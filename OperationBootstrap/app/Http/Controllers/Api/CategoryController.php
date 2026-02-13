@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Category\StoreCategoryRequest;
+use App\Http\Requests\Api\Category\UpdateCategoryRequest;
+use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\Request;
 
@@ -17,13 +20,11 @@ class CategoryController extends Controller
 
         $query = Category::query();
 
-        // Filters
         if ($request->filled('category_group_id')) {
             $query->where('category_group_id', (int) $request->query('category_group_id'));
         }
 
         if ($request->has('parent_id')) {
-            // parent_id can be null or a number
             $parentId = $request->query('parent_id');
             if ($parentId === null || $parentId === 'null' || $parentId === '') {
                 $query->whereNull('parent_id');
@@ -39,7 +40,6 @@ class CategoryController extends Controller
             }
         }
 
-        // Optional includes
         $with = [];
         foreach (['group', 'parent', 'children'] as $rel) {
             if ($include->contains($rel)) {
@@ -53,9 +53,18 @@ class CategoryController extends Controller
         $query->orderByRaw('COALESCE(sort_order, 2147483647) asc')
               ->orderBy('name');
 
-        return response()->json(
+        return CategoryResource::collection(
             $query->paginate(25)->withQueryString()
         );
+    }
+
+    public function store(StoreCategoryRequest $request)
+    {
+        $category = Category::create($request->validated());
+
+        return (new CategoryResource($category))
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function show(Request $request, Category $category)
@@ -75,6 +84,20 @@ class CategoryController extends Controller
             $category->load($with);
         }
 
-        return response()->json($category);
+        return new CategoryResource($category);
+    }
+
+    public function update(UpdateCategoryRequest $request, Category $category)
+    {
+        $category->update($request->validated());
+
+        return new CategoryResource($category->fresh());
+    }
+
+    public function destroy(Category $category)
+    {
+        $category->delete();
+
+        return response()->noContent();
     }
 }
