@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\lulul\\OneDrive\\Desktop\\coding\\cap\\A New Hope\\A New Hope\\A New Hope.csproj": {}
+    "J:\\OperationBootstrap\\OperationBootstrap\\A New Hope\\A New Hope.csproj": {}
   },
   "projects": {
-    "C:\\Users\\lulul\\OneDrive\\Desktop\\coding\\cap\\A New Hope\\A New Hope\\A New Hope.csproj": {
+    "J:\\OperationBootstrap\\OperationBootstrap\\A New Hope\\A New Hope.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\lulul\\OneDrive\\Desktop\\coding\\cap\\A New Hope\\A New Hope\\A New Hope.csproj",
+        "projectUniqueName": "J:\\OperationBootstrap\\OperationBootstrap\\A New Hope\\A New Hope.csproj",
         "projectName": "A New Hope",
-        "projectPath": "C:\\Users\\lulul\\OneDrive\\Desktop\\coding\\cap\\A New Hope\\A New Hope\\A New Hope.csproj",
-        "packagesPath": "C:\\Users\\lulul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\lulul\\OneDrive\\Desktop\\coding\\cap\\A New Hope\\A New Hope\\obj\\",
+        "projectPath": "J:\\OperationBootstrap\\OperationBootstrap\\A New Hope\\A New Hope.csproj",
+        "packagesPath": "C:\\Users\\trivi\\.nuget\\packages\\",
+        "outputPath": "J:\\OperationBootstrap\\OperationBootstrap\\A New Hope\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\lulul\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\trivi\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],

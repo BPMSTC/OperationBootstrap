@@ -1,6 +1,5 @@
 ﻿using A_New_Hope.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 
 public class ApplicationDbContext : DbContext
 {
@@ -8,8 +7,6 @@ public class ApplicationDbContext : DbContext
         : base(options) { }
 
     public DbSet<User> Users => Set<User>();
-    public DbSet<Role> Roles => Set<Role>();
-    public DbSet<RoleUser> RoleUsers => Set<RoleUser>();
     public DbSet<ClientProfile> ClientProfiles => Set<ClientProfile>();
     public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
     public DbSet<CategoryGroup> CategoryGroups => Set<CategoryGroup>();
@@ -40,27 +37,9 @@ public class ApplicationDbContext : DbContext
                 .HasConversion<string>()
                 .HasMaxLength(20);
 
-            entity.HasQueryFilter(e => e.DeletedAt == null);
-
-            entity.HasOne(e => e.CreatedByUser)
-                .WithMany()
-                .HasForeignKey(e => e.CreatedByUserId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasOne(e => e.UpdatedByUser)
-                .WithMany()
-                .HasForeignKey(e => e.UpdatedByUserId)
-                .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // ==============================
-        // ROLES
-        // ==============================
-        modelBuilder.Entity<Role>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-
-            entity.HasIndex(e => e.Name).IsUnique();
+            entity.Property(e => e.Role)
+                .HasConversion<string>()
+                .HasMaxLength(20);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
 
@@ -73,27 +52,6 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.UpdatedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
-        });
-
-        // ==============================
-        // ROLE_USER (Pivot)
-        // ==============================
-        modelBuilder.Entity<RoleUser>(entity =>
-        {
-            entity.HasKey(e => new { e.UserId, e.RoleId });
-
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.RoleId);
-
-            entity.HasOne(e => e.User)
-                .WithMany(u => u.RoleUsers)
-                .HasForeignKey(e => e.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Role)
-                .WithMany(r => r.RoleUsers)
-                .HasForeignKey(e => e.RoleId)
-                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ==============================
@@ -105,6 +63,8 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.EarnedIncomeMonthly)
                 .HasPrecision(10, 2);
+
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
 
@@ -133,6 +93,7 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.ClientUserId);
             entity.HasIndex(e => e.DateOfBirth);
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
 
@@ -161,8 +122,19 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Name).IsUnique();
             entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ==============================
@@ -175,6 +147,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.CategoryGroupId);
             entity.HasIndex(e => e.ParentId);
             entity.HasIndex(e => new { e.CategoryGroupId, e.Name }).IsUnique();
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
 
@@ -186,6 +159,16 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(e => e.Parent)
                 .WithMany(e => e.Children)
                 .HasForeignKey(e => e.ParentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -199,6 +182,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.CategoryId);
             entity.HasIndex(e => e.IsAvailable);
             entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
 
@@ -206,6 +190,16 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ==============================
@@ -217,10 +211,13 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => new { e.UserId, e.InventoryItemId }).IsUnique();
             entity.HasIndex(e => e.InventoryItemId);
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.Property(e => e.Preference)
                 .HasConversion<string>()
                 .HasMaxLength(20);
+
+            entity.HasQueryFilter(e => e.DeletedAt == null);
 
             entity.HasOne(e => e.User)
                 .WithMany()
@@ -231,6 +228,11 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.InventoryItemId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(e => e.UpdatedByUser)
                 .WithMany()
@@ -246,8 +248,19 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
 
             entity.HasIndex(e => e.IsActive);
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.HasQueryFilter(e => e.DeletedAt == null);
+
+            entity.HasOne(e => e.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.UpdatedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.UpdatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // ==============================
@@ -261,6 +274,7 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.ReferringOrganizationId);
             entity.HasIndex(e => e.ReferredOn);
             entity.HasIndex(e => new { e.ClientUserId, e.ReferredOn });
+            entity.HasIndex(e => e.DeletedAt);
 
             entity.Property(e => e.Status)
                 .HasConversion<string>()

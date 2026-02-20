@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("A New Hope")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1c1df72243e6547cbc88b6404d34a45ffa8f263c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+716411d8ec8b055adcab791c615ac4295ae84bb2")]
 [assembly: System.Reflection.AssemblyProductAttribute("A New Hope")]
 [assembly: System.Reflection.AssemblyTitleAttribute("A New Hope")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

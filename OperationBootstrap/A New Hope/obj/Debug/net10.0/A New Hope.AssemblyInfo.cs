@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("A New Hope")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a3ce7c9c76cac505c844218b94a78f5476fa8b8b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+716411d8ec8b055adcab791c615ac4295ae84bb2")]
 [assembly: System.Reflection.AssemblyProductAttribute("A New Hope")]
 [assembly: System.Reflection.AssemblyTitleAttribute("A New Hope")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

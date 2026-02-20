@@ -1,0 +1,103 @@
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\appsettings.Development.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\appsettings.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.staticwebassets.runtime.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.staticwebassets.endpoints.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.exe
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.deps.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.runtimeconfig.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.dll
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\A New Hope.pdb
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.dll
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+J:\OperationBootstrap\OperationBootstrap\A New Hope\bin\Debug\net10.0\Microsoft.EntityFrameworkCore.Relational.dll
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.csproj.AssemblyReference.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\rpswa.dswa.cache.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.GeneratedMSBuildEditorConfig.editorconfig
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.AssemblyInfoInputs.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.AssemblyInfo.cs
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.csproj.CoreCompileInputs.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.MvcApplicationPartsAssemblyInfo.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.RazorAssemblyInfo.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.RazorAssemblyInfo.cs
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.sourcelink.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\rjimswa.dswa.cache.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\scopedcss\bundle\A New Hope.styles.css
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\scopedcss\projectbundle\A New Hope.bundle.scp.css
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\zh938a6uqs-{0}-b9sayid5wm-b9sayid5wm.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\fsy8q2fcl3-{0}-61n19gt1b8-61n19gt1b8.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\kjn7iy1hlv-{0}-xtxxf3hu2r-xtxxf3hu2r.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\ilc4yvdhpm-{0}-t1cqhe9u97-t1cqhe9u97.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\rotdhgl5pl-{0}-c2jlpeoesf-c2jlpeoesf.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\sp0mxs2iy4-{0}-sejl45xvog-sejl45xvog.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\0rayyvb1rp-{0}-aexeepp0ev-aexeepp0ev.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\6ipgftorm3-{0}-xvp3kq03qx-xvp3kq03qx.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\mlha8s7hu2-{0}-ausgxo2sd3-ausgxo2sd3.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\h3bw594mqk-{0}-22vffe00uq-22vffe00uq.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\tzxppq8rt7-{0}-cosvhxvwiu-cosvhxvwiu.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\2oalyek6gs-{0}-qesaa3a1fm-qesaa3a1fm.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\24dannnco9-{0}-fvhpjtyr6v-fvhpjtyr6v.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\2u2dh6z40v-{0}-tmc1g35s3z-tmc1g35s3z.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\q6i0emlqf9-{0}-fsbi9cje9m-fsbi9cje9m.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\arah8n8q5q-{0}-rxsg74s51o-rxsg74s51o.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\tz95hqa7xf-{0}-ee0r1s7dh0-ee0r1s7dh0.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\qwo8vd484b-{0}-q9ht133ko3-q9ht133ko3.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\2ns7ih4h8h-{0}-jd9uben2k1-jd9uben2k1.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\9hz2r2c0ev-{0}-gye83jo8yx-gye83jo8yx.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\iylhmct2p9-{0}-r4e9w2rdcm-r4e9w2rdcm.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\ozev83be4v-{0}-wl58j5mj3v-wl58j5mj3v.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\y0t39q3wo5-{0}-c2oey78nd0-c2oey78nd0.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\mlzmlfcitf-{0}-d4r6k3f320-d4r6k3f320.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\u491zkfy8p-{0}-j5mq2jizvt-j5mq2jizvt.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\8xr7wd68p8-{0}-keugtjm085-keugtjm085.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\aveq5x1ali-{0}-nvvlpmu67g-nvvlpmu67g.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\ra8lpra0jh-{0}-zub09dkrxp-zub09dkrxp.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\yld2887dfm-{0}-pj5nd1wqec-pj5nd1wqec.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\hsawzao3g6-{0}-43atpzeawx-43atpzeawx.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\0b90ejxg20-{0}-v0zj4ognzu-v0zj4ognzu.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\buas8f3iek-{0}-ynyaa8k90p-ynyaa8k90p.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\o6qflajzue-{0}-hrwsygsryq-hrwsygsryq.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\cucqhzafj5-{0}-c63t5i9ira-c63t5i9ira.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\7p2yoeyyxg-{0}-ft3s53vfgj-ft3s53vfgj.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\2w92cl64m3-{0}-4094rpi4f9-4094rpi4f9.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\dp1d76rki9-{0}-6pdc2jztkx-6pdc2jztkx.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\nj7k4hky30-{0}-hd3gran6i8-hd3gran6i8.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\hs5qyl1y3h-{0}-iovd86k7lj-iovd86k7lj.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\3o7m19hy3q-{0}-ltid2c489k-ltid2c489k.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\jfmqsv7lhx-{0}-kbrnm935zg-kbrnm935zg.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\5rxq5hzb5h-{0}-8vyfqsqgz1-8vyfqsqgz1.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\eixmzwygck-{0}-y7v9cxd14o-y7v9cxd14o.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\sf6a4idwzi-{0}-u9q1upor1n-u9q1upor1n.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\4nghjp8s9j-{0}-h1s4sie4z3-h1s4sie4z3.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\9egkezazq9-{0}-4d85u1mtcx-4d85u1mtcx.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\qafzabcs5f-{0}-0j3bgjxly4-0j3bgjxly4.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\fqilikq9e4-{0}-03hjc8e09r-03hjc8e09r.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\qf2dv3jbfm-{0}-48y08845bh-48y08845bh.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\e8vmisqstp-{0}-356vix0kms-356vix0kms.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\d8dob2ab4a-{0}-83jwlth58m-83jwlth58m.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\3cuog158db-{0}-mrlpezrjn3-mrlpezrjn3.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\tsphe4iyup-{0}-worgj0nhwm-worgj0nhwm.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\5tc0bd1815-{0}-gk0pw8i4co-gk0pw8i4co.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\ez1b7bib51-{0}-x0q3zqp4vz-x0q3zqp4vz.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\8diof6lw92-{0}-d6nrnj6jjx-d6nrnj6jjx.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\1nm5es48ma-{0}-m9qm4tazc0-m9qm4tazc0.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\gevn4cuwwk-{0}-ttgo8qnofa-ttgo8qnofa.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\pbq6ew1gpp-{0}-jjsuc0puko-jjsuc0puko.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\g12pgjms5p-{0}-9vr69e8ynj-9vr69e8ynj.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\cf95bd18ao-{0}-87fc7y1x7t-87fc7y1x7t.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\vo5vq3uxnj-{0}-mlv21k5csn-mlv21k5csn.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\sp188h4do1-{0}-2or1fye6ua-2or1fye6ua.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\compressed\akh56y29et-{0}-2or1fye6ua-2or1fye6ua.gz
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\staticwebassets.build.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\staticwebassets.build.json.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\staticwebassets.development.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\staticwebassets.build.endpoints.json
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\swae.build.ex.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.csproj.Up2Date
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.dll
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\refint\A New Hope.dll
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.pdb
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\A New Hope.genruntimeconfig.cache
+J:\OperationBootstrap\OperationBootstrap\A New Hope\obj\Debug\net10.0\ref\A New Hope.dll
