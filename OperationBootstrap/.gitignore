@@ -1,0 +1,120 @@
+# =========================
+# OS / General
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+# Visual Studio
+# =========================
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio temporary files
+*.tmp
+*.temp
+*.cache
+*.log
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# =========================
+# JetBrains Rider / ReSharper (optional)
+# =========================
+.idea/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# =========================
+# .NET / Build output
+# =========================
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Publish output
+[Pp]ublish/
+wwwroot/publish/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# =========================
+# NuGet
+# =========================
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+!**/[Pp]ackages/repositories.config
+*.nuget.props
+*.nuget.targets
+
+# If you use PackageReference (most modern projects), keep this ignored:
+project.assets.json
+project.nuget.cache
+
+# =========================
+# Entity Framework / local DB artifacts
+# =========================
+*.mdf
+*.ldf
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# =========================
+# ASP.NET / Secrets / local config
+# =========================
+# User secrets / local secrets
+secrets.json
+
+# App settings overrides (keep templates, ignore local-only)
+#appsettings.Development.json
+appsettings.Local.json
+
+# Environment files (if you add them later)
+.env
+.env.*
+
+# =========================
+# Node (only if this repo later adds frontend tooling)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Generated files / coverage
+# =========================
+coverage/
+coverage*.json
+*.coverage
+*.coveragexml
+
+# =========================
+# Misc
+# =========================
+*.pid
+*.seed
+*.out
