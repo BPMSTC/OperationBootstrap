@@ -8,8 +8,11 @@ namespace A_New_Hope.Models
 
         public ulong ClientUserId { get; set; }
 
-        [MaxLength(200)] // Prevents LONGTEXT in MySQL and keeps data reasonable; also helps if you ever index/search names
-        public string FullName { get; set; } = null!;
+        [MaxLength(100)] // Split from FullName so first name can be stored/searched/sorted independently
+        public string FirstName { get; set; } = null!;
+
+        [MaxLength(100)] // Split from FullName so last name can be stored/searched/sorted independently
+        public string LastName { get; set; } = null!;
 
         public DateOnly? DateOfBirth { get; set; } // Keep if your provider supports DateOnly; otherwise switch to DateTime?
 
