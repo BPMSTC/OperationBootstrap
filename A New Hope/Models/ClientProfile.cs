@@ -23,7 +23,7 @@ namespace A_New_Hope.Models
         public User? CreatedByUser { get; set; }
         public User? UpdatedByUser { get; set; }
 
-        public ICollection<HouseholdMember> HouseholdMembers { get; set; } = new List<HouseholdMember>();
+        // public ICollection<HouseholdMember> HouseholdMembers { get; set; } = new List<HouseholdMember>();
         // Keep this only if HouseholdMember has a FK that aligns to UserId (e.g., HouseholdMember.ClientUserId == ClientProfile.UserId).
         // Otherwise remove for now and re-add once HouseholdMember is finalized to avoid ambiguous navigation.
     }
