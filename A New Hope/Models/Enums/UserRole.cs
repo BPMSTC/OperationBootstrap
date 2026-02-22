@@ -1,11 +1,8 @@
 namespace A_New_Hope.Models
 {
-    public enum ReferralStatus
+    public enum UserRole
     {
-        Pending,
-        Approved,
-        Denied,
-        Expired,
-        Closed
+        User,
+        Admin
     }
 }

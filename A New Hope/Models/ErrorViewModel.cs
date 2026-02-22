@@ -1,4 +1,4 @@
-namespace A_New_Hope.Models
+﻿namespace A_New_Hope.Models
 {
     public class ErrorViewModel
     {

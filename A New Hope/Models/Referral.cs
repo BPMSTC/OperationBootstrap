@@ -9,13 +9,13 @@ namespace A_New_Hope.Models
         public ulong ClientUserId { get; set; }
         public ulong ReferringOrganizationId { get; set; }
 
-        public DateOnly ReferredOn { get; set; } // Good fit semantically; keep if your MySQL provider supports DateOnly well
+        public DateTime ReferredOn { get; set; } // Good fit semantically; keep if your MySQL provider supports DateOnly well
 
         public ReferralStatus Status { get; set; } = ReferralStatus.Pending;
         // Changed from string -> enum to prevent typos/invalid values and keep status logic consistent
 
-        public DateOnly? ValidFrom { get; set; }
-        public DateOnly? ValidTo { get; set; }
+        public DateTime? ValidFrom { get; set; }
+        public DateTime? ValidTo { get; set; }
 
         [MaxLength(200)] // Prevents LONGTEXT and keeps referrer names within a practical length
         public string? ReferredByName { get; set; }
@@ -28,6 +28,7 @@ namespace A_New_Hope.Models
         [EmailAddress] // MVC-level validation for cleaner user input
         public string? ReferredByEmail { get; set; }
 
+        [MaxLength(2000)]
         public string? Notes { get; set; } // Leaving uncapped is okay if you want large free-form notes (TEXT/LONGTEXT in MySQL)
 
         public ulong? CreatedByUserId { get; set; }

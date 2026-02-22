@@ -9,6 +9,7 @@ namespace A_New_Hope.Models
         [MaxLength(254)] // Keeps the column as VARCHAR and supports indexing/uniqueness cleanly (Email is commonly capped at 254)
         public string Email { get; set; } = null!; // Email-as-login typically must be required; nullable + unique index is usually not desired
 
+        [MaxLength(255)]
         public string PasswordHash { get; set; } = null!; // Never store plain passwords; store a secure hash instead
         // public string? RememberToken { get; set; } // Optional: only keep if you implement "remember me" yourself
 
