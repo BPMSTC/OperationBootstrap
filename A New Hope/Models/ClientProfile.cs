@@ -17,14 +17,10 @@ namespace A_New_Hope.Models
 
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public DateTime? DeletedAt { get; set; }
+        public DateTime? DeletedAt { get; set; }   // <-- add this
 
         public User User { get; set; } = null!;
         public User? CreatedByUser { get; set; }
         public User? UpdatedByUser { get; set; }
-
-        // public ICollection<HouseholdMember> HouseholdMembers { get; set; } = new List<HouseholdMember>();
-        // Keep this only if HouseholdMember has a FK that aligns to UserId (e.g., HouseholdMember.ClientUserId == ClientProfile.UserId).
-        // Otherwise remove for now and re-add once HouseholdMember is finalized to avoid ambiguous navigation.
     }
 }

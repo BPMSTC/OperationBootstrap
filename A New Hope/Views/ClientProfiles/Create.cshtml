@@ -1,0 +1,50 @@
+@model A_New_Hope.Models.ClientProfile
+
+@{
+    ViewData["Title"] = "Create Client Profile";
+}
+
+<h1>Create Client Profile</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="UserId" class="form-label"></label>
+                <select asp-for="UserId" class="form-select" asp-items="ViewBag.UserId">
+                    <option value="">-- Select client --</option>
+                </select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="EmploymentStatus" class="form-label"></label>
+                <input asp-for="EmploymentStatus" class="form-control" />
+                <span asp-validation-for="EmploymentStatus" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="EarnedIncomeMonthly" class="form-label"></label>
+                <input asp-for="EarnedIncomeMonthly" class="form-control" />
+                <span asp-validation-for="EarnedIncomeMonthly" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" asp-for="IsUnhoused" />
+                <label class="form-check-label" asp-for="IsUnhoused"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Create</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

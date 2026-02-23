@@ -1,0 +1,41 @@
+@model A_New_Hope.Models.ClientProfile
+
+@{
+    ViewData["Title"] = "Client Profile Details";
+}
+
+<h1>Client Profile Details</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Client</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.User != null
+                    ? $"{Model.User.LastName}, {Model.User.FirstName} ({Model.User.Email})"
+                    : ""
+            )
+        </dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.EmploymentStatus)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.EmploymentStatus)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.EarnedIncomeMonthly)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.EarnedIncomeMonthly)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsUnhoused)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsUnhoused)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.UserId" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+</div>
