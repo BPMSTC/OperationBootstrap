@@ -1,0 +1,40 @@
+@model A_New_Hope.Models.InventoryItem
+
+@{
+    ViewData["Title"] = "Inventory Item Details";
+}
+
+<h1>Inventory Item Details</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-3">Category</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.Category != null
+                    ? (Model.Category.CategoryGroup != null
+                        ? $"{Model.Category.CategoryGroup.Name} - {Model.Category.Name}"
+                        : Model.Category.Name)
+                    : ""
+            )
+        </dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsBaseline)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsBaseline)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsAvailable)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsAvailable)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+</div>

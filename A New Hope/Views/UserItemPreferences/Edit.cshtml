@@ -1,0 +1,55 @@
+@model A_New_Hope.Models.UserItemPreference
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit</h1>
+
+<h4>User Item Preference</h4>
+<hr />
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="UserId" class="form-label"></label>
+                <select asp-for="UserId" class="form-select" asp-items="ViewBag.UserId">
+                    <option value="">-- Select User --</option>
+                </select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="InventoryItemId" class="form-label"></label>
+                <select asp-for="InventoryItemId" class="form-select" asp-items="ViewBag.InventoryItemId">
+                    <option value="">-- Select Inventory Item --</option>
+                </select>
+                <span asp-validation-for="InventoryItemId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Preference" class="form-label"></label>
+                <select asp-for="Preference" class="form-select" asp-items="ViewBag.PreferenceOptions">
+                    <option value="">-- Select Preference --</option>
+                </select>
+                <span asp-validation-for="Preference" class="text-danger"></span>
+            </div>
+
+            @* Removed audit/system-managed fields:
+               CreatedByUserId, UpdatedByUserId, CreatedAt, UpdatedAt, DeletedAt
+               These should be set in controller/server logic. *@
+
+            <div class="mt-3 d-flex gap-2">
+                <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

@@ -1,0 +1,43 @@
+@model A_New_Hope.Models.UserItemPreference
+
+@{
+    ViewData["Title"] = "Preference Details";
+}
+
+<h1>Preference Details</h1>
+
+<div>
+    <h4>User Item Preference</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Preference)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Preference)
+        </dd>
+
+        <dt class="col-sm-3">
+            User
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.User != null
+                ? (!string.IsNullOrWhiteSpace(Model.User.Email)
+                    ? Model.User.Email
+                    : $"{Model.User.FirstName} {Model.User.LastName}".Trim())
+                : "")
+        </dd>
+
+        <dt class="col-sm-3">
+            Inventory Item
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.InventoryItem != null ? Model.InventoryItem.Name : "")
+        </dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+</div>

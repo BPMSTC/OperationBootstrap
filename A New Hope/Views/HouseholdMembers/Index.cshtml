@@ -1,0 +1,49 @@
+@model IEnumerable<A_New_Hope.Models.HouseholdMember>
+
+@{
+    ViewData["Title"] = "Household Members";
+}
+
+<h1>Household Members</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+</p>
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Client</th>
+            <th>@Html.DisplayNameFor(model => model.FirstName)</th>
+            <th>@Html.DisplayNameFor(model => model.LastName)</th>
+            <th>@Html.DisplayNameFor(model => model.DateOfBirth)</th>
+            <th>@Html.DisplayNameFor(model => model.AgeAsOfDate)</th>
+            <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model)
+{
+        <tr>
+            <td>
+                @(
+                    item.ClientUser != null
+                        ? $"{item.ClientUser.LastName}, {item.ClientUser.FirstName} ({item.ClientUser.Email})"
+                        : ""
+                )
+            </td>
+            <td>@Html.DisplayFor(modelItem => item.FirstName)</td>
+            <td>@Html.DisplayFor(modelItem => item.LastName)</td>
+            <td>@Html.DisplayFor(modelItem => item.DateOfBirth)</td>
+            <td>@Html.DisplayFor(modelItem => item.AgeAsOfDate)</td>
+            <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
+            <td class="text-nowrap">
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

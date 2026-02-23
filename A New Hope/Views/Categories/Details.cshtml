@@ -1,0 +1,37 @@
+@model A_New_Hope.Models.Category
+
+@{
+    ViewData["Title"] = "Category Details";
+}
+
+<h1>Category Details</h1>
+
+<hr />
+
+<dl class="row">
+    <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+
+    <dt class="col-sm-3">Category Group</dt>
+    <dd class="col-sm-9">@Model.CategoryGroup.Name</dd>
+
+    <dt class="col-sm-3">Parent Category</dt>
+    <dd class="col-sm-9">@(Model.Parent?.Name ?? "-- None --")</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SortOrder)</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.SortOrder)</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+
+    <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
+    <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
+</dl>
+
+<div class="d-flex gap-2">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+</div>
