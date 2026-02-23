@@ -1,0 +1,55 @@
+@model A_New_Hope.Models.InventoryItem
+
+@{
+    ViewData["Title"] = "Edit Inventory Item";
+}
+
+<h1>Edit Inventory Item</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CategoryId" class="form-label"></label>
+                <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId">
+                    <option value="">-- Select category --</option>
+                </select>
+                <span asp-validation-for="CategoryId" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-2">
+                <input class="form-check-input" asp-for="IsBaseline" />
+                <label class="form-check-label" asp-for="IsBaseline"></label>
+            </div>
+
+            <div class="form-check mb-2">
+                <input class="form-check-input" asp-for="IsAvailable" />
+                <label class="form-check-label" asp-for="IsAvailable"></label>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" asp-for="IsActive" />
+                <label class="form-check-label" asp-for="IsActive"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
