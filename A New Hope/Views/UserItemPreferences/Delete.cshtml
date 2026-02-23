@@ -1,0 +1,46 @@
+@model A_New_Hope.Models.UserItemPreference
+
+@{
+    ViewData["Title"] = "Delete Preference";
+}
+
+<h1>Delete Preference</h1>
+
+<h3>Are you sure you want to delete this?</h3>
+
+<div>
+    <h4>User Item Preference</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">
+            @Html.DisplayNameFor(model => model.Preference)
+        </dt>
+        <dd class="col-sm-9">
+            @Html.DisplayFor(model => model.Preference)
+        </dd>
+
+        <dt class="col-sm-3">
+            User
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.User != null
+                ? (!string.IsNullOrWhiteSpace(Model.User.Email)
+                    ? Model.User.Email
+                    : $"{Model.User.FirstName} {Model.User.LastName}".Trim())
+                : "")
+        </dd>
+
+        <dt class="col-sm-3">
+            Inventory Item
+        </dt>
+        <dd class="col-sm-9">
+            @(Model.InventoryItem != null ? Model.InventoryItem.Name : "")
+        </dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Delete</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+    </form>
+</div>

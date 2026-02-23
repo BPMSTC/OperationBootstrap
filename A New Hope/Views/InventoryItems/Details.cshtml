@@ -13,7 +13,15 @@
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
 
         <dt class="col-sm-3">Category</dt>
-        <dd class="col-sm-9">@(Model.Category != null ? Model.Category.Name : "")</dd>
+        <dd class="col-sm-9">
+            @(
+                Model.Category != null
+                    ? (Model.Category.CategoryGroup != null
+                        ? $"{Model.Category.CategoryGroup.Name} - {Model.Category.Name}"
+                        : Model.Category.Name)
+                    : ""
+            )
+        </dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsBaseline)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.IsBaseline)</dd>
@@ -23,15 +31,6 @@
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DeletedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DeletedAt)</dd>
     </dl>
 </div>
 

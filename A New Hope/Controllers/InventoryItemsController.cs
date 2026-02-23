@@ -24,6 +24,7 @@ namespace A_New_Hope.Controllers
             var inventoryItems = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
+                    .ThenInclude(c => c.CategoryGroup)
                 .OrderBy(i => i.Category.Name)
                 .ThenBy(i => i.Name)
                 .ToListAsync();
@@ -42,6 +43,7 @@ namespace A_New_Hope.Controllers
             var inventoryItem = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
+                    .ThenInclude(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (inventoryItem == null)
@@ -189,6 +191,7 @@ namespace A_New_Hope.Controllers
             var inventoryItem = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
+                    .ThenInclude(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (inventoryItem == null)
