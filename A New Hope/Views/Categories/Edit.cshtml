@@ -1,0 +1,58 @@
+@model A_New_Hope.Models.Category
+
+@{
+    ViewData["Title"] = "Edit Category";
+}
+
+<h1>Edit Category</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="CategoryGroupId" class="form-label"></label>
+                <select asp-for="CategoryGroupId" class="form-select" asp-items="ViewBag.CategoryGroupId"></select>
+                <span asp-validation-for="CategoryGroupId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ParentId" class="form-label"></label>
+                <select asp-for="ParentId" class="form-select" asp-items="ViewBag.ParentId">
+                    <option value="">-- None --</option>
+                </select>
+                <span asp-validation-for="ParentId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SortOrder" class="form-label"></label>
+                <input asp-for="SortOrder" class="form-control" type="number" />
+                <span asp-validation-for="SortOrder" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" asp-for="IsActive" />
+                <label class="form-check-label" asp-for="IsActive"></label>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}
