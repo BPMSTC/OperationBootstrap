@@ -1,0 +1,90 @@
+@model A_New_Hope.Models.Referral
+
+@{
+    ViewData["Title"] = "Edit Referral";
+}
+
+<h1>Edit Referral</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+
+            <div class="mb-3">
+                <label asp-for="ClientUserId" class="form-label"></label>
+                <select asp-for="ClientUserId" class="form-select" asp-items="ViewBag.ClientUserId">
+                    <option value="">-- Select client --</option>
+                </select>
+                <span asp-validation-for="ClientUserId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ReferringOrganizationId" class="form-label"></label>
+                <select asp-for="ReferringOrganizationId" class="form-select" asp-items="ViewBag.ReferringOrganizationId">
+                    <option value="">-- Select organization --</option>
+                </select>
+                <span asp-validation-for="ReferringOrganizationId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ReferredOn" class="form-label"></label>
+                <input asp-for="ReferredOn" class="form-control" />
+                <span asp-validation-for="ReferredOn" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Status" class="form-label"></label>
+                <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<ReferralStatus>()"></select>
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ValidFrom" class="form-label"></label>
+                <input asp-for="ValidFrom" class="form-control" />
+                <span asp-validation-for="ValidFrom" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ValidTo" class="form-label"></label>
+                <input asp-for="ValidTo" class="form-control" />
+                <span asp-validation-for="ValidTo" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ReferredByName" class="form-label"></label>
+                <input asp-for="ReferredByName" class="form-control" />
+                <span asp-validation-for="ReferredByName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ReferredByPhoneNumber" class="form-label"></label>
+                <input asp-for="ReferredByPhoneNumber" class="form-control" />
+                <span asp-validation-for="ReferredByPhoneNumber" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ReferredByEmail" class="form-label"></label>
+                <input asp-for="ReferredByEmail" class="form-control" />
+                <span asp-validation-for="ReferredByEmail" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Notes" class="form-label"></label>
+                <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Notes" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
