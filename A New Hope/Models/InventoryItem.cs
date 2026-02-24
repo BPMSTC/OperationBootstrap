@@ -24,7 +24,7 @@ namespace A_New_Hope.Models
 
         public Category Category { get; set; } = null!;
 
-        public User? CreatedByUser { get; set; } // Lets you Include() audit users and avoids relying on FK IDs only
-        public User? UpdatedByUser { get; set; } // Same; makes admin auditing/UX much easier
+        public DomainUser? CreatedByUser { get; set; } // Lets you Include() audit users and avoids relying on FK IDs only
+        public DomainUser? UpdatedByUser { get; set; } // Same; makes admin auditing/UX much easier
     }
 }

@@ -2,19 +2,12 @@
 
 namespace A_New_Hope.Models
 {
-    public class User
+    public class DomainUser
     {
         public ulong Id { get; set; }
 
         [MaxLength(254)] // Keeps the column as VARCHAR and supports indexing/uniqueness cleanly (Email is commonly capped at 254)
-        public string Email { get; set; } = null!; // Email-as-login typically must be required; nullable + unique index is usually not desired
-
-        [MaxLength(255)]
-        public string PasswordHash { get; set; } = null!; // Never store plain passwords; store a secure hash instead
-        // public string? RememberToken { get; set; } // Optional: only keep if you implement "remember me" yourself
-
-        public DateTime? EmailVerifiedAt { get; set; }
-        public DateTime? LastLoginAt { get; set; }
+        public string Email { get; set; } = null!; // Contact email (not login credentials)
 
         // Profile
         [MaxLength(25)] public string? PhoneNumber { get; set; } // Avoid LONGTEXT and keep data reasonable
@@ -30,7 +23,7 @@ namespace A_New_Hope.Models
         public DateOnly? DateOfBirth { get; set; } // Fine if your MySQL EF provider supports it; otherwise switch to DateTime?
 
         public PreferenceOption DefaultPreference { get; set; } = PreferenceOption.Ask; // Enum prevents invalid values like "aks" or "maybe"
-        public UserRole Role { get; set; } = UserRole.User; // Simple single-role auth model (replaces Role/RoleUser tables for User/Admin-style access)
+        public UserType UserType { get; set; } = UserType.Client;
         public bool IsActive { get; set; } = true;
 
         // Audit
@@ -42,11 +35,8 @@ namespace A_New_Hope.Models
         public DateTime? DeletedAt { get; set; }
 
         // Navigation
-        public User? CreatedByUser { get; set; }
-        public User? UpdatedByUser { get; set; }
-
-        // Removed RoleUsers because you said roles are going away (prevents new code from depending on it)
-        // public ICollection<RoleUser> RoleUsers { get; set; } = new List<RoleUser>();
+        public DomainUser? CreatedByUser { get; set; }
+        public DomainUser? UpdatedByUser { get; set; }
 
         public ClientProfile? ClientProfile { get; set; }
     }

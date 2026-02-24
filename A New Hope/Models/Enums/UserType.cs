@@ -1,8 +1,9 @@
 namespace A_New_Hope.Models
 {
-    public enum UserRole
+    public enum UserType
     {
-        User,
+        Client,
+        Staff,
         Admin
     }
 }

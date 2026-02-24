@@ -37,7 +37,7 @@ namespace A_New_Hope.Models
         public Category? Parent { get; set; }
         public ICollection<Category> Children { get; set; } = new List<Category>();
 
-        public User? CreatedByUser { get; set; } // Lets you Include() the creator and enables proper FK mapping without EF creating "shadow" FK columns
-        public User? UpdatedByUser { get; set; } // Same as above; also makes audit display in MVC views straightforward (e.g., "Last updated by")
+        public DomainUser? CreatedByUser { get; set; } // Lets you Include() the creator and enables proper FK mapping without EF creating "shadow" FK columns
+        public DomainUser? UpdatedByUser { get; set; } // Same as above; also makes audit display in MVC views straightforward (e.g., "Last updated by")
     }
 }

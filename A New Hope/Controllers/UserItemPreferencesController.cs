@@ -312,7 +312,7 @@ namespace A_New_Hope.Controllers
                 selectedPreference);
         }
 
-        private static string BuildUserDisplayName(User u)
+        private static string BuildUserDisplayName(DomainUser u)
         {
             var first = (u.FirstName ?? string.Empty).Trim();
             var last = (u.LastName ?? string.Empty).Trim();

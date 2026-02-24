@@ -8,7 +8,7 @@ namespace A_New_Hope.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
 
-        public DbSet<User> Users => Set<User>();
+        public DbSet<DomainUser> Users => Set<DomainUser>();
         public DbSet<ClientProfile> ClientProfiles => Set<ClientProfile>();
         public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
         public DbSet<CategoryGroup> CategoryGroups => Set<CategoryGroup>();
@@ -25,7 +25,7 @@ namespace A_New_Hope.Data
             // ==============================
             // USERS
             // ==============================
-            modelBuilder.Entity<User>(entity =>
+            modelBuilder.Entity<DomainUser>(entity =>
             {
                 entity.HasKey(e => e.Id);
 
@@ -36,14 +36,13 @@ namespace A_New_Hope.Data
                 entity.HasIndex(e => e.Email).IsUnique();
 
                 entity.HasIndex(e => e.IsActive);
-                entity.HasIndex(e => e.LastLoginAt);
                 entity.HasIndex(e => e.DeletedAt);
 
                 entity.Property(e => e.DefaultPreference)
                     .HasConversion<string>()
                     .HasMaxLength(20);
 
-                entity.Property(e => e.Role)
+                entity.Property(e => e.UserType)
                     .HasConversion<string>()
                     .HasMaxLength(20);
 

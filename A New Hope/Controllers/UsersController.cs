@@ -59,12 +59,12 @@ namespace A_New_Hope.Controllers
         // POST: Users/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Email,PasswordHash,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,Role,IsActive")] A_New_Hope.Models.User user)
+        public async Task<IActionResult> Create([Bind("Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,Role,IsActive")] A_New_Hope.Models.DomainUser user)
         {
             // Navigation properties are not posted by the form
-            ModelState.Remove(nameof(A_New_Hope.Models.User.CreatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.UpdatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.ClientProfile));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.ClientProfile));
 
             if (!ModelState.IsValid)
             {
@@ -113,7 +113,7 @@ namespace A_New_Hope.Controllers
         // POST: Users/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PasswordHash,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,Role,IsActive")] A_New_Hope.Models.User formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,Role,IsActive")] A_New_Hope.Models.DomainUser formModel)
         {
             if (id != formModel.Id)
             {
@@ -121,9 +121,9 @@ namespace A_New_Hope.Controllers
             }
 
             // Navigation properties are not posted by the form
-            ModelState.Remove(nameof(A_New_Hope.Models.User.CreatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.UpdatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.ClientProfile));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.ClientProfile));
 
             if (!ModelState.IsValid)
             {
@@ -140,7 +140,6 @@ namespace A_New_Hope.Controllers
 
             // Update editable fields only
             existing.Email = formModel.Email;
-            existing.PasswordHash = formModel.PasswordHash;
             existing.PhoneNumber = formModel.PhoneNumber;
             existing.FirstName = formModel.FirstName;
             existing.LastName = formModel.LastName;
@@ -151,7 +150,7 @@ namespace A_New_Hope.Controllers
             existing.PostalCode = formModel.PostalCode;
             existing.DateOfBirth = formModel.DateOfBirth;
             existing.DefaultPreference = formModel.DefaultPreference;
-            existing.Role = formModel.Role;
+            existing.UserType = formModel.UserType;
             existing.IsActive = formModel.IsActive;
 
             // Audit
