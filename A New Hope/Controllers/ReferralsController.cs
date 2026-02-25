@@ -242,7 +242,7 @@ namespace A_New_Hope.Controllers
 
         private async Task PopulateDropdowns(ulong? selectedClientUserId = null, ulong? selectedReferringOrganizationId = null)
         {
-            var users = await _context.Users
+            var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)

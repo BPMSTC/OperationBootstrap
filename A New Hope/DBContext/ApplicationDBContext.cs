@@ -1,14 +1,16 @@
 ﻿using A_New_Hope.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options) { }
 
-        public DbSet<DomainUser> Users => Set<DomainUser>();
+        public DbSet<DomainUser> DomainUsers => Set<DomainUser>();
         public DbSet<ClientProfile> ClientProfiles => Set<ClientProfile>();
         public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
         public DbSet<CategoryGroup> CategoryGroups => Set<CategoryGroup>();
@@ -23,11 +25,13 @@ namespace A_New_Hope.Data
             base.OnModelCreating(modelBuilder);
 
             // ==============================
-            // USERS
+            // DOMAIN USERS
             // ==============================
             modelBuilder.Entity<DomainUser>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.ToTable("Users");
 
                 // MySQL-friendly explicit lengths for indexed strings
                 entity.Property(e => e.Email)
@@ -56,6 +60,22 @@ namespace A_New_Hope.Data
                 entity.HasOne(e => e.UpdatedByUser)
                     .WithMany()
                     .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+
+            // ==============================
+            // AUTHENTICATION USERS (1:1 with DomainUser)
+            // ==============================
+            modelBuilder.Entity<ApplicationUser>(entity =>
+            {
+                // Keep default Identity table names (AspNetUsers, AspNetRoles, etc.)
+                // Add optional link to your domain user record
+                entity.HasIndex(e => e.DomainUserId).IsUnique();
+
+                entity.HasOne(e => e.DomainUser)
+                    .WithOne()
+                    .HasForeignKey<ApplicationUser>(e => e.DomainUserId)
                     .OnDelete(DeleteBehavior.SetNull);
             });
 

@@ -271,7 +271,7 @@ namespace A_New_Hope.Controllers
             ulong? selectedInventoryItemId = null,
             PreferenceOption? selectedPreference = null)
         {
-            var users = await _context.Users
+            var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null && u.IsActive)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)

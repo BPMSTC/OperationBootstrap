@@ -25,7 +25,7 @@ namespace A_New_Hope.Data
             // ------------------------------
             // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
 
-            if (!await context.Users.AnyAsync())
+            if (!await context.DomainUsers.AnyAsync())
             {
                 var admin = new DomainUser
                 {
@@ -71,14 +71,14 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
-                context.Users.AddRange(admin, client1, client2);
+                context.DomainUsers.AddRange(admin, client1, client2);
                 await context.SaveChangesAsync();
             }
 
             // Pull seeded users (works whether they were just inserted or already existed)
-            var adminUser = await context.Users.FirstAsync(u => u.Email == "admin@anewhope.local");
-            var clientUser1 = await context.Users.FirstAsync(u => u.Email == "client1@anewhope.local");
-            var clientUser2 = await context.Users.FirstAsync(u => u.Email == "client2@anewhope.local");
+            var adminUser = await context.DomainUsers.FirstAsync(u => u.Email == "admin@anewhope.local");
+            var clientUser1 = await context.DomainUsers.FirstAsync(u => u.Email == "client1@anewhope.local");
+            var clientUser2 = await context.DomainUsers.FirstAsync(u => u.Email == "client2@anewhope.local");
 
             // ------------------------------
             // CLIENT PROFILES
