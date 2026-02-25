@@ -17,10 +17,10 @@
         public DateTime UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; } // Optional but recommended for soft-delete consistency
 
-        public User User { get; set; } = null!;
+        public DomainUser User { get; set; } = null!;
         public InventoryItem InventoryItem { get; set; } = null!;
 
-        public User? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in MVC/admin views
-        public User? UpdatedByUser { get; set; }
+        public DomainUser? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in MVC/admin views
+        public DomainUser? UpdatedByUser { get; set; }
     }
 }

@@ -5,30 +5,63 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.ViewModels;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace A_New_Hope.Controllers
 {
+    [Authorize(Roles = "Staff,Admin")]
     public class UsersController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: Users
         public async Task<IActionResult> Index()
         {
-            var users = await _context.Users
+            var domainUsers = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
+            var identityLinks = await _context.Users
+                .Where(iu => iu.DomainUserId != null)
+                .Select(iu => new { iu.Id, iu.DomainUserId })
+                .ToListAsync();
+
+            var identityByDomainUserId = identityLinks
+                .Where(x => x.DomainUserId.HasValue)
+                .ToDictionary(x => x.DomainUserId!.Value, x => x.Id);
+
+            var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
+            {
+                Id = u.Id,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                City = u.City,
+                State = u.State,
+                PostalCode = u.PostalCode,
+                DateOfBirth = u.DateOfBirth,
+                DefaultPreference = u.DefaultPreference,
+                UserType = u.UserType,
+                IsActive = u.IsActive,
+                HasLoginAccount = identityByDomainUserId.ContainsKey(u.Id),
+                IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
+            }).ToList();
             return View(users);
         }
+
 
         // GET: Users/Details/5
         public async Task<IActionResult> Details(ulong? id)
@@ -38,7 +71,7 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -59,12 +92,12 @@ namespace A_New_Hope.Controllers
         // POST: Users/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Email,PasswordHash,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,Role,IsActive")] A_New_Hope.Models.User user)
+        public async Task<IActionResult> Create([Bind("Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] A_New_Hope.Models.DomainUser user)
         {
             // Navigation properties are not posted by the form
-            ModelState.Remove(nameof(A_New_Hope.Models.User.CreatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.UpdatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.ClientProfile));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.ClientProfile));
 
             if (!ModelState.IsValid)
             {
@@ -99,7 +132,7 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
             if (user == null)
@@ -113,7 +146,7 @@ namespace A_New_Hope.Controllers
         // POST: Users/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PasswordHash,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,Role,IsActive")] A_New_Hope.Models.User formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] A_New_Hope.Models.DomainUser formModel)
         {
             if (id != formModel.Id)
             {
@@ -121,16 +154,16 @@ namespace A_New_Hope.Controllers
             }
 
             // Navigation properties are not posted by the form
-            ModelState.Remove(nameof(A_New_Hope.Models.User.CreatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.UpdatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.User.ClientProfile));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
+            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.ClientProfile));
 
             if (!ModelState.IsValid)
             {
                 return View(formModel);
             }
 
-            var existing = await _context.Users
+            var existing = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
             if (existing == null)
@@ -140,7 +173,6 @@ namespace A_New_Hope.Controllers
 
             // Update editable fields only
             existing.Email = formModel.Email;
-            existing.PasswordHash = formModel.PasswordHash;
             existing.PhoneNumber = formModel.PhoneNumber;
             existing.FirstName = formModel.FirstName;
             existing.LastName = formModel.LastName;
@@ -151,7 +183,7 @@ namespace A_New_Hope.Controllers
             existing.PostalCode = formModel.PostalCode;
             existing.DateOfBirth = formModel.DateOfBirth;
             existing.DefaultPreference = formModel.DefaultPreference;
-            existing.Role = formModel.Role;
+            existing.UserType = formModel.UserType;
             existing.IsActive = formModel.IsActive;
 
             // Audit
@@ -161,6 +193,10 @@ namespace A_New_Hope.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Keep Identity role + access in sync if this DomainUser has a login account
+                await SyncIdentityAccessForDomainUserAsync(existing);
+
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
@@ -171,6 +207,11 @@ namespace A_New_Hope.Controllers
                 }
 
                 throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View(formModel);
             }
             catch (DbUpdateException)
             {
@@ -187,7 +228,7 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
+            var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
@@ -204,7 +245,7 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            var user = await _context.Users
+            var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
             if (user == null)
@@ -230,9 +271,76 @@ namespace A_New_Hope.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        private async Task SyncIdentityAccessForDomainUserAsync(DomainUser domainUser)
+        {
+            var appUser = await _context.Users
+                .FirstOrDefaultAsync(iu => iu.DomainUserId == domainUser.Id);
+
+            // No login account yet — nothing to sync
+            if (appUser == null)
+                return;
+
+            // -----------------------------
+            // Sync roles (Admin / Staff only)
+            // -----------------------------
+            var currentRoles = await _userManager.GetRolesAsync(appUser);
+            var managedRoles = currentRoles.Where(r => r == "Admin" || r == "Staff").ToList();
+
+            if (managedRoles.Count > 0)
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(appUser, managedRoles);
+                if (!removeResult.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        "Failed to remove existing Identity roles: " +
+                        string.Join(" | ", removeResult.Errors.Select(e => e.Description)));
+                }
+            }
+
+            var targetRole = domainUser.UserType switch
+            {
+                UserType.Admin => "Admin",
+                UserType.Staff => "Staff",
+                _ => null // Client = no login role
+            };
+
+            if (!string.IsNullOrWhiteSpace(targetRole))
+            {
+                var addResult = await _userManager.AddToRoleAsync(appUser, targetRole);
+                if (!addResult.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        "Failed to assign Identity role: " +
+                        string.Join(" | ", addResult.Errors.Select(e => e.Description)));
+                }
+            }
+
+            // -----------------------------
+            // Sync login enabled/disabled with DomainUser.IsActive
+            // -----------------------------
+            appUser.LockoutEnabled = true;
+
+            if (domainUser.IsActive)
+            {
+                appUser.LockoutEnd = null; // enable login
+            }
+            else
+            {
+                appUser.LockoutEnd = new DateTimeOffset(new DateTime(2099, 12, 31, 23, 59, 59), TimeSpan.Zero);
+            }
+
+            var updateResult = await _userManager.UpdateAsync(appUser);
+            if (!updateResult.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    "Failed to sync Identity login status: " +
+                    string.Join(" | ", updateResult.Errors.Select(e => e.Description)));
+            }
+        }
+
         private async Task<bool> UserExists(ulong id)
         {
-            return await _context.Users
+            return await _context.DomainUsers
                 .AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
     }

@@ -271,7 +271,7 @@ namespace A_New_Hope.Controllers
             ulong? selectedInventoryItemId = null,
             PreferenceOption? selectedPreference = null)
         {
-            var users = await _context.Users
+            var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null && u.IsActive)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)
@@ -312,7 +312,7 @@ namespace A_New_Hope.Controllers
                 selectedPreference);
         }
 
-        private static string BuildUserDisplayName(User u)
+        private static string BuildUserDisplayName(DomainUser u)
         {
             var first = (u.FirstName ?? string.Empty).Trim();
             var last = (u.LastName ?? string.Empty).Trim();

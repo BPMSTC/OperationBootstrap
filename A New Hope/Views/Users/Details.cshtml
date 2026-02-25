@@ -1,4 +1,4 @@
-@model A_New_Hope.Models.User
+@model A_New_Hope.Models.DomainUser
 
 @{
     ViewData["Title"] = "Details";
@@ -15,24 +15,6 @@
         </dt>
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Email)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.PasswordHash)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.PasswordHash)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.EmailVerifiedAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.EmailVerifiedAt)
-        </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.LastLoginAt)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.LastLoginAt)
         </dd>
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.PhoneNumber)
@@ -95,10 +77,10 @@
             @Html.DisplayFor(model => model.DefaultPreference)
         </dd>
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Role)
+            @Html.DisplayNameFor(model => model.UserType)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Role)
+            @Html.DisplayFor(model => model.UserType)
         </dd>
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.IsActive)
@@ -128,13 +110,13 @@
             @Html.DisplayNameFor(model => model.CreatedByUser)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.CreatedByUser.Id)
+            @(Model.CreatedByUser?.Id.ToString() ?? "")
         </dd>
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.UpdatedByUser)
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.UpdatedByUser.Id)
+            @(Model.UpdatedByUser?.Id.ToString() ?? "")
         </dd>
     </dl>
 </div>

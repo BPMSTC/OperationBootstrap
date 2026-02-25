@@ -1,4 +1,4 @@
-@model A_New_Hope.Models.User
+@model A_New_Hope.Models.DomainUser
 
 @{
     ViewData["Title"] = "Create User";
@@ -16,12 +16,6 @@
                 <label asp-for="Email" class="form-label"></label>
                 <input asp-for="Email" class="form-control" />
                 <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="PasswordHash" class="form-label">Password</label>
-                <input asp-for="PasswordHash" type="password" class="form-control" />
-                <span asp-validation-for="PasswordHash" class="text-danger"></span>
             </div>
 
             <div class="mb-3">
@@ -85,9 +79,9 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="Role" class="form-label"></label>
-                <select asp-for="Role" class="form-select" asp-items="Html.GetEnumSelectList<UserRole>()"></select>
-                <span asp-validation-for="Role" class="text-danger"></span>
+                <label asp-for="UserType" class="form-label"></label>
+                <select asp-for="UserType" class="form-select" asp-items="Html.GetEnumSelectList<UserType>()"></select>
+                <span asp-validation-for="UserType" class="text-danger"></span>
             </div>
 
             <div class="mb-3 form-check">
