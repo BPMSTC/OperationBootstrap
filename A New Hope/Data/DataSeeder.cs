@@ -25,28 +25,26 @@ namespace A_New_Hope.Data
             // ------------------------------
             // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
 
-            if (!await context.Users.AnyAsync())
+            if (!await context.DomainUsers.AnyAsync())
             {
-                var admin = new User
+                var admin = new DomainUser
                 {
                     Email = "admin@anewhope.local",
-                    PasswordHash = "TEMP_HASH_REPLACE_LATER",
                     FirstName = "System",
                     LastName = "Admin",
-                    Role = UserRole.Admin,
+                    UserType = UserType.Admin,
                     DefaultPreference = PreferenceOption.Ask,
                     IsActive = true,
                     CreatedAt = now,
                     UpdatedAt = now
                 };
 
-                var client1 = new User
+                var client1 = new DomainUser
                 {
                     Email = "client1@anewhope.local",
-                    PasswordHash = "TEMP_HASH_REPLACE_LATER",
                     FirstName = "Jamie",
                     LastName = "Client",
-                    Role = UserRole.User,
+                    UserType = UserType.Client,
                     DefaultPreference = PreferenceOption.Ask,
                     IsActive = true,
                     PhoneNumber = "555-111-2222",
@@ -57,13 +55,12 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
-                var client2 = new User
+                var client2 = new DomainUser
                 {
                     Email = "client2@anewhope.local",
-                    PasswordHash = "TEMP_HASH_REPLACE_LATER",
                     FirstName = "Taylor",
                     LastName = "Client",
-                    Role = UserRole.User,
+                    UserType = UserType.Client,
                     DefaultPreference = PreferenceOption.Always,
                     IsActive = true,
                     PhoneNumber = "555-333-4444",
@@ -74,14 +71,14 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
-                context.Users.AddRange(admin, client1, client2);
+                context.DomainUsers.AddRange(admin, client1, client2);
                 await context.SaveChangesAsync();
             }
 
             // Pull seeded users (works whether they were just inserted or already existed)
-            var adminUser = await context.Users.FirstAsync(u => u.Email == "admin@anewhope.local");
-            var clientUser1 = await context.Users.FirstAsync(u => u.Email == "client1@anewhope.local");
-            var clientUser2 = await context.Users.FirstAsync(u => u.Email == "client2@anewhope.local");
+            var adminUser = await context.DomainUsers.FirstAsync(u => u.Email == "admin@anewhope.local");
+            var clientUser1 = await context.DomainUsers.FirstAsync(u => u.Email == "client1@anewhope.local");
+            var clientUser2 = await context.DomainUsers.FirstAsync(u => u.Email == "client2@anewhope.local");
 
             // ------------------------------
             // CLIENT PROFILES

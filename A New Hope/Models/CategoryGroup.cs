@@ -21,7 +21,7 @@ namespace A_New_Hope.Models
 
         public ICollection<Category> Categories { get; set; } = new List<Category>();
 
-        public User? CreatedByUser { get; set; } // Enables easy Include() + avoids EF “shadow FK” issues if you later add navs elsewhere
-        public User? UpdatedByUser { get; set; } // Same; useful for admin UI (“Last updated by”)
+        public DomainUser? CreatedByUser { get; set; } // Enables easy Include() + avoids EF “shadow FK” issues if you later add navs elsewhere
+        public DomainUser? UpdatedByUser { get; set; } // Same; useful for admin UI (“Last updated by”)
     }
 }

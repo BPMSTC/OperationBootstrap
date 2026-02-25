@@ -19,8 +19,8 @@ namespace A_New_Hope.Models
         public DateTime UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }   // <-- add this
 
-        public User User { get; set; } = null!;
-        public User? CreatedByUser { get; set; }
-        public User? UpdatedByUser { get; set; }
+        public DomainUser User { get; set; } = null!;
+        public DomainUser? CreatedByUser { get; set; }
+        public DomainUser? UpdatedByUser { get; set; }
     }
 }

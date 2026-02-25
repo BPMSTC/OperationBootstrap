@@ -22,9 +22,6 @@ namespace A_New_Hope.Migrations
                     Id = table.Column<ulong>(type: "bigint unsigned", nullable: false)
                         .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
                     Email = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false),
-                    PasswordHash = table.Column<string>(type: "varchar(255)", maxLength: 255, nullable: false),
-                    EmailVerifiedAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    LastLoginAt = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     PhoneNumber = table.Column<string>(type: "varchar(25)", maxLength: 25, nullable: true),
                     FirstName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true),
                     LastName = table.Column<string>(type: "varchar(100)", maxLength: 100, nullable: true),
@@ -35,7 +32,7 @@ namespace A_New_Hope.Migrations
                     PostalCode = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: true),
                     DateOfBirth = table.Column<DateOnly>(type: "date", nullable: true),
                     DefaultPreference = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false),
-                    Role = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false),
+                    UserType = table.Column<string>(type: "varchar(20)", maxLength: 20, nullable: false),
                     IsActive = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     CreatedByUserId = table.Column<ulong>(type: "bigint unsigned", nullable: true),
                     UpdatedByUserId = table.Column<ulong>(type: "bigint unsigned", nullable: true),
@@ -628,11 +625,6 @@ namespace A_New_Hope.Migrations
                 name: "IX_Users_IsActive",
                 table: "Users",
                 column: "IsActive");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_LastLoginAt",
-                table: "Users",
-                column: "LastLoginAt");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_UpdatedByUserId",

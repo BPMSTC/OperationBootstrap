@@ -42,7 +42,7 @@ namespace A_New_Hope.Models
 
         public ICollection<Referral> Referrals { get; set; } = new List<Referral>();
 
-        public User? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in admin/audit views
-        public User? UpdatedByUser { get; set; } // Added to match UpdatedByUserId and support Include()
+        public DomainUser? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in admin/audit views
+        public DomainUser? UpdatedByUser { get; set; } // Added to match UpdatedByUserId and support Include()
     }
 }
