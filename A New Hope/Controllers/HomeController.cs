@@ -16,6 +16,11 @@ namespace A_New_Hope.Controllers
             return View();
         }
 
+        public IActionResult Landing()
+        {
+            return View();
+        }
+
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
