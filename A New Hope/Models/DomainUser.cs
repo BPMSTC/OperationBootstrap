@@ -39,5 +39,5 @@ namespace A_New_Hope.Models
         public DomainUser? UpdatedByUser { get; set; }
 
         public ClientProfile? ClientProfile { get; set; }
-    }
+    }//a change so that my commit will store so i can push, delete this later
 }
