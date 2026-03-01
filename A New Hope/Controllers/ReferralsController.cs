@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using A_New_Hope.Data;
 using A_New_Hope.Models;
 
@@ -12,15 +13,19 @@ namespace A_New_Hope.Controllers
     public class ReferralsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ReferralsController> _logger;
 
-        public ReferralsController(ApplicationDbContext context)
+        public ReferralsController(ApplicationDbContext context, ILogger<ReferralsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: Referrals
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("Loading Referrals Index page");
+
             var referrals = await _context.Referrals
                 .Where(r => r.DeletedAt == null)
                 .Include(r => r.ClientUser)
@@ -28,6 +33,8 @@ namespace A_New_Hope.Controllers
                 .OrderByDescending(r => r.ReferredOn)
                 .ThenBy(r => r.Id)
                 .ToListAsync();
+
+            _logger.LogInformation("Loaded {Count} referrals", referrals.Count);
 
             return View(referrals);
         }
@@ -37,8 +44,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Details requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Fetching details for Referral Id {Id}", id);
 
             var referral = await _context.Referrals
                 .Where(r => r.DeletedAt == null)
@@ -48,6 +58,7 @@ namespace A_New_Hope.Controllers
 
             if (referral == null)
             {
+                _logger.LogWarning("Referral Id {Id} not found", id);
                 return NotFound();
             }
 
@@ -57,6 +68,7 @@ namespace A_New_Hope.Controllers
         // GET: Referrals/Create
         public async Task<IActionResult> Create()
         {
+            _logger.LogInformation("Loading Create Referral page");
             await PopulateDropdowns();
             return View();
         }
@@ -66,7 +78,8 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,ReferredByName,ReferredByPhoneNumber,ReferredByEmail,Notes")] Referral referral)
         {
-            // Navigation properties are not posted by the form
+            _logger.LogInformation("Attempting to create Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
             ModelState.Remove(nameof(Referral.ClientUser));
             ModelState.Remove(nameof(Referral.ReferringOrganization));
             ModelState.Remove(nameof(Referral.CreatedByUser));
@@ -74,6 +87,7 @@ namespace A_New_Hope.Controllers
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Create Referral failed validation for ClientUserId {ClientUserId}", referral.ClientUserId);
                 await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
                 return View(referral);
             }
@@ -81,18 +95,20 @@ namespace A_New_Hope.Controllers
             var now = DateTime.UtcNow;
             referral.CreatedAt = now;
             referral.UpdatedAt = now;
-            referral.CreatedByUserId = null; // set later when auth is implemented
-            referral.UpdatedByUserId = null; // set later when auth is implemented
+            referral.CreatedByUserId = null;
+            referral.UpdatedByUserId = null;
 
             _context.Add(referral);
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Referral Id {Id} created successfully", referral.Id);
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
                 ModelState.AddModelError("", "Unable to save referral.");
                 await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
                 return View(referral);
@@ -104,14 +120,18 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Edit requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Loading Edit page for Referral Id {Id}", id);
 
             var referral = await _context.Referrals
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
             if (referral == null)
             {
+                _logger.LogWarning("Referral Id {Id} not found for edit", id);
                 return NotFound();
             }
 
@@ -124,12 +144,14 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,ReferredByName,ReferredByPhoneNumber,ReferredByEmail,Notes")] Referral formModel)
         {
+            _logger.LogInformation("Attempting to edit Referral Id {Id}", id);
+
             if (id != formModel.Id)
             {
+                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form
             ModelState.Remove(nameof(Referral.ClientUser));
             ModelState.Remove(nameof(Referral.ReferringOrganization));
             ModelState.Remove(nameof(Referral.CreatedByUser));
@@ -137,6 +159,7 @@ namespace A_New_Hope.Controllers
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Edit Referral failed validation for Id {Id}", id);
                 await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
                 return View(formModel);
             }
@@ -146,10 +169,11 @@ namespace A_New_Hope.Controllers
 
             if (existing == null)
             {
+                _logger.LogWarning("Referral Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
-            // Update editable fields only
+            // Update editable fields
             existing.ClientUserId = formModel.ClientUserId;
             existing.ReferringOrganizationId = formModel.ReferringOrganizationId;
             existing.ReferredOn = formModel.ReferredOn;
@@ -161,26 +185,27 @@ namespace A_New_Hope.Controllers
             existing.ReferredByEmail = formModel.ReferredByEmail;
             existing.Notes = formModel.Notes;
 
-            // Audit
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // set later when auth is implemented
+            existing.UpdatedByUserId = null;
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Referral Id {Id} updated successfully", id);
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!await ReferralExists(formModel.Id))
                 {
+                    _logger.LogWarning("Referral Id {Id} no longer exists during concurrency check", id);
                     return NotFound();
                 }
-
                 throw;
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error updating Referral Id {Id}", id);
                 ModelState.AddModelError("", "Unable to save changes.");
                 await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
                 return View(formModel);
@@ -192,8 +217,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Delete requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Loading Delete confirmation for Referral Id {Id}", id);
 
             var referral = await _context.Referrals
                 .Where(r => r.DeletedAt == null)
@@ -203,6 +231,7 @@ namespace A_New_Hope.Controllers
 
             if (referral == null)
             {
+                _logger.LogWarning("Referral Id {Id} not found for delete", id);
                 return NotFound();
             }
 
@@ -214,25 +243,29 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
+            _logger.LogWarning("Soft deleting Referral Id {Id}", id);
+
             var referral = await _context.Referrals
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
             if (referral == null)
             {
+                _logger.LogWarning("Referral Id {Id} not found during delete", id);
                 return NotFound();
             }
 
-            // Soft delete
             referral.DeletedAt = DateTime.UtcNow;
             referral.UpdatedAt = DateTime.UtcNow;
-            referral.UpdatedByUserId = null; // set later when auth is implemented
+            referral.UpdatedByUserId = null;
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("Referral Id {Id} soft deleted", id);
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error soft deleting Referral Id {Id}", id);
                 TempData["ErrorMessage"] = "Unable to delete referral.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
@@ -242,6 +275,8 @@ namespace A_New_Hope.Controllers
 
         private async Task PopulateDropdowns(ulong? selectedClientUserId = null, ulong? selectedReferringOrganizationId = null)
         {
+            _logger.LogDebug("Populating dropdowns for Referrals");
+
             var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .OrderBy(u => u.LastName)
@@ -264,6 +299,8 @@ namespace A_New_Hope.Controllers
 
             ViewData["ClientUserId"] = new SelectList(userOptions, "Id", "DisplayName", selectedClientUserId);
             ViewData["ReferringOrganizationId"] = new SelectList(organizations, "Id", "Name", selectedReferringOrganizationId);
+
+            _logger.LogDebug("Dropdowns populated: {UsersCount} users, {OrgsCount} organizations", userOptions.Count, organizations.Count);
         }
 
         private async Task<bool> ReferralExists(ulong id)
