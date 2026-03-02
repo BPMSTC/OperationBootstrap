@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using A_New_Hope.Data;
 using A_New_Hope.Models;
 
@@ -12,15 +13,19 @@ namespace A_New_Hope.Controllers
     public class UserItemPreferencesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<UserItemPreferencesController> _logger;
 
-        public UserItemPreferencesController(ApplicationDbContext context)
+        public UserItemPreferencesController(ApplicationDbContext context, ILogger<UserItemPreferencesController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: UserItemPreferences
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("Loading UserItemPreferences Index page");
+
             var userItemPreferences = await _context.UserItemPreferences
                 .Where(u => u.DeletedAt == null)
                 .Include(u => u.User)
@@ -33,6 +38,7 @@ namespace A_New_Hope.Controllers
                 .ThenBy(u => u.InventoryItem.Name)
                 .ToListAsync();
 
+            _logger.LogInformation("Loaded {Count} user item preferences", userItemPreferences.Count);
             return View(userItemPreferences);
         }
 
@@ -41,8 +47,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Details requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Fetching details for UserItemPreference Id {Id}", id);
 
             var userItemPreference = await _context.UserItemPreferences
                 .Where(u => u.DeletedAt == null)
@@ -55,6 +64,7 @@ namespace A_New_Hope.Controllers
 
             if (userItemPreference == null)
             {
+                _logger.LogWarning("UserItemPreference Id {Id} not found", id);
                 return NotFound();
             }
 
@@ -64,6 +74,7 @@ namespace A_New_Hope.Controllers
         // GET: UserItemPreferences/Create
         public async Task<IActionResult> Create()
         {
+            _logger.LogInformation("Loading Create UserItemPreference page");
             await PopulateDropdowns();
             return View();
         }
@@ -73,7 +84,9 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("UserId,InventoryItemId,Preference")] UserItemPreference userItemPreference)
         {
-            // Navigation properties are not posted by the form
+            _logger.LogInformation("Attempting to create UserItemPreference for UserId {UserId} and InventoryItemId {ItemId}",
+                userItemPreference.UserId, userItemPreference.InventoryItemId);
+
             ModelState.Remove(nameof(UserItemPreference.User));
             ModelState.Remove(nameof(UserItemPreference.InventoryItem));
             ModelState.Remove(nameof(UserItemPreference.CreatedByUser));
@@ -81,11 +94,12 @@ namespace A_New_Hope.Controllers
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Create UserItemPreference failed validation for UserId {UserId} / ItemId {ItemId}",
+                    userItemPreference.UserId, userItemPreference.InventoryItemId);
                 await PopulateDropdowns(userItemPreference.UserId, userItemPreference.InventoryItemId, userItemPreference.Preference);
                 return View(userItemPreference);
             }
 
-            // Prevent duplicate (UserId, InventoryItemId)
             var duplicateExists = await _context.UserItemPreferences
                 .AnyAsync(u =>
                     u.DeletedAt == null &&
@@ -94,6 +108,8 @@ namespace A_New_Hope.Controllers
 
             if (duplicateExists)
             {
+                _logger.LogWarning("Duplicate UserItemPreference detected for UserId {UserId} / ItemId {ItemId}",
+                    userItemPreference.UserId, userItemPreference.InventoryItemId);
                 ModelState.AddModelError("", "A preference for this user and inventory item already exists.");
                 await PopulateDropdowns(userItemPreference.UserId, userItemPreference.InventoryItemId, userItemPreference.Preference);
                 return View(userItemPreference);
@@ -102,18 +118,21 @@ namespace A_New_Hope.Controllers
             var now = DateTime.UtcNow;
             userItemPreference.CreatedAt = now;
             userItemPreference.UpdatedAt = now;
-            userItemPreference.CreatedByUserId = null; // set later when auth is implemented
-            userItemPreference.UpdatedByUserId = null; // set later when auth is implemented
+            userItemPreference.CreatedByUserId = null;
+            userItemPreference.UpdatedByUserId = null;
 
             _context.Add(userItemPreference);
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("UserItemPreference Id {Id} created successfully", userItemPreference.Id);
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error creating UserItemPreference for UserId {UserId} / ItemId {ItemId}",
+                    userItemPreference.UserId, userItemPreference.InventoryItemId);
                 ModelState.AddModelError("", "Unable to save preference.");
                 await PopulateDropdowns(userItemPreference.UserId, userItemPreference.InventoryItemId, userItemPreference.Preference);
                 return View(userItemPreference);
@@ -125,8 +144,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Edit requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Loading Edit page for UserItemPreference Id {Id}", id);
 
             var userItemPreference = await _context.UserItemPreferences
                 .Where(u => u.DeletedAt == null)
@@ -134,6 +156,7 @@ namespace A_New_Hope.Controllers
 
             if (userItemPreference == null)
             {
+                _logger.LogWarning("UserItemPreference Id {Id} not found for edit", id);
                 return NotFound();
             }
 
@@ -146,12 +169,14 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,UserId,InventoryItemId,Preference")] UserItemPreference formModel)
         {
+            _logger.LogInformation("Attempting to edit UserItemPreference Id {Id}", id);
+
             if (id != formModel.Id)
             {
+                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form
             ModelState.Remove(nameof(UserItemPreference.User));
             ModelState.Remove(nameof(UserItemPreference.InventoryItem));
             ModelState.Remove(nameof(UserItemPreference.CreatedByUser));
@@ -159,6 +184,7 @@ namespace A_New_Hope.Controllers
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Edit UserItemPreference failed validation for Id {Id}", id);
                 await PopulateDropdowns(formModel.UserId, formModel.InventoryItemId, formModel.Preference);
                 return View(formModel);
             }
@@ -169,10 +195,10 @@ namespace A_New_Hope.Controllers
 
             if (existing == null)
             {
+                _logger.LogWarning("UserItemPreference Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
-            // Prevent duplicate (UserId, InventoryItemId) when editing
             var duplicateExists = await _context.UserItemPreferences
                 .AnyAsync(u =>
                     u.Id != id &&
@@ -182,36 +208,36 @@ namespace A_New_Hope.Controllers
 
             if (duplicateExists)
             {
+                _logger.LogWarning("Duplicate detected on edit for UserId {UserId} / ItemId {ItemId}", formModel.UserId, formModel.InventoryItemId);
                 ModelState.AddModelError("", "A preference for this user and inventory item already exists.");
                 await PopulateDropdowns(formModel.UserId, formModel.InventoryItemId, formModel.Preference);
                 return View(formModel);
             }
 
-            // Update editable fields only
             existing.UserId = formModel.UserId;
             existing.InventoryItemId = formModel.InventoryItemId;
             existing.Preference = formModel.Preference;
-
-            // Audit
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // set later when auth is implemented
+            existing.UpdatedByUserId = null;
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("UserItemPreference Id {Id} updated successfully", id);
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!await UserItemPreferenceExists(formModel.Id))
                 {
+                    _logger.LogWarning("UserItemPreference Id {Id} no longer exists during concurrency check", id);
                     return NotFound();
                 }
-
                 throw;
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error updating UserItemPreference Id {Id}", id);
                 ModelState.AddModelError("", "Unable to save changes.");
                 await PopulateDropdowns(formModel.UserId, formModel.InventoryItemId, formModel.Preference);
                 return View(formModel);
@@ -223,8 +249,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Delete requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Loading Delete confirmation for UserItemPreference Id {Id}", id);
 
             var userItemPreference = await _context.UserItemPreferences
                 .Where(u => u.DeletedAt == null)
@@ -237,6 +266,7 @@ namespace A_New_Hope.Controllers
 
             if (userItemPreference == null)
             {
+                _logger.LogWarning("UserItemPreference Id {Id} not found for delete", id);
                 return NotFound();
             }
 
@@ -248,28 +278,29 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
+            _logger.LogWarning("Soft deleting UserItemPreference Id {Id}", id);
+
             var userItemPreference = await _context.UserItemPreferences
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (userItemPreference == null)
             {
+                _logger.LogWarning("UserItemPreference Id {Id} not found during delete", id);
                 return NotFound();
             }
 
-            // Soft delete
             userItemPreference.DeletedAt = DateTime.UtcNow;
             userItemPreference.UpdatedAt = DateTime.UtcNow;
-            userItemPreference.UpdatedByUserId = null; // set later when auth is implemented
+            userItemPreference.UpdatedByUserId = null;
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("UserItemPreference Id {Id} soft deleted", id);
+
             return RedirectToAction(nameof(Index));
         }
 
-        private async Task PopulateDropdowns(
-            ulong? selectedUserId = null,
-            ulong? selectedInventoryItemId = null,
-            PreferenceOption? selectedPreference = null)
+        private async Task PopulateDropdowns(ulong? selectedUserId = null, ulong? selectedInventoryItemId = null, PreferenceOption? selectedPreference = null)
         {
             var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null && u.IsActive)
@@ -278,11 +309,7 @@ namespace A_New_Hope.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
-            var userOptions = users.Select(u => new
-            {
-                u.Id,
-                DisplayName = BuildUserDisplayName(u)
-            }).ToList();
+            var userOptions = users.Select(u => new { u.Id, DisplayName = BuildUserDisplayName(u) }).ToList();
 
             var inventoryItems = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
@@ -293,16 +320,10 @@ namespace A_New_Hope.Controllers
                 .ThenBy(i => i.Name)
                 .ToListAsync();
 
-            var inventoryOptions = inventoryItems.Select(i => new
-            {
-                i.Id,
-                DisplayName = $"{i.Category.CategoryGroup.Name} - {i.Category.Name} - {i.Name}"
-            }).ToList();
+            var inventoryOptions = inventoryItems.Select(i => new { i.Id, DisplayName = $"{i.Category.CategoryGroup.Name} - {i.Category.Name} - {i.Name}" }).ToList();
 
             ViewData["UserId"] = new SelectList(userOptions, "Id", "DisplayName", selectedUserId);
             ViewData["InventoryItemId"] = new SelectList(inventoryOptions, "Id", "DisplayName", selectedInventoryItemId);
-
-            // Enum dropdown for PreferenceOption
             ViewData["PreferenceOptions"] = new SelectList(
                 Enum.GetValues(typeof(PreferenceOption))
                     .Cast<PreferenceOption>()
@@ -310,6 +331,8 @@ namespace A_New_Hope.Controllers
                 "Value",
                 "Text",
                 selectedPreference);
+
+            _logger.LogInformation("Populated dropdowns: {UserCount} users, {ItemCount} items", userOptions.Count, inventoryOptions.Count);
         }
 
         private static string BuildUserDisplayName(DomainUser u)
@@ -334,7 +357,7 @@ namespace A_New_Hope.Controllers
 
         private async Task<bool> UserItemPreferenceExists(ulong id)
         {
-            return await _context.UserItemPreferences.AnyAsync(e => e.Id == id);
+            return await _context.UserItemPreferences.AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
     }
 }

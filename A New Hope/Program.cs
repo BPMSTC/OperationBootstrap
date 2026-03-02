@@ -2,12 +2,25 @@ using A_New_Hope.Data;
 using A_New_Hope.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+<<<<<<< HEAD
 using Microsoft.AspNetCore.Authorization;
+=======
+using Microsoft.Extensions.Logging;
+>>>>>>> origin/main
 
 var builder = WebApplication.CreateBuilder(args);
 
+//Configure Logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.AddEventLog();
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<LoggingScopeFilter>();
+});
 builder.Services.AddRazorPages(); // Needed for Identity UI
 
 builder.Services.AddAuthorization(options =>

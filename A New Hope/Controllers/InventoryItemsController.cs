@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using A_New_Hope.Data;
 using A_New_Hope.Models;
 
@@ -12,15 +13,19 @@ namespace A_New_Hope.Controllers
     public class InventoryItemsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<InventoryItemsController> _logger;
 
-        public InventoryItemsController(ApplicationDbContext context)
+        public InventoryItemsController(ApplicationDbContext context, ILogger<InventoryItemsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // GET: InventoryItems
         public async Task<IActionResult> Index()
         {
+            _logger.LogInformation("Loading InventoryItems Index page");
+
             var inventoryItems = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
@@ -28,6 +33,8 @@ namespace A_New_Hope.Controllers
                 .OrderBy(i => i.Category.Name)
                 .ThenBy(i => i.Name)
                 .ToListAsync();
+
+            _logger.LogInformation("Loaded {Count} inventory items", inventoryItems.Count);
 
             return View(inventoryItems);
         }
@@ -37,8 +44,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Details requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Fetching details for InventoryItem Id {Id}", id);
 
             var inventoryItem = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
@@ -48,6 +58,7 @@ namespace A_New_Hope.Controllers
 
             if (inventoryItem == null)
             {
+                _logger.LogWarning("InventoryItem Id {Id} not found", id);
                 return NotFound();
             }
 
@@ -57,6 +68,7 @@ namespace A_New_Hope.Controllers
         // GET: InventoryItems/Create
         public async Task<IActionResult> Create()
         {
+            _logger.LogInformation("Loading Create InventoryItem page");
             await PopulateDropdowns();
             return View();
         }
@@ -66,13 +78,15 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,CategoryId,IsBaseline,IsAvailable,IsActive")] InventoryItem inventoryItem)
         {
-            // Navigation properties are not posted by the form
+            _logger.LogInformation("Attempting to create InventoryItem {Name}", inventoryItem.Name);
+
             ModelState.Remove(nameof(InventoryItem.Category));
             ModelState.Remove(nameof(InventoryItem.CreatedByUser));
             ModelState.Remove(nameof(InventoryItem.UpdatedByUser));
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Create InventoryItem failed validation for {Name}", inventoryItem.Name);
                 await PopulateDropdowns(inventoryItem.CategoryId);
                 return View(inventoryItem);
             }
@@ -80,18 +94,20 @@ namespace A_New_Hope.Controllers
             var now = DateTime.UtcNow;
             inventoryItem.CreatedAt = now;
             inventoryItem.UpdatedAt = now;
-            inventoryItem.CreatedByUserId = null; // set later when auth is implemented
-            inventoryItem.UpdatedByUserId = null; // set later when auth is implemented
+            inventoryItem.CreatedByUserId = null;
+            inventoryItem.UpdatedByUserId = null;
 
             _context.Add(inventoryItem);
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("InventoryItem {Name} created successfully", inventoryItem.Name);
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error creating InventoryItem {Name}", inventoryItem.Name);
                 ModelState.AddModelError("", "Unable to save inventory item.");
                 await PopulateDropdowns(inventoryItem.CategoryId);
                 return View(inventoryItem);
@@ -103,14 +119,18 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Edit requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Loading Edit page for InventoryItem Id {Id}", id);
 
             var inventoryItem = await _context.InventoryItems
                 .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
 
             if (inventoryItem == null)
             {
+                _logger.LogWarning("InventoryItem Id {Id} not found for edit", id);
                 return NotFound();
             }
 
@@ -123,18 +143,21 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,Name,CategoryId,IsBaseline,IsAvailable,IsActive")] InventoryItem formModel)
         {
+            _logger.LogInformation("Attempting to edit InventoryItem Id {Id}", id);
+
             if (id != formModel.Id)
             {
+                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form
             ModelState.Remove(nameof(InventoryItem.Category));
             ModelState.Remove(nameof(InventoryItem.CreatedByUser));
             ModelState.Remove(nameof(InventoryItem.UpdatedByUser));
 
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("Edit InventoryItem failed validation for Id {Id}", id);
                 await PopulateDropdowns(formModel.CategoryId);
                 return View(formModel);
             }
@@ -144,36 +167,36 @@ namespace A_New_Hope.Controllers
 
             if (existing == null)
             {
+                _logger.LogWarning("InventoryItem Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
-            // Update editable fields only
             existing.Name = formModel.Name;
             existing.CategoryId = formModel.CategoryId;
             existing.IsBaseline = formModel.IsBaseline;
             existing.IsAvailable = formModel.IsAvailable;
             existing.IsActive = formModel.IsActive;
-
-            // Audit
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // set later when auth is implemented
+            existing.UpdatedByUserId = null;
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("InventoryItem Id {Id} updated successfully", id);
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!await InventoryItemExists(formModel.Id))
                 {
+                    _logger.LogWarning("InventoryItem Id {Id} no longer exists during concurrency check", id);
                     return NotFound();
                 }
-
                 throw;
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error updating InventoryItem Id {Id}", id);
                 ModelState.AddModelError("", "Unable to save changes.");
                 await PopulateDropdowns(formModel.CategoryId);
                 return View(formModel);
@@ -185,8 +208,11 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogWarning("Delete requested with null Id");
                 return NotFound();
             }
+
+            _logger.LogInformation("Loading Delete confirmation for InventoryItem Id {Id}", id);
 
             var inventoryItem = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
@@ -196,6 +222,7 @@ namespace A_New_Hope.Controllers
 
             if (inventoryItem == null)
             {
+                _logger.LogWarning("InventoryItem Id {Id} not found for delete", id);
                 return NotFound();
             }
 
@@ -207,25 +234,29 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
+            _logger.LogWarning("Soft deleting InventoryItem Id {Id}", id);
+
             var inventoryItem = await _context.InventoryItems
                 .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
 
             if (inventoryItem == null)
             {
+                _logger.LogWarning("InventoryItem Id {Id} not found during delete", id);
                 return NotFound();
             }
 
-            // Soft delete
             inventoryItem.DeletedAt = DateTime.UtcNow;
             inventoryItem.UpdatedAt = DateTime.UtcNow;
-            inventoryItem.UpdatedByUserId = null; // set later when auth is implemented
+            inventoryItem.UpdatedByUserId = null;
 
             try
             {
                 await _context.SaveChangesAsync();
+                _logger.LogInformation("InventoryItem Id {Id} soft deleted", id);
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Error soft deleting InventoryItem Id {Id}", id);
                 TempData["ErrorMessage"] = "Unable to delete inventory item.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
@@ -235,6 +266,8 @@ namespace A_New_Hope.Controllers
 
         private async Task PopulateDropdowns(ulong? selectedCategoryId = null)
         {
+            _logger.LogDebug("Populating Category dropdown for InventoryItem");
+
             var categories = await _context.Categories
                 .Where(c => c.DeletedAt == null && c.CategoryGroup.DeletedAt == null)
                 .Include(c => c.CategoryGroup)
@@ -243,7 +276,6 @@ namespace A_New_Hope.Controllers
                 .ThenBy(c => c.Name)
                 .ToListAsync();
 
-            // Display as: "Food - Canned Goods"
             var categoryOptions = categories
                 .Select(c => new
                 {
@@ -251,6 +283,8 @@ namespace A_New_Hope.Controllers
                     DisplayName = $"{c.CategoryGroup.Name} - {c.Name}"
                 })
                 .ToList();
+
+            _logger.LogDebug("Loaded {Count} categories for dropdown", categoryOptions.Count);
 
             ViewData["CategoryId"] = new SelectList(categoryOptions, "Id", "DisplayName", selectedCategoryId);
         }

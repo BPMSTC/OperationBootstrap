@@ -1,13 +1,10 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using A_New_Hope.Data;
 using A_New_Hope.Models;
 using A_New_Hope.Models.ViewModels;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Controllers
 {
@@ -16,17 +13,22 @@ namespace A_New_Hope.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<UsersController> _logger;
 
-        public UsersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public UsersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ILogger<UsersController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: Users
         public async Task<IActionResult> Index()
         {
-            var domainUsers = await _context.DomainUsers
+            _logger.LogInformation($"Retrieving users");
+            try
+            {           
+                var domainUsers = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)
@@ -42,32 +44,42 @@ namespace A_New_Hope.Controllers
                 .Where(x => x.DomainUserId.HasValue)
                 .ToDictionary(x => x.DomainUserId!.Value, x => x.Id);
 
-            var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
-            {
-                Id = u.Id,
-                Email = u.Email,
-                PhoneNumber = u.PhoneNumber,
-                FirstName = u.FirstName,
-                LastName = u.LastName,
-                City = u.City,
-                State = u.State,
-                PostalCode = u.PostalCode,
-                DateOfBirth = u.DateOfBirth,
-                DefaultPreference = u.DefaultPreference,
-                UserType = u.UserType,
-                IsActive = u.IsActive,
-                HasLoginAccount = identityByDomainUserId.ContainsKey(u.Id),
-                IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
-            }).ToList();
-            return View(users);
-        }
+                var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
+                {
+                    Id = u.Id,
+                    Email = u.Email,
+                    PhoneNumber = u.PhoneNumber,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    City = u.City,
+                    State = u.State,
+                    PostalCode = u.PostalCode,
+                    DateOfBirth = u.DateOfBirth,
+                    DefaultPreference = u.DefaultPreference,
+                    UserType = u.UserType,
+                    IsActive = u.IsActive,
+                    HasLoginAccount = identityByDomainUserId.ContainsKey(u.Id),
+                    IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
+                }).ToList();
 
+                _logger.LogInformation("Retrieved {UserCount} users", users.Count);
+
+                return View(users);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to retrieve users.");
+
+                return View("Error");
+            }
+        }
 
         // GET: Users/Details/5
         public async Task<IActionResult> Details(ulong? id)
         {
             if (id == null)
             {
+                _logger.LogInformation("Details requested with null id");
                 return NotFound();
             }
 
@@ -77,6 +89,7 @@ namespace A_New_Hope.Controllers
 
             if (user == null)
             {
+                _logger.LogInformation("User not found. UserId = {UserID}", id);
                 return NotFound();
             }
 
@@ -94,6 +107,9 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] A_New_Hope.Models.DomainUser user)
         {
+            _logger.LogInformation(
+                "creating user Email = {Email}", user.Email);
+
             // Navigation properties are not posted by the form
             ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
             ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
@@ -117,8 +133,9 @@ namespace A_New_Hope.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogError(ex, "Failed to create user Email = {Email}", user.Email);
                 ModelState.AddModelError("", "Unable to save user.");
                 return View(user);
             }
@@ -137,6 +154,7 @@ namespace A_New_Hope.Controllers
 
             if (user == null)
             {
+                _logger.LogWarning("user {user} not found.", user);
                 return NotFound();
             }
 
@@ -148,8 +166,11 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] A_New_Hope.Models.DomainUser formModel)
         {
+            _logger.LogInformation("Updating user UserId={UserId}", id);
+
             if (id != formModel.Id)
             {
+                _logger.LogWarning($"{id.ToString()} Not found.");
                 return NotFound();
             }
 
@@ -197,12 +218,14 @@ namespace A_New_Hope.Controllers
                 // Keep Identity role + access in sync if this DomainUser has a login account
                 await SyncIdentityAccessForDomainUserAsync(existing);
 
+                _logger.LogInformation("User updated successfully. UserId={UserId}", id);
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
                 if (!await UserExists(formModel.Id))
                 {
+                    _logger.LogError("User doesn't exist.");
                     return NotFound();
                 }
 
@@ -211,11 +234,13 @@ namespace A_New_Hope.Controllers
             catch (InvalidOperationException ex)
             {
                 ModelState.AddModelError("", ex.Message);
+                _logger.LogError($"{ex.Message}");
                 return View(formModel);
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
                 ModelState.AddModelError("", "Unable to save changes.");
+                _logger.LogError($"{ex.Message}");
                 return View(formModel);
             }
         }
@@ -225,6 +250,7 @@ namespace A_New_Hope.Controllers
         {
             if (id == null)
             {
+                _logger.LogInformation($"{id} not found.");
                 return NotFound();
             }
 
@@ -234,6 +260,8 @@ namespace A_New_Hope.Controllers
 
             if (user == null)
             {
+                _logger.LogInformation($"{user} not found.");
+
                 return NotFound();
             }
 
@@ -248,8 +276,10 @@ namespace A_New_Hope.Controllers
             var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
+            _logger.LogInformation("Soft deleting user UserId={UserId}", id);
             if (user == null)
             {
+                _logger.LogInformation("UserId={UserId} not found.", id);
                 return NotFound();
             }
 
@@ -262,9 +292,10 @@ namespace A_New_Hope.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
                 TempData["ErrorMessage"] = "Unable to delete user.";
+                _logger.LogWarning("Failed to delete user UserId={UserId}", id);
                 return RedirectToAction(nameof(Delete), new { id });
             }
 
@@ -278,8 +309,10 @@ namespace A_New_Hope.Controllers
 
             // No login account yet — nothing to sync
             if (appUser == null)
+            {
+                _logger.LogError($"{appUser} cannot be found.");
                 return;
-
+            }
             // -----------------------------
             // Sync roles (Admin / Staff only)
             // -----------------------------
