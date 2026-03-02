@@ -1,26 +1,101 @@
 ﻿namespace A_New_Hope.Models
 {
+    /// <summary>
+    /// UserItemPreference
+    /// ------------------
+    /// Represents a user's preference for a specific InventoryItem.
+    ///
+    /// Core idea:
+    /// - DomainUser has a DefaultPreference (a fallback).
+    /// - UserItemPreference overrides that default for a specific InventoryItem.
+    ///
+    /// Relationship:
+    /// - Each record links one user (UserId) to one inventory item (InventoryItemId).
+    ///
+    /// Uniqueness/business rule:
+    /// - A user should have at most one preference per inventory item.
+    /// - This is enforced in ApplicationDbContext via a unique index on (UserId, InventoryItemId).
+    ///
+    /// Soft delete:
+    /// - DeletedAt marks the record as deleted without physically removing it.
+    /// - ApplicationDbContext applies a query filter to exclude deleted rows by default.
+    ///
+    /// Audit fields:
+    /// - CreatedByUserId / UpdatedByUserId store which DomainUser set/changed the preference.
+    /// - CreatedAt / UpdatedAt store timestamps (UTC recommended).
+    /// </summary>
     public class UserItemPreference
     {
+        /// <summary>
+        /// Primary key for the preference record.
+        /// </summary>
         public ulong Id { get; set; }
 
+        /// <summary>
+        /// Foreign key to the DomainUser this preference belongs to.
+        /// </summary>
         public ulong UserId { get; set; }
+
+        /// <summary>
+        /// Foreign key to the InventoryItem this preference applies to.
+        /// </summary>
         public ulong InventoryItemId { get; set; }
 
+        /// <summary>
+        /// Preference value (Always / Ask / Never).
+        /// Using an enum prevents invalid values and keeps preference logic consistent.
+        /// </summary>
         public PreferenceOption Preference { get; set; } = PreferenceOption.Ask;
-        // Enum is safer than string (prevents typos/invalid values)
 
+        /// <summary>
+        /// Audit: DomainUser who initially created/set this preference (nullable until auth is wired).
+        /// </summary>
         public ulong? CreatedByUserId { get; set; } // Added so you know who initially set the preference
+
+        /// <summary>
+        /// Audit: DomainUser who last updated/changed this preference (nullable until auth is wired).
+        /// </summary>
         public ulong? UpdatedByUserId { get; set; } // Keeps track of who last changed it
 
+        /// <summary>
+        /// Timestamp when the record was created (typically set server-side in UTC).
+        /// </summary>
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>
+        /// Timestamp when the record was last updated (typically set server-side in UTC).
+        /// </summary>
         public DateTime UpdatedAt { get; set; }
+
+        /// <summary>
+        /// Soft delete marker:
+        /// - null = not deleted
+        /// - non-null = deleted (excluded by global query filters in ApplicationDbContext)
+        /// </summary>
         public DateTime? DeletedAt { get; set; } // Optional but recommended for soft-delete consistency
 
+        // -----------------------------------------------------------------
+        // Navigation properties (EF Core relationships)
+        // -----------------------------------------------------------------
+
+        /// <summary>
+        /// Required navigation to the DomainUser this preference belongs to.
+        /// </summary>
         public DomainUser User { get; set; } = null!;
+
+        /// <summary>
+        /// Required navigation to the InventoryItem this preference applies to.
+        /// </summary>
         public InventoryItem InventoryItem { get; set; } = null!;
 
+        /// <summary>
+        /// Navigation to the DomainUser who created the preference (useful for Include() and admin auditing).
+        /// </summary>
         public DomainUser? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in MVC/admin views
+
+        /// <summary>
+        /// Navigation to the DomainUser who last updated the preference.
+        /// </summary>
         public DomainUser? UpdatedByUser { get; set; }
     }
 }

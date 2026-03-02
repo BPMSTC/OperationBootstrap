@@ -1,10 +1,23 @@
+// DataSeeder.cs
+// ------------
 // This seeder is designed to be safely re-runnable for local development.
-// Each data section checks whether the target table already contains rows
-// (using AnyAsync()) before inserting seed data. That helps prevent duplicate
-// records when the app starts multiple times.
 //
-// Note: This is "safe-ish" for initial/dev seeding because it skips entire
-// sections once data exists. It does not upsert or reconcile changed seed values.
+// How “safe re-run” works in THIS implementation:
+// - Each section checks whether the target table already contains rows (AnyAsync()).
+// - If the table is NOT empty, that entire section is skipped.
+// - This prevents duplicates on repeated application startup.
+//
+// What this seeder does NOT do:
+// - It does not “upsert” (insert-or-update) records.
+// - It does not reconcile changes if you modify seed values later.
+// - It does not guarantee partial sections are consistent if you manually delete only some rows.
+//   Example: If you delete Categories but leave CategoryGroups, the Categories section will run,
+//   but the CategoryGroups section will be skipped (because it’s not empty). That might be okay,
+//   but it’s important to understand the behavior.
+//
+// Typical usage:
+// - Call SeedAsync at application startup (often from Program.cs) in dev/local environments.
+// - The call to MigrateAsync() ensures the schema is created/updated before inserting seed rows.
 
 using A_New_Hope.Models;
 using Microsoft.EntityFrameworkCore;
@@ -13,20 +26,48 @@ namespace A_New_Hope.Data
 {
     public static class DataSeeder
     {
+        /// <summary>
+        /// Seeds the database with minimal “starter” data for development/testing.
+        ///
+        /// Important behaviors:
+        /// - Ensures migrations are applied before seeding.
+        /// - Uses UTC timestamps for all CreatedAt/UpdatedAt fields.
+        /// - Uses AnyAsync() checks per table to prevent duplicate inserts on reruns.
+        ///
+        /// Parameter:
+        /// - context: The EF Core DbContext connected to your database.
+        /// </summary>
         public static async Task SeedAsync(ApplicationDbContext context)
         {
-            // Ensure DB exists / migrations applied
+            // ------------------------------------------------------------
+            // 0) Ensure database is created and migrations are applied
+            // ------------------------------------------------------------
+            // This will:
+            // - Create the database if it does not exist
+            // - Apply any pending EF Core migrations
+            //
+            // If migrations fail (bad connection string, migration errors), this will throw
+            // and the app startup will fail (which is usually what you want in dev).
             await context.Database.MigrateAsync();
 
+            // Use a single "now" timestamp so seeded rows share a consistent CreatedAt/UpdatedAt value.
+            // This makes the seed data easy to reason about and avoids small time skews.
             var now = DateTime.UtcNow;
 
-            // ------------------------------
-            // USERS
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // USERS (DomainUsers)
+            // ============================================================
+            // DomainUsers represent your application’s "business user" records (clients, staff, admins).
+            //
+            // This section seeds:
+            // - 1 admin user
+            // - 2 client users
+            //
+            // NOTE: This seeds ONLY DomainUsers; Identity (login accounts) is handled separately
+            // by your IdentitySeeder.
             if (!await context.DomainUsers.AnyAsync())
             {
+                // Admin user (staff/admin login concepts are typically handled via Identity roles)
                 var admin = new DomainUser
                 {
                     Email = "admin@anewhope.local",
@@ -39,6 +80,7 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
+                // Client #1
                 var client1 = new DomainUser
                 {
                     Email = "client1@anewhope.local",
@@ -55,6 +97,7 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
+                // Client #2
                 var client2 = new DomainUser
                 {
                     Email = "client2@anewhope.local",
@@ -71,20 +114,26 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
+                // AddRange stages the inserts; SaveChangesAsync commits them to the DB.
                 context.DomainUsers.AddRange(admin, client1, client2);
                 await context.SaveChangesAsync();
             }
 
-            // Pull seeded users (works whether they were just inserted or already existed)
+            // Pull seeded users (works whether they were just inserted OR already existed)
+            // -------------------------------------------------------------------------
+            // These lookups are used as foreign keys in later sections (profiles, referrals, audit fields, etc.).
+            //
+            // NOTE: FirstAsync will throw if the email isn't found.
+            // In dev seeding, that is usually acceptable because it indicates inconsistent seed state.
             var adminUser = await context.DomainUsers.FirstAsync(u => u.Email == "admin@anewhope.local");
             var clientUser1 = await context.DomainUsers.FirstAsync(u => u.Email == "client1@anewhope.local");
             var clientUser2 = await context.DomainUsers.FirstAsync(u => u.Email == "client2@anewhope.local");
 
-            // ------------------------------
+            // ============================================================
             // CLIENT PROFILES
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // ClientProfiles represent additional client-specific data tied 1:1 to a DomainUser (UserId).
+            // This section seeds one profile per client user.
             if (!await context.ClientProfiles.AnyAsync())
             {
                 context.ClientProfiles.AddRange(
@@ -94,6 +143,8 @@ namespace A_New_Hope.Data
                         EmploymentStatus = "Part-time",
                         EarnedIncomeMonthly = 1200.00m,
                         IsUnhoused = false,
+
+                        // Audit: set to admin for seeded data to indicate “seeded by admin”
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
                         CreatedAt = now,
@@ -115,11 +166,11 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
-            // ------------------------------
+            // ============================================================
             // HOUSEHOLD MEMBERS
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // HouseholdMembers represent additional people in a client’s household.
+            // Each member is linked to a client user via ClientUserId.
             if (!await context.HouseholdMembers.AnyAsync())
             {
                 context.HouseholdMembers.AddRange(
@@ -150,11 +201,11 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
-            // ------------------------------
+            // ============================================================
             // CATEGORY GROUPS
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // CategoryGroups are high-level groupings such as "Food" and "Non-Food".
+            // Categories belong to CategoryGroups.
             if (!await context.CategoryGroups.AnyAsync())
             {
                 context.CategoryGroups.AddRange(
@@ -183,14 +234,14 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
+            // Pull category groups for FK use in Categories seeding.
             var foodGroup = await context.CategoryGroups.FirstAsync(g => g.Name == "Food");
             var nonFoodGroup = await context.CategoryGroups.FirstAsync(g => g.Name == "Non-Food");
 
-            // ------------------------------
+            // ============================================================
             // CATEGORIES
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-            
+            // ============================================================
+            // Categories belong to CategoryGroups and are used to classify InventoryItems.
             if (!await context.Categories.AnyAsync())
             {
                 context.Categories.AddRange(
@@ -243,16 +294,18 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
+            // Pull categories for FK use in InventoryItems seeding.
+            // NOTE: If you ever add duplicate category names across groups, these lookups will become ambiguous.
             var cannedGoods = await context.Categories.FirstAsync(c => c.Name == "Canned Goods");
             var produce = await context.Categories.FirstAsync(c => c.Name == "Produce");
             var hygiene = await context.Categories.FirstAsync(c => c.Name == "Hygiene");
             var household = await context.Categories.FirstAsync(c => c.Name == "Household Supplies");
 
-            // ------------------------------
+            // ============================================================
             // REFERRING ORGANIZATIONS
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // ReferringOrganizations represent external agencies/organizations that refer clients.
+            // Referrals will link a client to a ReferringOrganization.
             if (!await context.ReferringOrganizations.AnyAsync())
             {
                 context.ReferringOrganizations.AddRange(
@@ -293,13 +346,14 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
+            // Pull a specific organization for FK use in Referrals seeding.
             var org1 = await context.ReferringOrganizations.FirstAsync(o => o.Name == "Portage County Social Services");
 
-            // ------------------------------
+            // ============================================================
             // INVENTORY ITEMS
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // InventoryItems represent the “things” clients can request/receive.
+            // Each InventoryItem belongs to a Category (and therefore indirectly to a CategoryGroup).
             if (!await context.InventoryItems.AnyAsync())
             {
                 context.InventoryItems.AddRange(
@@ -356,11 +410,11 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
-            // ------------------------------
+            // ============================================================
             // REFERRALS
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // Referrals link a client (ClientUserId) to an organization (ReferringOrganizationId)
+            // and store metadata such as status, contact info, and notes.
             if (!await context.Referrals.AnyAsync())
             {
                 context.Referrals.Add(
@@ -368,7 +422,10 @@ namespace A_New_Hope.Data
                     {
                         ClientUserId = clientUser1.Id,
                         ReferringOrganizationId = org1.Id,
+
+                        // ReferredOn is set to "now" at seed time.
                         ReferredOn = DateTime.UtcNow,
+
                         Status = ReferralStatus.Pending,
                         ReferredByName = "Alex Rivera",
                         ReferredByPhoneNumber = "555-100-2000",
@@ -384,13 +441,18 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
-            // ------------------------------
+            // ============================================================
             // USER ITEM PREFERENCES
-            // ------------------------------
-            // Seed only if table is empty (AnyAsync prevents duplicates on rerun)
-
+            // ============================================================
+            // UserItemPreferences define how a user wants specific inventory items handled.
+            // Example: Always / Ask / Never.
+            //
+            // NOTE:
+            // - This section queries inventory items by name.
+            // - If you later add duplicate names, these lookups can become ambiguous.
             if (!await context.UserItemPreferences.AnyAsync())
             {
+                // Pull inventory items needed for preference rows.
                 var toothpaste = await context.InventoryItems.FirstAsync(i => i.Name == "Toothpaste");
                 var applesItem = await context.InventoryItems.FirstAsync(i => i.Name == "Apples");
 
