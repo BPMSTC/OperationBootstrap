@@ -2,11 +2,8 @@ using A_New_Hope.Data;
 using A_New_Hope.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-<<<<<<< HEAD
-using Microsoft.AspNetCore.Authorization;
-=======
 using Microsoft.Extensions.Logging;
->>>>>>> origin/main
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
