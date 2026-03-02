@@ -12,26 +12,35 @@ namespace A_New_Hope.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<UserAccountsController> _logger;
 
         public UserAccountsController(
             ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            ILogger<UserAccountsController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: /UserAccounts/Create?domainUserId=123
         public async Task<IActionResult> Create(ulong domainUserId)
         {
+            _logger.LogInformation("Creating Login Account for DomainUserId={DomainuserId}", domainUserId);
+
             var domainUser = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == domainUserId && u.DeletedAt == null);
 
             if (domainUser == null)
+            {
+                _logger.LogInformation("Create login failed: DomainUser not found, DomainUserId={DomainUserId}", domainUserId);
                 return NotFound();
+            }
 
             if (domainUser.UserType == UserType.Client)
             {
+                _logger.LogInformation("Create login failed, Identity user creation failed for DomainUserId={DomainUserID}", domainUserId);
                 TempData["ErrorMessage"] = "Clients do not have login accounts.";
                 return RedirectToAction("Index", "Users");
             }
@@ -95,6 +104,7 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            _logger.LogInformation("Login Account created for DomainUserId={DomainUserId}", domainUserId);
             TempData["SuccessMessage"] = $"Login created for {domainUser.Email}. Temporary password: {tempPassword}";
             return RedirectToAction(nameof(Manage), new { domainUserId });
         }
@@ -106,13 +116,18 @@ namespace A_New_Hope.Controllers
                 .FirstOrDefaultAsync(u => u.Id == domainUserId && u.DeletedAt == null);
 
             if (domainUser == null)
+            {
+                _logger.LogInformation("Cannot manage user, DomainUserId={DomainUserId} was not found.", domainUserId);
                 return NotFound();
+            }
+
 
             var appUser = await _context.Users
                 .FirstOrDefaultAsync(iu => iu.DomainUserId == domainUserId);
 
             if (appUser == null)
             {
+                _logger.LogInformation("Cannot manager user, DomainUserId={DomainUserId} returned null.", domainUserId);
                 TempData["InfoMessage"] = "No login account exists for this user yet.";
                 return RedirectToAction("Index", "Users");
             }
@@ -130,6 +145,8 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ResetPassword(ulong domainUserId, string? newPassword)
         {
+            _logger.LogInformation("Password reset requested for DomainUserId={DomainUserId}", domainUserId);
+
             var domainUser = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == domainUserId && u.DeletedAt == null);
 
@@ -141,6 +158,7 @@ namespace A_New_Hope.Controllers
 
             if (appUser == null)
             {
+                _logger.LogInformation("No login account exists for DomainUserId={DomainUserId}", domainUserId);
                 TempData["ErrorMessage"] = "No login account exists for this user.";
                 return RedirectToAction("Index", "Users");
             }
@@ -154,11 +172,13 @@ namespace A_New_Hope.Controllers
 
             if (!resetResult.Succeeded)
             {
+                _logger.LogInformation("Password reset for DomainUserId={DomainUserId} failed.", domainUserId);
                 TempData["ErrorMessage"] = "Password reset failed: " +
                                            string.Join(" | ", resetResult.Errors.Select(e => e.Description));
                 return RedirectToAction(nameof(Manage), new { domainUserId });
             }
 
+            _logger.LogInformation("Password successfully reset for DomainUserId={DomainUserId}", domainUserId);
             TempData["SuccessMessage"] = $"Password reset for {domainUser.Email}. Temporary password: {passwordToUse}";
             return RedirectToAction(nameof(Manage), new { domainUserId });
         }
@@ -167,17 +187,22 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DisableLogin(ulong domainUserId)
         {
+            _logger.LogInformation("Disabling login for DomainUserId={DomainUserId}", domainUserId);
             var domainUser = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == domainUserId && u.DeletedAt == null);
 
             if (domainUser == null)
-                return NotFound();
+            {
+                _logger.LogInformation("Cannot disable user.  DomainUserId={DomainUserId} returned null.", domainUserId);
+                return NotFound(); 
+            }
 
             var appUser = await _context.Users
                 .FirstOrDefaultAsync(iu => iu.DomainUserId == domainUserId);
 
             if (appUser == null)
             {
+                _logger.LogInformation("No login account exists for DomainUserId={DomainUserId}", domainUserId);
                 TempData["ErrorMessage"] = "No login account exists for this user.";
                 return RedirectToAction("Index", "Users");
             }
@@ -189,6 +214,7 @@ namespace A_New_Hope.Controllers
             var updateResult = await _userManager.UpdateAsync(appUser);
             if (!updateResult.Succeeded)
             {
+                _logger.LogInformation("Could not disable login for DomainUserId={DomainUserId}", domainUserId);
                 TempData["ErrorMessage"] = "Could not disable login: " +
                                            string.Join(" | ", updateResult.Errors.Select(e => e.Description));
                 return RedirectToAction(nameof(Manage), new { domainUserId });
@@ -203,12 +229,14 @@ namespace A_New_Hope.Controllers
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                _logger.LogInformation(ex, "Login was disabled, but the domain user status for DomainUserId={DomainUserId} could not be updated.", domainUserId);
                 TempData["ErrorMessage"] = "Login was disabled, but the domain user status could not be updated.";
                 return RedirectToAction(nameof(Manage), new { domainUserId });
             }
 
+            _logger.LogInformation("Login was disabled for DomainUserId={DomainUserId}", domainUserId);
             TempData["SuccessMessage"] = $"Login disabled for {domainUser.Email}.";
             return RedirectToAction(nameof(Manage), new { domainUserId });
         }
@@ -217,17 +245,22 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EnableLogin(ulong domainUserId)
         {
+            _logger.LogInformation("Enabling login for DomainUserId={DomainUserId}", domainUserId);
             var domainUser = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == domainUserId && u.DeletedAt == null);
 
             if (domainUser == null)
+            {
+                _logger.LogInformation("Could not enable login for DomainUserId={DomainUserId}. not found. ", domainUserId);
                 return NotFound();
+            }
 
             var appUser = await _context.Users
                 .FirstOrDefaultAsync(iu => iu.DomainUserId == domainUserId);
 
             if (appUser == null)
             {
+                _logger.LogInformation("No login account exists for DomainUserId={DomainUserId}", domainUserId);
                 TempData["ErrorMessage"] = "No login account exists for this user.";
                 return RedirectToAction("Index", "Users");
             }
@@ -237,6 +270,7 @@ namespace A_New_Hope.Controllers
             var updateResult = await _userManager.UpdateAsync(appUser);
             if (!updateResult.Succeeded)
             {
+                _logger.LogInformation("Could not enable login for DomainUserId={DomainUserId}", domainUserId);
                 TempData["ErrorMessage"] = "Could not enable login: " +
                                            string.Join(" | ", updateResult.Errors.Select(e => e.Description));
                 return RedirectToAction(nameof(Manage), new { domainUserId });
@@ -253,10 +287,12 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateException)
             {
+                _logger.LogInformation("Login was enabled for DomainUserId={DomainUserId}, but the domain user status could not be updated", domainUserId);
                 TempData["ErrorMessage"] = "Login was enabled, but the domain user status could not be updated.";
                 return RedirectToAction(nameof(Manage), new { domainUserId });
             }
 
+            _logger.LogInformation("Login enabled for DomainUserId={DomainUserId}", domainUserId);
             TempData["SuccessMessage"] = $"Login enabled for {domainUser.Email}.";
             return RedirectToAction(nameof(Manage), new { domainUserId });
         }

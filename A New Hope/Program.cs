@@ -2,11 +2,21 @@ using A_New_Hope.Data; // adjust if your DbContext namespace is different
 using A_New_Hope.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//Configure Logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.AddEventLog();
+
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add<LoggingScopeFilter>();
+});
 builder.Services.AddRazorPages(); // Needed for Identity UI
 
 // Read connection string once and fail fast if missing
