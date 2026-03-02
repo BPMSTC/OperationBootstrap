@@ -1,13 +1,22 @@
-using A_New_Hope.Data; // adjust if your DbContext namespace is different
+using A_New_Hope.Data;
 using A_New_Hope.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages(); // Needed for Identity UI
+
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireRole("Admin", "Staff")
+        .Build();
+});
 
 // Read connection string once and fail fast if missing
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -44,9 +53,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
 app.UseRouting();
-
-app.UseAuthentication(); // Must come before UseAuthorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
