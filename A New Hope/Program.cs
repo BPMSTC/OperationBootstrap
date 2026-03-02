@@ -1,33 +1,67 @@
-using A_New_Hope.Data; // adjust if your DbContext namespace is different
+using A_New_Hope.Data;
 using A_New_Hope.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
+// Create the application builder (reads config, sets up DI, logging, etc.)
 var builder = WebApplication.CreateBuilder(args);
 
-//Configure Logging
+// ------------------------------
+// Logging
+// ------------------------------
+// Replace default logging providers with explicit ones so log output is predictable in dev.
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-builder.Logging.AddDebug();
-builder.Logging.AddEventLog();
+builder.Logging.AddConsole(); // Console output (terminal)
+builder.Logging.AddDebug();   // Debug output (Visual Studio Output window)
 
-// Add services to the container.
+// Windows-only provider (safe on cross-platform apps because it's runtime-guarded)
+if (OperatingSystem.IsWindows())
+{
+    builder.Logging.AddEventLog(); // Event Viewer on Windows
+}
+
+// ------------------------------
+// MVC + Razor Pages
+// ------------------------------
+// Add MVC controllers/views, and register a global action filter that adds Controller/Action log scope.
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add<LoggingScopeFilter>();
 });
-builder.Services.AddRazorPages(); // Needed for Identity UI
 
-// Read connection string once and fail fast if missing
+// Identity UI endpoints (e.g., /Identity/Account/Login)
+builder.Services.AddRazorPages();
+
+// ------------------------------
+// Authorization
+// ------------------------------
+// Fallback policy: if an endpoint doesn't explicitly allow anonymous access,
+// the user must be authenticated AND in Admin or Staff role.
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireRole("Admin", "Staff")
+        .Build();
+});
+
+// ------------------------------
+// Database
+// ------------------------------
+// Read connection string once and fail fast if missing.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' was not found.");
 
-// Register DbContext with MySQL
+// Register EF Core DbContext using MySQL provider.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySQL(connectionString));
 
-// Add Identity
+// ------------------------------
+// Identity
+// ------------------------------
+// Configure ASP.NET Core Identity (password rules, unique email, etc.)
+// and store Identity data in the same ApplicationDbContext.
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
@@ -46,7 +80,10 @@ builder.Services
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ------------------------------
+// HTTP request pipeline
+// ------------------------------
+// Production-style error handling + HSTS (only outside development).
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -54,27 +91,37 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(); // Serves wwwroot assets (CSS/JS/images)
 app.UseRouting();
 
-app.UseAuthentication(); // Must come before UseAuthorization
+// AuthN first, then AuthZ.
+app.UseAuthentication();
 app.UseAuthorization();
 
+// Enables static asset mapping for endpoints configured with WithStaticAssets().
 app.MapStaticAssets();
 
+// Default MVC route: /{controller=Home}/{action=Index}/{id?}
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
-app.MapRazorPages(); // Identity UI routes
+// Razor Pages routes (Identity UI endpoints live here)
+app.MapRazorPages();
 
-// Seed data
+// ------------------------------
+// Seeding (Domain + Identity)
+// ------------------------------
+// Creates a scoped service provider so DbContext/Identity services resolve correctly.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+    // Seed domain tables (DomainUsers, Categories, etc.)
     await DataSeeder.SeedAsync(db);
 
-    // Seed Identity roles/users (create IdentitySeeder next if you haven't already)
+    // Seed Identity roles/users (Admin/Staff roles + initial admin login)
     await IdentitySeeder.SeedAsync(scope.ServiceProvider);
 }
 
@@ -88,4 +135,4 @@ if (app.Environment.IsDevelopment())
 }
 */
 
-app.Run();
+app.Run(); // Start the web host
