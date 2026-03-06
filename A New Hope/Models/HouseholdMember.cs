@@ -2,33 +2,99 @@
 
 namespace A_New_Hope.Models
 {
+    /// <summary>
+    /// HouseholdMember
+    /// ---------------
+    /// Represents an additional person in a client's household.
+    ///
+    /// Relationship:
+    /// - Each HouseholdMember belongs to a client DomainUser via ClientUserId.
+    ///
+    /// Notes:
+    /// - FirstName/LastName are stored separately to support searching/sorting/filtering.
+    /// - Soft delete is supported via DeletedAt.
+    /// - Audit fields track who created/updated the record (once auth is wired).
+    /// </summary>
     public class HouseholdMember
     {
+        /// <summary>
+        /// Primary key for the household member record.
+        /// </summary>
         public ulong Id { get; set; }
 
+        /// <summary>
+        /// Foreign key to the client DomainUser who this household member is associated with.
+        /// </summary>
         public ulong ClientUserId { get; set; }
 
-        [MaxLength(100)] // Split from FullName so first name can be stored/searched/sorted independently
+        /// <summary>
+        /// Household member first name (required).
+        /// </summary>
+        [MaxLength(100)] // Stored separately from last name for searching/sorting
         public string FirstName { get; set; } = null!;
 
-        [MaxLength(100)] // Split from FullName so last name can be stored/searched/sorted independently
+        /// <summary>
+        /// Household member last name (required).
+        /// </summary>
+        [MaxLength(100)] // Stored separately from first name for searching/sorting
         public string LastName { get; set; } = null!;
 
-        public DateTime? DateOfBirth { get; set; } // Keep if your provider supports DateOnly; otherwise switch to DateTime?
+        /// <summary>
+        /// Optional date of birth.
+        /// Using DateTime keeps provider compatibility (DateOnly support varies by provider).
+        /// </summary>
+        public DateTime? DateOfBirth { get; set; }
 
-        // public byte? AgeYears { get; set; } // Recommend removing: age becomes stale; compute from DOB + "as of" date/event date
+        /// <summary>
+        /// Optional snapshot date for "age as of" calculations.
+        /// Keep only if you truly need to store historical age snapshots; otherwise age can be derived from DOB.
+        /// </summary>
+        public DateTime? AgeAsOfDate { get; set; }
 
-        public DateTime? AgeAsOfDate { get; set; } // Keep ONLY if you truly need "age as of <date>" snapshots; otherwise remove too
-
+        /// <summary>
+        /// Audit: DomainUser who created this record (nullable until auth is wired).
+        /// </summary>
         public ulong? CreatedByUserId { get; set; }
+
+        /// <summary>
+        /// Audit: DomainUser who last updated this record (nullable until auth is wired).
+        /// </summary>
         public ulong? UpdatedByUserId { get; set; }
 
+        /// <summary>
+        /// Timestamp when the record was created (typically set server-side in UTC).
+        /// </summary>
         public DateTime CreatedAt { get; set; }
+
+        /// <summary>
+        /// Timestamp when the record was last updated (typically set server-side in UTC).
+        /// </summary>
         public DateTime UpdatedAt { get; set; }
+
+        /// <summary>
+        /// Soft delete marker:
+        /// - null = not deleted
+        /// - non-null = deleted (excluded by global query filters in ApplicationDbContext)
+        /// </summary>
         public DateTime? DeletedAt { get; set; }
 
+        // -----------------------------------------------------------------
+        // Navigation properties (EF Core relationships)
+        // -----------------------------------------------------------------
+
+        /// <summary>
+        /// Navigation to the client DomainUser who owns this household member.
+        /// </summary>
         public DomainUser ClientUser { get; set; } = null!;
+
+        /// <summary>
+        /// Navigation to the DomainUser who created this record.
+        /// </summary>
         public DomainUser? CreatedByUser { get; set; }
+
+        /// <summary>
+        /// Navigation to the DomainUser who last updated this record.
+        /// </summary>
         public DomainUser? UpdatedByUser { get; set; }
     }
 }
