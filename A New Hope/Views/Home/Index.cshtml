@@ -1,26 +1,31 @@
 ﻿@{
     ViewData["Title"] = "Home";
     var users = ViewBag.Users as IEnumerable<dynamic>;
+    bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
 }
 
 <style>
-    /* Page background */
     body {
         background-color: #f0f2f5 !important;
         font-family: Arial, sans-serif;
         color: #212529;
     }
 
-    /* Card holding all content */
+    .content-locked {
+        filter: blur(6px);
+        pointer-events: none;
+        user-select: none;
+        opacity: 0.4;
+    }
+
     .main-card {
         background-color: #e9ecef !important;
         border-radius: 12px;
         padding: 30px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* slightly stronger shadow */
-        border: 2px solid #ced4da; /* slightly thicker border */
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        border: 2px solid #ced4da;
     }
 
-    /* Section headers */
     .section-header {
         background-color: #495057 !important;
         color: #ffffff !important;
@@ -29,13 +34,12 @@
         font-weight: 600;
         font-size: 1.1rem;
         margin-bottom: 15px;
-        border: 1px solid #343a40; /* subtle border for clarity */
+        border: 1px solid #343a40;
     }
 
-    /* Buttons */
     .neutral-btn-primary {
         background-color: #343a40 !important;
-        border: 2px solid #212529 !important; /* slightly thicker border */
+        border: 2px solid #212529 !important;
         color: white !important;
         font-weight: 600;
     }
@@ -46,7 +50,7 @@
 
     .neutral-btn-secondary {
         background-color: #adb5bd !important;
-        border: 2px solid #868e96 !important; /* slightly thicker border */
+        border: 2px solid #868e96 !important;
         color: black !important;
         font-weight: 600;
     }
@@ -56,17 +60,15 @@
             color: white !important;
         }
 
-    /* Scrollable table container */
     .scroll-box {
         max-height: 450px;
         overflow-y: auto;
         background-color: #f8f9fa !important;
         border-radius: 6px;
         padding: 10px;
-        border: 2px solid #ced4da; /* makes scroll box easier to see */
+        border: 2px solid #ced4da;
     }
 
-    /* Table header */
     table thead {
         background-color: #6c757d !important;
         color: white !important;
@@ -74,11 +76,11 @@
 
     table {
         background-color: #ffffff !important;
-        border: 2px solid #ced4da !important; /* stronger table border */
+        border: 2px solid #ced4da !important;
     }
 
         table th, table td {
-            border: 1px solid #adb5bd !important; /* slightly thicker cell borders */
+            border: 1px solid #adb5bd !important;
             padding: 8px;
         }
 
@@ -87,42 +89,129 @@
         cursor: pointer;
     }
 
-    /* Search input */
     #searchInput {
         background-color: #ffffff !important;
-        border: 2px solid #ced4da !important; /* thicker border for easy visibility */
+        border: 2px solid #ced4da !important;
         padding: 10px;
     }
+
+    /* Login Modal Overlay */
+    #loginOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-modal-box {
+        background: white;
+        border-radius: 14px;
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        text-align: left;
+    }
+
+        .login-modal-box .brand-logo {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+            .login-modal-box .brand-logo img {
+                max-width: 220px;
+                height: auto;
+            }
+
+        .login-modal-box h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-modal-box .subtitle {
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+        }
 </style>
 
-<div class="container mt-5">
+<!-- LOGIN MODAL (only rendered when not authenticated) -->
+@if (!isAuthenticated)
+{
+    <div id="loginOverlay">
+        <div class="login-modal-box">
+
+            <div class="brand-logo">
+                <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
+                     alt="Operation Bootstrap Logo" />
+            </div>
+
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Please sign in to continue</p>
+
+            <form asp-controller="Account" asp-action="Login" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ReturnUrl" value="/" />
+
+                @if (ViewBag.LoginError != null)
+                {
+                    <div class="alert alert-danger mb-3">@ViewBag.LoginError</div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Email</label>
+                    <input type="email" name="Email" class="form-control"
+                           placeholder="you@example.com" required />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <input type="password" name="Password" class="form-control"
+                           placeholder="••••••••" required />
+                </div>
+
+                <div class="form-check mb-4">
+                    <input type="checkbox" name="RememberMe"
+                           class="form-check-input" id="rememberMe" />
+                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                </div>
+
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Log In</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+}
+
+<!-- MAIN CONTENT (blurred when not authenticated) -->
+<div class="container mt-5 @(!isAuthenticated ? "content-locked" : "")">
     <div class="main-card">
 
-        <!-- Buttons -->
         <div class="d-flex justify-content-between mb-4">
-            <a asp-controller="Referrals"
-                   asp-action="Create"
-                   class="btn neutral-btn-primary btn-lg w-50 me-2">
+            <a asp-controller="Referrals" asp-action="Create"
+               class="btn neutral-btn-primary btn-lg w-50 me-2">
                 + New Referral
             </a>
-
             <button class="btn neutral-btn-secondary btn-lg w-50 ms-2" disabled>
                 Reporting (W.I.P.)
             </button>
         </div>
 
-        <!-- Client List Section -->
-        <div class="section-header mb-3">
-            Client List
-        </div>
+        <div class="section-header mb-3">Client List</div>
 
-        <!-- Search Input -->
-        <input type="text"
-               id="searchInput"
+        <input type="text" id="searchInput"
                class="form-control form-control-lg mb-3"
                placeholder="Search by name, email, or address..." />
 
-        <!-- Scrollable Table -->
         <div class="scroll-box">
             <table class="table table-hover table-bordered mb-0">
                 <thead>
@@ -147,6 +236,7 @@
                 </tbody>
             </table>
         </div>
+
     </div>
 </div>
 
@@ -155,48 +245,37 @@
         const input = document.getElementById("searchInput");
         const resultsBody = document.getElementById("resultsBody");
 
-        // Live search
         input.addEventListener("input", function () {
             const query = input.value;
-
-            // If empty, reload full list
             if (query.length === 0) {
-                fetch(`/Home/Index`)
-                    .then(() => location.reload());
+                fetch(`/Home/Index`).then(() => location.reload());
                 return;
             }
 
             fetch(`/Home/Search?query=${encodeURIComponent(query)}`)
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
                     resultsBody.innerHTML = "";
-
                     if (data.length === 0) {
                         resultsBody.innerHTML =
                             `<tr><td colspan="3" class="text-center">No results found</td></tr>`;
                         return;
                     }
-
                     data.forEach(user => {
-                        const row = `
+                        resultsBody.innerHTML += `
                             <tr class="clickable-row" data-id="${user.id}">
                                 <td>${user.fullName}</td>
                                 <td>${user.email}</td>
                                 <td>${user.address}</td>
-                            </tr>
-                        `;
-                        resultsBody.innerHTML += row;
+                            </tr>`;
                     });
                 });
         });
 
-        // Clickable rows
         document.addEventListener("click", function (e) {
             const row = e.target.closest(".clickable-row");
-            if (row) {
-                const id = row.getAttribute("data-id");
-                window.location.href = `/ClientProfiles/Details/${id}`;
-            }
+            if (row)
+                window.location.href = `/ClientProfiles/Details/${row.getAttribute("data-id")}`;
         });
     </script>
 }

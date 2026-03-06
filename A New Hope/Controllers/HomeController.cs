@@ -1,4 +1,5 @@
 using A_New_Hope.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -6,8 +7,13 @@ namespace A_New_Hope.Controllers
 {
     public class HomeController : Controller
     {
+        [AllowAnonymous]
         public IActionResult Index()
         {
+            // Pass login error to view if present
+            if (TempData["LoginError"] is string err)
+                ViewBag.LoginError = err;
+
             return View();
         }
 

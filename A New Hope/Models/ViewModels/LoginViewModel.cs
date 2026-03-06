@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace A_New_Hope.ViewModel
+namespace A_New_Hope.Models.ViewModels
 {
     public class LoginViewModel
     {

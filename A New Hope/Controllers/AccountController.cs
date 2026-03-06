@@ -1,6 +1,5 @@
 ﻿using A_New_Hope.Models;
 using A_New_Hope.Models.ViewModels;
-using A_New_Hope.ViewModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -44,46 +43,38 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
-                return View(model);
-
-            var user = await _userManager.FindByEmailAsync(model.Email);
-
-            if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                return View(model);
+                TempData["LoginError"] = "Please fill in all fields.";
+                return RedirectToAction("Index", "Home");
             }
 
-            // Optional: enforce lockout before attempting sign-in
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null)
+            {
+                TempData["LoginError"] = "Invalid email or password.";
+                return RedirectToAction("Index", "Home");
+            }
+
             if (await _userManager.IsLockedOutAsync(user))
             {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "This account is locked. Please contact an administrator.");
-                return View(model);
+                TempData["LoginError"] = "This account is locked. Please contact an administrator.";
+                return RedirectToAction("Index", "Home");
             }
 
             var result = await _signInManager.PasswordSignInAsync(
-                user,
-                model.Password,
-                model.RememberMe,
-                lockoutOnFailure: true);
+                user, model.Password, model.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded)
-            {
-                return LocalRedirect(model.ReturnUrl ?? "~/");
-            }
+                return RedirectToAction("Index", "Home");  // modal disappears, content unlocks
 
             if (result.IsLockedOut)
             {
-                ModelState.AddModelError(
-                    string.Empty,
-                    "This account has been locked due to multiple failed login attempts.");
-                return View(model);
+                TempData["LoginError"] = "Account locked due to multiple failed attempts.";
+                return RedirectToAction("Index", "Home");
             }
 
-            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-            return View(model);
+            TempData["LoginError"] = "Invalid email or password.";
+            return RedirectToAction("Index", "Home");
         }
 
         // --------------------
@@ -95,7 +86,7 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return RedirectToAction(nameof(Login));
+            return RedirectToAction("Index", "Home");
         }
 
         // --------------------
