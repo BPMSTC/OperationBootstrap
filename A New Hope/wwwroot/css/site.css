@@ -230,3 +230,109 @@ td a {
         table-layout: auto; /* natural column widths */
     }
 
+/* =========================
+   DETAILS PAGE STYLING
+========================= */
+
+/* Definition list container */
+dl.row {
+    background-color: #ffffff;
+    border: 2px solid #ced4da;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+    /* Field labels */
+    dl.row dt {
+        font-weight: 600;
+        color: #343a40;
+        padding: 8px 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    /* Field values */
+    dl.row dd {
+        margin-bottom: 0;
+        padding: 8px 10px;
+        border-bottom: 1px solid #e9ecef;
+        color: #212529;
+        word-break: break-word;
+    }
+
+        /* Remove border on last row */
+        dl.row dt:last-of-type,
+        dl.row dd:last-of-type {
+            border-bottom: none;
+        }
+
+    /* Improve spacing between label/value rows */
+    dl.row dt + dd {
+        margin-bottom: 6px;
+    }
+
+/* Action buttons area */
+.details-actions {
+    margin-top: 10px;
+}
+
+    /* Ensure buttons wrap nicely on small screens */
+    .details-actions a {
+        margin-right: 8px;
+        margin-bottom: 6px;
+    }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+
+    dl.row dt,
+    dl.row dd {
+        font-size: 0.9rem;
+        padding: 6px 8px;
+    }
+}
+
+/* =========================
+   DELETE PAGE STYLING
+========================= */
+
+/* Delete confirmation message */
+h3 {
+    font-weight: 600;
+    color: #842029;
+    margin-bottom: 15px;
+}
+
+/* Warning alert styling override to match site theme */
+.alert-warning {
+    border: 2px solid #f5c2c7;
+    background-color: #fff3f3;
+    color: #842029;
+    font-weight: 600;
+    border-radius: 8px;
+}
+
+/* Delete action form area */
+form[asp-action="Delete"] {
+    margin-top: 15px;
+}
+
+    /* Delete button spacing */
+    form[asp-action="Delete"] .btn-danger {
+        font-weight: 600;
+    }
+
+    /* Keep buttons aligned and spaced */
+    form[asp-action="Delete"] a {
+        margin-left: 8px;
+    }
+
+/* Slight emphasis for delete buttons */
+.btn-danger {
+    background-color: #842029 !important;
+    border: 2px solid #58151c !important;
+}
+
+    .btn-danger:hover {
+        background-color: #a52834 !important;
+    }
