@@ -45,9 +45,9 @@ h1 {
     font-weight: 600;
 }
 
-    .btn-primary:hover {
-        background-color: #495057 !important;
-    }
+.btn-primary:hover {
+    background-color: #495057 !important;
+}
 
 .btn-secondary {
     background-color: #adb5bd !important;
@@ -56,10 +56,10 @@ h1 {
     font-weight: 600;
 }
 
-    .btn-secondary:hover {
-        background-color: #868e96 !important;
-        color: white !important;
-    }
+.btn-secondary:hover {
+    background-color: #868e96 !important;
+    color: white !important;
+}
 
 /* Forms */
 .form-label {
@@ -80,24 +80,25 @@ textarea.form-control {
     box-sizing: border-box;
 }
 
-    .form-control:focus,
-    .form-select:focus,
-    textarea.form-control:focus {
-        border-color: #495057 !important;
-        box-shadow: 0 0 0 0.2rem rgba(73, 80, 87, 0.25) !important;
-        background-color: #ffffff !important;
-    }
+.form-control:focus,
+.form-select:focus,
+textarea.form-control:focus {
+    border-color: #000000 !important;
+    box-shadow: 0 0 0 0.2rem rgba(255,191,71,0.45) !important;
+    background-color: #ffffff !important;
+}
 
-    .input-validation-error,
-    .form-control.is-invalid,
-    .form-select.is-invalid {
-        border: 2px solid #dc3545 !important;
-        background-color: #fff5f5 !important;
-    }
+.input-validation-error,
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border: 2px solid #6b2d2d !important;
+    background-color: #f8eaea !important;
+}
 
 .text-danger {
     font-size: 0.9rem;
     font-weight: 500;
+    color: #6b2d2d !important;
 }
 
 /* Page Container */
@@ -122,7 +123,6 @@ textarea.form-control {
    TABLES
 ========================= */
 
-/* Tables use full width, natural sizing, scroll only if needed */
 .table {
     width: 100%;
     background-color: #ffffff !important;
@@ -130,42 +130,42 @@ textarea.form-control {
     border-collapse: collapse;
 }
 
-    .table th,
-    .table td {
-        border: 1px solid #adb5bd !important;
-        padding: 8px;
-        vertical-align: middle;
-        text-align: left;
-        word-wrap: break-word;
-        white-space: normal; /* allow natural wrapping */
-    }
+.table th,
+.table td {
+    border: 1px solid #adb5bd !important;
+    padding: 8px;
+    vertical-align: middle;
+    text-align: left;
+    word-wrap: break-word;
+    white-space: normal;
+}
 
-    .table thead {
-        background-color: #6c757d !important;
-        color: white !important;
-        font-weight: 600;
-    }
+.table thead {
+    background-color: #5a6268 !important;
+    color: white !important;
+    font-weight: 600;
+}
 
 .table-striped tbody tr:nth-of-type(odd) {
     background-color: #f8f9fa !important;
 }
 
 .table-hover tbody tr:hover {
-    background-color: #dee2e6 !important;
+    background-color: #d0d5db !important;
     cursor: pointer;
 }
 
 /* Action links */
 td a {
-    color: #343a40;
+    color: #2b2b2b;
     font-weight: 600;
     text-decoration: none;
 }
 
-    td a:hover {
-        color: #000000;
-        text-decoration: underline;
-    }
+td a:hover {
+    color: #000000;
+    text-decoration: underline;
+}
 
 /* Action column sizing */
 .table th:last-child,
@@ -178,7 +178,7 @@ td a {
     white-space: nowrap;
 }
 
-/* Optional scroll box wrapper for extremely tall tables */
+/* Optional scroll box wrapper */
 .scroll-box {
     max-height: 60vh;
     overflow-y: auto;
@@ -215,26 +215,24 @@ td a {
    TABLES MATCH HEADER WIDTH SITE-WIDE
 ========================= */
 
-/* Make tables use the same width as their container/header */
 .table-responsive {
     display: block;
     width: 100%;
-    overflow-x: auto; /* keep horizontal scroll if needed */
+    overflow-x: auto;
 }
 
-    .table-responsive > table {
-        width: 100%; /* table fills its parent container */
-        max-width: 100%; /* never exceed container width */
-        margin-left: 0; /* align left with container/header */
-        margin-right: 0; /* align right with container/header */
-        table-layout: auto; /* natural column widths */
-    }
+.table-responsive > table {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    table-layout: auto;
+}
 
 /* =========================
    DETAILS PAGE STYLING
 ========================= */
 
-/* Definition list container */
 dl.row {
     background-color: #ffffff;
     border: 2px solid #ced4da;
@@ -243,46 +241,40 @@ dl.row {
     margin-bottom: 20px;
 }
 
-    /* Field labels */
-    dl.row dt {
-        font-weight: 600;
-        color: #343a40;
-        padding: 8px 10px;
-        border-bottom: 1px solid #e9ecef;
-    }
+dl.row dt {
+    font-weight: 600;
+    color: #343a40;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e9ecef;
+}
 
-    /* Field values */
-    dl.row dd {
-        margin-bottom: 0;
-        padding: 8px 10px;
-        border-bottom: 1px solid #e9ecef;
-        color: #212529;
-        word-break: break-word;
-    }
+dl.row dd {
+    margin-bottom: 0;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e9ecef;
+    color: #212529;
+    word-break: break-word;
+}
 
-        /* Remove border on last row */
-        dl.row dt:last-of-type,
-        dl.row dd:last-of-type {
-            border-bottom: none;
-        }
+dl.row dt:last-of-type,
+dl.row dd:last-of-type {
+    border-bottom: none;
+}
 
-    /* Improve spacing between label/value rows */
-    dl.row dt + dd {
-        margin-bottom: 6px;
-    }
+dl.row dt + dd {
+    margin-bottom: 6px;
+}
 
 /* Action buttons area */
 .details-actions {
     margin-top: 10px;
 }
 
-    /* Ensure buttons wrap nicely on small screens */
-    .details-actions a {
-        margin-right: 8px;
-        margin-bottom: 6px;
-    }
+.details-actions a {
+    margin-right: 8px;
+    margin-bottom: 6px;
+}
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
 
     dl.row dt,
@@ -296,43 +288,37 @@ dl.row {
    DELETE PAGE STYLING
 ========================= */
 
-/* Delete confirmation message */
 h3 {
     font-weight: 600;
-    color: #842029;
+    color: #4a1c1c;
     margin-bottom: 15px;
 }
 
-/* Warning alert styling override to match site theme */
 .alert-warning {
-    border: 2px solid #f5c2c7;
-    background-color: #fff3f3;
-    color: #842029;
+    border: 2px solid #6b2d2d;
+    background-color: #f5e6e6;
+    color: #3a1a1a;
     font-weight: 600;
     border-radius: 8px;
 }
 
-/* Delete action form area */
 form[asp-action="Delete"] {
     margin-top: 15px;
 }
 
-    /* Delete button spacing */
-    form[asp-action="Delete"] .btn-danger {
-        font-weight: 600;
-    }
-
-    /* Keep buttons aligned and spaced */
-    form[asp-action="Delete"] a {
-        margin-left: 8px;
-    }
-
-/* Slight emphasis for delete buttons */
-.btn-danger {
-    background-color: #842029 !important;
-    border: 2px solid #58151c !important;
+form[asp-action="Delete"] .btn-danger {
+    font-weight: 600;
 }
 
-    .btn-danger:hover {
-        background-color: #a52834 !important;
-    }
+form[asp-action="Delete"] a {
+    margin-left: 8px;
+}
+
+.btn-danger {
+    background-color: #5c2b2b !important;
+    border: 2px solid #2f1414 !important;
+}
+
+.btn-danger:hover {
+    background-color: #3f1c1c !important;
+}
