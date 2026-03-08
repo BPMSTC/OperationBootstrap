@@ -3,48 +3,20 @@ using A_New_Hope.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace A_New_Hope.Controllers
 {
     /// <summary>
-    /// ReferralsController
-    /// -------------------
-    /// This controller manages DIO operations for Referral records.
-    ///
-    /// In your domain, a Referral appears to represent a record that:
-    /// - Links a client (ClientUserId -> DomainUsers/User entity) to a ReferringOrganization
-    /// - Captures referral metadata such as:
-    ///     - ReferredOn date
-    ///     - Status
-    ///     - ValidFrom/ValidTo date range
-    ///     - ReferredBy contact info (name/phone/email)
-    ///     - Notes
-    ///
-    /// Key behaviors implemented here:
-    /// - Uses Entity Framework Core (ApplicationDbContext) for database access.
-    /// - Uses dependency-injected ILogger to log reads/writes/errors for troubleshooting and traceability.
-    /// - Uses SOFT DELETE semantics: deletes set DeletedAt (and update audit fields) instead of removing rows.
-    /// - Filters out soft-deleted referrals in Index/Details/Edit/Delete flows (DeletedAt == null).
-    /// - Populates dropdown lists for selecting ClientUser and ReferringOrganization.
-    ///
-    /// Notes on audit fields:
-    /// - CreatedAt/UpdatedAt are set using DateTime.UtcNow.
-    /// - CreatedByUserId/UpdatedByUserId are currently set to null until auth/user tracking is implemented.
+    /// Manages create, read, update, and soft delete operations for referrals.
     /// </summary>
     public class ReferralsController : Controller
     {
-        /// <summary>
-        /// EF Core DbContext used to query and persist Referral data and related entities.
-        /// </summary>
         private readonly ApplicationDbContext _context;
-
-        /// <summary>
-        /// Logger for this controller. Output destination depends on Program.cs logging providers.
-        /// </summary>
         private readonly ILogger<ReferralsController> _logger;
 
         /// <summary>
-        /// Constructor with dependency injection.
+        /// Creates the controller with the required database context and logger.
         /// </summary>
         public ReferralsController(ApplicationDbContext context, ILogger<ReferralsController> logger)
         {
@@ -54,22 +26,12 @@ namespace A_New_Hope.Controllers
 
         // GET: Referrals
         /// <summary>
-        /// Displays a list of referrals (non-deleted only).
-        ///
-        /// Query behavior:
-        /// - Filters out soft-deleted referrals (DeletedAt == null).
-        /// - Eager-loads:
-        ///     - ClientUser (so the view can show client info)
-        ///     - ReferringOrganization (so the view can show organization name)
-        /// - Sorts:
-        ///     - Most recent referrals first (OrderByDescending ReferredOn)
-        ///     - Then by Id for stable ordering when dates match
+        /// Displays all non-deleted referrals.
         /// </summary>
         public async Task<IActionResult> Index()
         {
             _logger.LogInformation("Loading Referrals Index page");
 
-            // Load active referrals with necessary related entities for display.
             var referrals = await _context.Referrals
                 .Where(r => r.DeletedAt == null)
                 .Include(r => r.ClientUser)
@@ -85,11 +47,7 @@ namespace A_New_Hope.Controllers
 
         // GET: Referrals/Details/5
         /// <summary>
-        /// Displays details for a single Referral by primary key Id.
-        ///
-        /// Behavior:
-        /// - Returns 404 if id is null or referral not found (or soft deleted).
-        /// - Eager-loads ClientUser and ReferringOrganization for display context.
+        /// Displays details for a single non-deleted referral.
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
@@ -101,7 +59,6 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for Referral Id {Id}", id);
 
-            // Load the referral record with related entities.
             var referral = await _context.Referrals
                 .Where(r => r.DeletedAt == null)
                 .Include(r => r.ClientUser)
@@ -119,11 +76,7 @@ namespace A_New_Hope.Controllers
 
         // GET: Referrals/Create
         /// <summary>
-        /// Shows the Create form for a new Referral.
-        ///
-        /// Important:
-        /// - Referral requires both a ClientUserId and ReferringOrganizationId,
-        ///   so dropdown lists must be populated before rendering the view.
+        /// Shows the create form.
         /// </summary>
         public async Task<IActionResult> Create()
         {
@@ -134,20 +87,7 @@ namespace A_New_Hope.Controllers
 
         // POST: Referrals/Create
         /// <summary>
-        /// Processes form submission to create a new Referral.
-        ///
-        /// Security:
-        /// - [ValidateAntiForgeryToken] provides CSRF protection.
-        ///
-        /// Binding:
-        /// - [Bind(...)] limits which fields are accepted from the form (prevents over-posting).
-        ///
-        /// Validation:
-        /// - Removes navigation properties from ModelState because forms do not post navigation objects.
-        /// - If invalid, repopulates dropdowns and re-renders the view with validation messages.
-        ///
-        /// Audit:
-        /// - Sets CreatedAt/UpdatedAt and placeholder CreatedBy/UpdatedBy user IDs.
+        /// Creates a new referral after server-side validation.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -155,13 +95,15 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
 
-            // Navigation properties are not included in form posts. Remove them from ModelState to avoid false invalidation.
+            // Navigation properties are not posted by the form.
             ModelState.Remove(nameof(Referral.ClientUser));
             ModelState.Remove(nameof(Referral.ReferringOrganization));
             ModelState.Remove(nameof(Referral.CreatedByUser));
             ModelState.Remove(nameof(Referral.UpdatedByUser));
 
-            // If validation fails, repopulate dropdowns so the view renders correctly.
+            NormalizeReferral(referral);
+            await ApplyReferralValidationAsync(referral);
+
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create Referral failed validation for ClientUserId {ClientUserId}", referral.ClientUserId);
@@ -169,46 +111,34 @@ namespace A_New_Hope.Controllers
                 return View(referral);
             }
 
-            // Set audit fields (UTC for consistency).
             var now = DateTime.UtcNow;
             referral.CreatedAt = now;
             referral.UpdatedAt = now;
-            referral.CreatedByUserId = null; // Placeholder until auth integration.
-            referral.UpdatedByUserId = null; // Placeholder until auth integration.
+            referral.CreatedByUserId = null; // Replace when auth/user tracking is added.
+            referral.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
-            // Stage insert.
             _context.Add(referral);
 
             try
             {
-                // Persist to database.
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Referral Id {Id} created successfully", referral.Id);
-
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex)
             {
-                // Common causes: FK constraints, unique constraints (if present), DB connectivity, etc.
                 _logger.LogError(ex, "Error creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
 
                 ModelState.AddModelError("", "Unable to save referral.");
-
-                // Rebuild dropdowns so view can re-render correctly with same selections.
                 await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-
                 return View(referral);
             }
         }
 
         // GET: Referrals/Edit/5
         /// <summary>
-        /// Shows the Edit form for an existing Referral.
-        ///
-        /// Behavior:
-        /// - Returns 404 if id is null or referral not found (or soft deleted).
-        /// - Populates dropdowns so the form can display current selections.
+        /// Shows the edit form for a single non-deleted referral.
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
@@ -220,7 +150,6 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for Referral Id {Id}", id);
 
-            // Load the referral record being edited (excluding deleted).
             var referral = await _context.Referrals
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
@@ -230,32 +159,13 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Populate dropdowns with current values so the form remains consistent.
             await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-
             return View(referral);
         }
 
         // POST: Referrals/Edit/5
         /// <summary>
-        /// Processes form submission to update an existing Referral.
-        ///
-        /// Parameters:
-        /// - id: route Id (primary key of referral)
-        /// - formModel: posted model (limited by [Bind] to editable properties)
-        ///
-        /// Safety checks:
-        /// - Confirms route Id matches posted model Id.
-        /// - Removes navigation properties from ModelState (not posted by forms).
-        ///
-        /// Update strategy:
-        /// - Loads existing record (ensures not soft deleted)
-        /// - Copies all editable fields from formModel to existing
-        /// - Updates audit fields (UpdatedAt/UpdatedByUserId)
-        ///
-        /// Error handling:
-        /// - DbUpdateConcurrencyException: record changed/deleted since it was loaded.
-        /// - DbUpdateException: general DB update failures.
+        /// Updates an existing referral after server-side validation.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -263,20 +173,22 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit Referral Id {Id}", id);
 
-            // Prevent tampering/mismatched posts by enforcing route/model id equality.
+            // Prevent route/model mismatches.
             if (id != formModel.Id)
             {
                 _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Remove navigation props from validation, as they are not posted by the form.
+            // Navigation properties are not posted by the form.
             ModelState.Remove(nameof(Referral.ClientUser));
             ModelState.Remove(nameof(Referral.ReferringOrganization));
             ModelState.Remove(nameof(Referral.CreatedByUser));
             ModelState.Remove(nameof(Referral.UpdatedByUser));
 
-            // If invalid, repopulate dropdowns and re-render view with validation messages.
+            NormalizeReferral(formModel);
+            await ApplyReferralValidationAsync(formModel, formModel.Id);
+
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit Referral failed validation for Id {Id}", id);
@@ -284,7 +196,6 @@ namespace A_New_Hope.Controllers
                 return View(formModel);
             }
 
-            // Load the existing record to apply updates safely.
             var existing = await _context.Referrals
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
@@ -294,9 +205,6 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Update editable fields
-            // Note: This is a "copy into tracked entity" approach (rather than attaching formModel),
-            // which helps avoid unintended overwrites.
             existing.ClientUserId = formModel.ClientUserId;
             existing.ReferringOrganizationId = formModel.ReferringOrganizationId;
             existing.ReferredOn = formModel.ReferredOn;
@@ -308,29 +216,24 @@ namespace A_New_Hope.Controllers
             existing.ReferredByEmail = formModel.ReferredByEmail;
             existing.Notes = formModel.Notes;
 
-            // Audit fields.
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // Placeholder until auth integration.
+            existing.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
             try
             {
-                // Persist updates.
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Referral Id {Id} updated successfully", id);
-
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Concurrency exception indicates record may have been deleted/changed since load.
                 if (!await ReferralExists(formModel.Id))
                 {
                     _logger.LogWarning("Referral Id {Id} no longer exists during concurrency check", id);
                     return NotFound();
                 }
 
-                // If it still exists, rethrow to be handled by global exception handling.
                 throw;
             }
             catch (DbUpdateException ex)
@@ -338,22 +241,14 @@ namespace A_New_Hope.Controllers
                 _logger.LogError(ex, "Error updating Referral Id {Id}", id);
 
                 ModelState.AddModelError("", "Unable to save changes.");
-
-                // Repopulate dropdowns so the view renders correctly on error.
                 await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
-
                 return View(formModel);
             }
         }
 
         // GET: Referrals/Delete/5
         /// <summary>
-        /// Shows the Delete confirmation page for a Referral.
-        ///
-        /// Notes:
-        /// - This GET action does not delete anything.
-        /// - It loads the referral and related entities so the user can confirm the correct record.
-        /// - Actual soft delete is performed in DeleteConfirmed.
+        /// Shows the delete confirmation page for a single non-deleted referral.
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
@@ -365,7 +260,6 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Delete confirmation for Referral Id {Id}", id);
 
-            // Load record for confirmation view, including related entities for context.
             var referral = await _context.Referrals
                 .Where(r => r.DeletedAt == null)
                 .Include(r => r.ClientUser)
@@ -383,15 +277,7 @@ namespace A_New_Hope.Controllers
 
         // POST: Referrals/Delete/5
         /// <summary>
-        /// Executes the delete operation (soft delete) for a Referral.
-        ///
-        /// Soft delete strategy:
-        /// - Sets DeletedAt to UTC now
-        /// - Updates audit fields
-        /// - Keeps the row for history/audit/referential integrity
-        ///
-        /// Error handling:
-        /// - If SaveChanges fails, store a TempData message and redirect back to confirmation page.
+        /// Soft deletes a referral.
         /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -399,7 +285,6 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting Referral Id {Id}", id);
 
-            // Load the record to be soft deleted.
             var referral = await _context.Referrals
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
@@ -409,14 +294,13 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Apply soft delete + audit fields.
+            // Soft delete instead of physically removing the row.
             referral.DeletedAt = DateTime.UtcNow;
             referral.UpdatedAt = DateTime.UtcNow;
-            referral.UpdatedByUserId = null; // Placeholder until auth integration.
+            referral.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
             try
             {
-                // Persist soft delete changes.
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Referral Id {Id} soft deleted", id);
@@ -425,9 +309,7 @@ namespace A_New_Hope.Controllers
             {
                 _logger.LogError(ex, "Error soft deleting Referral Id {Id}", id);
 
-                // TempData persists across one redirect to show feedback to the user.
                 TempData["ErrorMessage"] = "Unable to delete referral.";
-
                 return RedirectToAction(nameof(Delete), new { id });
             }
 
@@ -435,25 +317,12 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// Populates dropdown lists needed by the Create/Edit Referral forms.
-        ///
-        /// Dropdowns:
-        /// - ClientUserId: list of users (DomainUsers) displayed as "LastName, FirstName (Email)"
-        /// - ReferringOrganizationId: list of organizations displayed by Name
-        ///
-        /// Parameters:
-        /// - selectedClientUserId: pre-select a specific client (useful for redisplay after validation errors)
-        /// - selectedReferringOrganizationId: pre-select a specific organization
-        ///
-        /// Notes:
-        /// - This method logs a debug message with counts so you can confirm the dropdowns were populated.
+        /// Populates dropdown lists for the create and edit forms.
         /// </summary>
         private async Task PopulateDropdowns(ulong? selectedClientUserId = null, ulong? selectedReferringOrganizationId = null)
         {
             _logger.LogDebug("Populating dropdowns for Referrals");
 
-            // Load users eligible for selection (excluding soft-deleted).
-            // Sorting includes email as a tertiary key to provide stable ordering.
             var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .OrderBy(u => u.LastName)
@@ -461,7 +330,6 @@ namespace A_New_Hope.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
-            // Create user-friendly dropdown labels.
             var userOptions = users
                 .Select(u => new
                 {
@@ -470,13 +338,11 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
-            // Load referring organizations eligible for selection (excluding soft-deleted).
             var organizations = await _context.ReferringOrganizations
                 .Where(o => o.DeletedAt == null)
                 .OrderBy(o => o.Name)
                 .ToListAsync();
 
-            // Place dropdown data into ViewData for Razor views.
             ViewData["ClientUserId"] = new SelectList(userOptions, "Id", "DisplayName", selectedClientUserId);
             ViewData["ReferringOrganizationId"] = new SelectList(organizations, "Id", "Name", selectedReferringOrganizationId);
 
@@ -484,12 +350,195 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// Helper method used by Edit POST concurrency handling.
-        /// Confirms whether a non-deleted referral still exists.
+        /// Returns true if the non-deleted referral exists.
         /// </summary>
         private async Task<bool> ReferralExists(ulong id)
         {
             return await _context.Referrals.AnyAsync(e => e.Id == id && e.DeletedAt == null);
+        }
+
+        /// <summary>
+        /// Trims strings and converts blank optional values to null.
+        /// </summary>
+        private static void NormalizeReferral(Referral model)
+        {
+            model.ReferredByName = NullIfWhiteSpace(model.ReferredByName);
+            model.ReferredByPhoneNumber = NullIfWhiteSpace(model.ReferredByPhoneNumber);
+            model.ReferredByEmail = NullIfWhiteSpace(model.ReferredByEmail);
+            model.Notes = NullIfWhiteSpace(model.Notes);
+        }
+
+        /// <summary>
+        /// Applies business-rule validation beyond data annotations.
+        /// </summary>
+        private async Task ApplyReferralValidationAsync(Referral model, ulong? currentId = null)
+        {
+            var clientExists = await _context.DomainUsers
+                .AnyAsync(u =>
+                    u.Id == model.ClientUserId &&
+                    u.DeletedAt == null &&
+                    u.UserType == UserType.Client);
+
+            if (!clientExists)
+            {
+                ModelState.AddModelError(nameof(Referral.ClientUserId), "Select a valid client.");
+            }
+
+            var organizationExists = await _context.ReferringOrganizations
+                .AnyAsync(o =>
+                    o.Id == model.ReferringOrganizationId &&
+                    o.DeletedAt == null &&
+                    o.IsActive);
+
+            if (!organizationExists)
+            {
+                ModelState.AddModelError(nameof(Referral.ReferringOrganizationId), "Select a valid active referring organization.");
+            }
+
+            if (!Enum.IsDefined(typeof(ReferralStatus), model.Status))
+            {
+                ModelState.AddModelError(nameof(Referral.Status), "Select a valid referral status.");
+            }
+
+            if (model.ReferredOn.Date > DateTime.UtcNow.Date)
+            {
+                ModelState.AddModelError(nameof(Referral.ReferredOn), "Referral date cannot be in the future.");
+            }
+
+            if (model.ValidFrom.HasValue && model.ValidTo.HasValue && model.ValidFrom.Value > model.ValidTo.Value)
+            {
+                ModelState.AddModelError(nameof(Referral.ValidTo), "Valid To must be on or after Valid From.");
+            }
+
+            if (model.ValidFrom.HasValue && model.ValidFrom.Value < model.ReferredOn)
+            {
+                ModelState.AddModelError(nameof(Referral.ValidFrom), "Valid From cannot be earlier than Referred On.");
+            }
+
+            if (model.ValidTo.HasValue && model.ValidTo.Value < model.ReferredOn)
+            {
+                ModelState.AddModelError(nameof(Referral.ValidTo), "Valid To cannot be earlier than Referred On.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.ReferredByName) && !IsValidPersonName(model.ReferredByName))
+            {
+                ModelState.AddModelError(nameof(Referral.ReferredByName), "Referred By Name contains invalid characters.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.ReferredByPhoneNumber) && !IsValidPhoneNumber(model.ReferredByPhoneNumber))
+            {
+                ModelState.AddModelError(nameof(Referral.ReferredByPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.ReferredByEmail) && !IsValidEmail(model.ReferredByEmail))
+            {
+                ModelState.AddModelError(nameof(Referral.ReferredByEmail), "Email format is invalid.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Notes) && model.Notes.Length > 2000)
+            {
+                ModelState.AddModelError(nameof(Referral.Notes), "Notes cannot exceed 2000 characters.");
+            }
+        }
+
+        /// <summary>
+        /// Returns null when the value is blank; otherwise returns the trimmed value.
+        /// </summary>
+        private static string? NullIfWhiteSpace(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Validates a practical US-style phone number.
+        /// </summary>
+        private static bool IsValidPhoneNumber(string phoneNumber)
+        {
+            if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
+            {
+                return false;
+            }
+
+            var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
+
+            if (digitsOnly.Length == 10)
+            {
+                return true;
+            }
+
+            if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Validates a practical email format for this project.
+        /// </summary>
+        private static bool IsValidEmail(string email)
+        {
+            if (email.Contains(' '))
+            {
+                return false;
+            }
+
+            if (email.Count(c => c == '@') != 1)
+            {
+                return false;
+            }
+
+            if (email.Contains(".."))
+            {
+                return false;
+            }
+
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            var localPart = parts[0];
+            var domainPart = parts[1];
+
+            if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
+            {
+                return false;
+            }
+
+            if (localPart.StartsWith('.') || localPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            if (!domainPart.Contains('.'))
+            {
+                return false;
+            }
+
+            var domainLabels = domainPart.Split('.');
+            if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
+            {
+                return false;
+            }
+
+            return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
+                && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
+        }
+
+        /// <summary>
+        /// Validates a person name using a practical character set.
+        /// </summary>
+        private static bool IsValidPersonName(string name)
+        {
+            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
     }
 }
