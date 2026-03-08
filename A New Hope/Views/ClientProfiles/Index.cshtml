@@ -4,44 +4,48 @@
     ViewData["Title"] = "Client Profiles";
 }
 
-<h1>Client Profiles</h1>
+<div class="page-header">
+    <h1>Client Profiles</h1>
+</div>
 
-<p>
+<div class="mb-3">
     <a asp-action="Create" class="btn btn-primary">Create New</a>
-</p>
+</div>
 
-<table class="table table-striped table-hover align-middle">
-    <thead>
-        <tr>
-            <th>Client</th>
-            <th>@Html.DisplayNameFor(model => model.EmploymentStatus)</th>
-            <th>@Html.DisplayNameFor(model => model.EarnedIncomeMonthly)</th>
-            <th>@Html.DisplayNameFor(model => model.IsUnhoused)</th>
-            <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model)
-{
-        <tr>
-            <td>
-                @(
-                    item.User != null
-                        ? $"{item.User.LastName}, {item.User.FirstName} ({item.User.Email})"
-                        : ""
-                )
-            </td>
-            <td>@Html.DisplayFor(modelItem => item.EmploymentStatus)</td>
-            <td>@Html.DisplayFor(modelItem => item.EarnedIncomeMonthly)</td>
-            <td>@Html.DisplayFor(modelItem => item.IsUnhoused)</td>
-            <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
-            <td class="text-nowrap">
-                <a asp-action="Edit" asp-route-id="@item.UserId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.UserId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.UserId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>@Html.DisplayNameFor(model => model.EmploymentStatus)</th>
+                <th>@Html.DisplayNameFor(model => model.EarnedIncomeMonthly)</th>
+                <th>@Html.DisplayNameFor(model => model.IsUnhoused)</th>
+                <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @(
+                            item.User != null
+                                ? $"{item.User.LastName}, {item.User.FirstName} ({item.User.Email})"
+                                : ""
+                        )
+                    </td>
+                    <td>@Html.DisplayFor(modelItem => item.EmploymentStatus)</td>
+                    <td>@Html.DisplayFor(modelItem => item.EarnedIncomeMonthly)</td>
+                    <td>@Html.DisplayFor(modelItem => item.IsUnhoused)</td>
+                    <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Edit" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a asp-action="Details" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-secondary">Details</a>
+                        <a asp-action="Delete" asp-route-id="@item.UserId" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
