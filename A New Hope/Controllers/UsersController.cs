@@ -5,60 +5,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace A_New_Hope.Controllers
 {
     /// <summary>
-    /// UsersController
-    /// ---------------
-    /// This controller manages CRUD operations for DomainUser records (your application's "business users" table).
-    ///
-    /// IMPORTANT DISTINCTION IN YOUR APP:
-    /// - DomainUser (DomainUsers table): the canonical "person/user" record used by the business logic.
-    /// - ApplicationUser (Identity users table): the login account used for authentication/authorization.
-    ///
-    /// In this project, not every DomainUser has an Identity login account.
-    /// - Staff/Admin users typically do have logins.
-    /// - Clients may exist as DomainUsers but are explicitly treated differently (often no login).
-    ///
-    /// High-level responsibilities of this controller:
-    /// 1) List DomainUsers for staff/admin management.
-    /// 2) Create, edit, soft-delete DomainUsers.
-    /// 3) Display whether each DomainUser has a linked Identity login account.
-    /// 4) When editing a DomainUser, keep Identity access in sync (role + login enabled/disabled)
-    ///    for any linked Identity account.
-    ///
-    /// Authorization:
-    /// - Restricted to Staff and Admin roles via [Authorize(Roles = "Staff,Admin")].
-    ///
-    /// Audit + deletion model:
-    /// - Uses soft delete (DeletedAt timestamp) rather than physical deletion.
-    /// - Uses CreatedAt/UpdatedAt timestamps and placeholder CreatedByUserId/UpdatedByUserId
-    ///   until you wire them to the currently logged-in domain user.
+    /// Manages CRUD operations for DomainUser records.
     /// </summary>
     [Authorize(Roles = "Staff,Admin")]
     public class UsersController : Controller
     {
-        /// <summary>
-        /// EF Core DbContext used for DomainUsers and Identity users (ApplicationUser via _context.Users).
-        /// </summary>
         private readonly ApplicationDbContext _context;
-
-        /// <summary>
-        /// Identity UserManager used to read/write Identity roles and lockout settings for ApplicationUser accounts.
-        /// </summary>
         private readonly UserManager<ApplicationUser> _userManager;
-
-        /// <summary>
-        /// Logger used to trace operations (list/load/save/sync) and capture errors.
-        /// </summary>
         private readonly ILogger<UsersController> _logger;
 
         /// <summary>
-        /// Constructor with dependency injection for:
-        /// - ApplicationDbContext (data access)
-        /// - UserManager (Identity role/lockout management)
-        /// - ILogger (observability)
+        /// Creates the controller with the required services.
         /// </summary>
         public UsersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ILogger<UsersController> logger)
         {
@@ -69,34 +31,14 @@ namespace A_New_Hope.Controllers
 
         // GET: Users
         /// <summary>
-        /// Displays a list of DomainUsers.
-        ///
-        /// This action builds a view model list (DomainUserIndexRowViewModel) rather than returning raw entities.
-        /// That view model includes:
-        /// - DomainUser fields (name/email/contact/address, user type, status, etc.)
-        /// - Flags/fields that indicate whether there is a linked Identity login account:
-        ///     - HasLoginAccount (bool)
-        ///     - IdentityUserId (string? - the Identity user's primary key)
-        ///
-        /// Implementation notes:
-        /// - Loads DomainUsers first (non-deleted).
-        /// - Loads Identity links next by querying Identity users that have DomainUserId populated.
-        /// - Creates a dictionary mapping DomainUserId => IdentityUserId for fast lookups.
-        /// - Projects DomainUsers into the index view model list.
-        ///
-        /// Error handling:
-        /// - Wrapped in try/catch; on failure returns a generic Error view.
+        /// Displays all non-deleted domain users.
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            _logger.LogInformation($"Retrieving users");
+            _logger.LogInformation("Retrieving users");
 
             try
             {
-                // -----------------------------
-                // 1) Load DomainUsers (business users)
-                // -----------------------------
-                // Only non-deleted users are shown.
                 var domainUsers = await _context.DomainUsers
                     .Where(u => u.DeletedAt == null)
                     .OrderBy(u => u.LastName)
@@ -104,26 +46,15 @@ namespace A_New_Hope.Controllers
                     .ThenBy(u => u.Email)
                     .ToListAsync();
 
-                // -----------------------------
-                // 2) Load Identity -> DomainUser links
-                // -----------------------------
-                // Identity users are stored in _context.Users (ApplicationUser).
-                // DomainUserId is a nullable FK-like link to DomainUsers.
                 var identityLinks = await _context.Users
                     .Where(iu => iu.DomainUserId != null)
                     .Select(iu => new { iu.Id, iu.DomainUserId })
                     .ToListAsync();
 
-                // Build a dictionary for quick mapping:
-                // DomainUserId (ulong) => IdentityUserId (string)
                 var identityByDomainUserId = identityLinks
                     .Where(x => x.DomainUserId.HasValue)
                     .ToDictionary(x => x.DomainUserId!.Value, x => x.Id);
 
-                // -----------------------------
-                // 3) Project to a UI-friendly row model
-                // -----------------------------
-                // The view model list includes both DomainUser fields and Identity login metadata.
                 var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
                 {
                     Id = u.Id,
@@ -138,34 +69,24 @@ namespace A_New_Hope.Controllers
                     DefaultPreference = u.DefaultPreference,
                     UserType = u.UserType,
                     IsActive = u.IsActive,
-
-                    // Determine whether a login exists by checking dictionary membership.
                     HasLoginAccount = identityByDomainUserId.ContainsKey(u.Id),
-
-                    // If present, set the Identity user ID (string). Otherwise null.
                     IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {UserCount} users", users.Count);
 
-                // Render Views/Users/Index.cshtml with the view model list.
                 return View(users);
             }
             catch (Exception ex)
             {
-                // If anything fails (DB connectivity, query issue, etc.), log the exception and show Error view.
                 _logger.LogError(ex, "Failed to retrieve users.");
-
                 return View("Error");
             }
         }
 
         // GET: Users/Details/5
         /// <summary>
-        /// Displays details for a single DomainUser by Id.
-        ///
-        /// Behavior:
-        /// - Returns 404 if id is null or user not found (or deleted).
+        /// Displays details for a single non-deleted domain user.
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
@@ -175,7 +96,6 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Load the DomainUser (non-deleted only).
             var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
@@ -191,7 +111,7 @@ namespace A_New_Hope.Controllers
 
         // GET: Users/Create
         /// <summary>
-        /// Shows the Create form for a new DomainUser.
+        /// Shows the create form.
         /// </summary>
         public IActionResult Create()
         {
@@ -200,56 +120,37 @@ namespace A_New_Hope.Controllers
 
         // POST: Users/Create
         /// <summary>
-        /// Processes form submission to create a new DomainUser.
-        ///
-        /// Security:
-        /// - [ValidateAntiForgeryToken] provides CSRF protection.
-        ///
-        /// Binding:
-        /// - [Bind(...)] limits which properties can be posted (prevents over-posting).
-        ///
-        /// Validation:
-        /// - Removes navigation properties from ModelState because forms do not post navigation objects.
-        ///
-        /// Audit:
-        /// - Sets CreatedAt/UpdatedAt and placeholder CreatedBy/UpdatedBy user IDs.
-        ///
-        /// Error handling:
-        /// - Catches DbUpdateException to show a friendly UI message.
+        /// Creates a new domain user after server-side validation.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] A_New_Hope.Models.DomainUser user)
+        public async Task<IActionResult> Create([Bind("Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] DomainUser user)
         {
-            _logger.LogInformation("creating user Email = {Email}", user.Email);
+            _logger.LogInformation("Creating user Email = {Email}", user.Email);
 
-            // Navigation properties are not posted by the form
-            // Removing these avoids false validation failures.
-            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.ClientProfile));
+            ModelState.Remove(nameof(DomainUser.CreatedByUser));
+            ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+            ModelState.Remove(nameof(DomainUser.ClientProfile));
 
-            // If the posted model is invalid, re-render the form with validation messages.
+            NormalizeDomainUser(user);
+            await ApplyDomainUserValidationAsync(user);
+
             if (!ModelState.IsValid)
             {
                 return View(user);
             }
 
-            // Set audit metadata (UTC timestamps).
             var now = DateTime.UtcNow;
             user.CreatedAt = now;
             user.UpdatedAt = now;
-            user.CreatedByUserId = null; // set later when auth is implemented
-            user.UpdatedByUserId = null; // set later when auth is implemented
+            user.CreatedByUserId = null;
+            user.UpdatedByUserId = null;
 
-            // Stage insert.
             _context.Add(user);
 
             try
             {
-                // Persist to DB.
                 await _context.SaveChangesAsync();
-
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex)
@@ -257,17 +158,13 @@ namespace A_New_Hope.Controllers
                 _logger.LogError(ex, "Failed to create user Email = {Email}", user.Email);
 
                 ModelState.AddModelError("", "Unable to save user.");
-
                 return View(user);
             }
         }
 
         // GET: Users/Edit/5
         /// <summary>
-        /// Shows the Edit form for an existing DomainUser.
-        ///
-        /// Behavior:
-        /// - Returns 404 if id is null or record not found (or deleted).
+        /// Shows the edit form for a single non-deleted domain user.
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
@@ -276,13 +173,12 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Load the user being edited (non-deleted only).
             var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
             if (user == null)
             {
-                _logger.LogWarning("user {user} not found.", user);
+                _logger.LogWarning("User {UserId} not found for edit.", id);
                 return NotFound();
             }
 
@@ -291,52 +187,32 @@ namespace A_New_Hope.Controllers
 
         // POST: Users/Edit/5
         /// <summary>
-        /// Processes form submission to update an existing DomainUser.
-        ///
-        /// Key concept:
-        /// - DomainUsers represent business users. If they also have a login account (Identity user),
-        ///   this method calls SyncIdentityAccessForDomainUserAsync(...) after saving DomainUser changes
-        ///   to keep Identity role and lockout status consistent with DomainUser.UserType and DomainUser.IsActive.
-        ///
-        /// Security:
-        /// - [ValidateAntiForgeryToken] provides CSRF protection.
-        ///
-        /// Binding:
-        /// - [Bind(...)] limits posted properties to editable fields (prevents over-posting).
-        ///
-        /// Validation:
-        /// - Removes navigation properties from ModelState.
-        ///
-        /// Error handling:
-        /// - DbUpdateConcurrencyException: record changed/deleted since load.
-        /// - InvalidOperationException: thrown by identity sync if role/lockout changes fail.
-        /// - DbUpdateException: DB update failures.
+        /// Updates an existing domain user after server-side validation.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] A_New_Hope.Models.DomainUser formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] DomainUser formModel)
         {
             _logger.LogInformation("Updating user UserId={UserId}", id);
 
-            // Enforce route/model id equality to prevent mismatched/tampered posts.
             if (id != formModel.Id)
             {
-                _logger.LogWarning($"{id.ToString()} Not found.");
+                _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form
-            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.CreatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.UpdatedByUser));
-            ModelState.Remove(nameof(A_New_Hope.Models.DomainUser.ClientProfile));
+            ModelState.Remove(nameof(DomainUser.CreatedByUser));
+            ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+            ModelState.Remove(nameof(DomainUser.ClientProfile));
 
-            // If validation fails, re-render the form with messages.
+            NormalizeDomainUser(formModel);
+            await ApplyDomainUserValidationAsync(formModel, formModel.Id);
+
             if (!ModelState.IsValid)
             {
                 return View(formModel);
             }
 
-            // Load existing record to apply updates safely.
             var existing = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
@@ -345,8 +221,6 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Update editable fields only
-            // (copy values from formModel into the tracked entity).
             existing.Email = formModel.Email;
             existing.PhoneNumber = formModel.PhoneNumber;
             existing.FirstName = formModel.FirstName;
@@ -360,17 +234,13 @@ namespace A_New_Hope.Controllers
             existing.DefaultPreference = formModel.DefaultPreference;
             existing.UserType = formModel.UserType;
             existing.IsActive = formModel.IsActive;
-
-            // Audit
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // set later when auth is implemented
+            existing.UpdatedByUserId = null;
 
             try
             {
-                // Persist DomainUser changes first.
                 await _context.SaveChangesAsync();
 
-                // Keep Identity role + access in sync if this DomainUser has a login account
                 await SyncIdentityAccessForDomainUserAsync(existing);
 
                 _logger.LogInformation("User updated successfully. UserId={UserId}", id);
@@ -379,7 +249,6 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Concurrency issue: record may have been deleted/changed since it was loaded.
                 if (!await UserExists(formModel.Id))
                 {
                     _logger.LogError("User doesn't exist.");
@@ -390,49 +259,37 @@ namespace A_New_Hope.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // This exception is used in SyncIdentityAccessForDomainUserAsync(...) when Identity operations fail.
-                // It is surfaced to the user as a ModelState error.
                 ModelState.AddModelError("", ex.Message);
-
-                _logger.LogError($"{ex.Message}");
-
+                _logger.LogError("{Message}", ex.Message);
                 return View(formModel);
             }
             catch (DbUpdateException ex)
             {
-                // General DB update failure.
                 ModelState.AddModelError("", "Unable to save changes.");
-
-                _logger.LogError($"{ex.Message}");
-
+                _logger.LogError("{Message}", ex.Message);
                 return View(formModel);
             }
         }
 
         // GET: Users/Delete/5
         /// <summary>
-        /// Shows the Delete confirmation page for a DomainUser.
-        ///
-        /// Notes:
-        /// - This GET action does not delete anything.
-        /// - Actual soft delete occurs in DeleteConfirmed.
+        /// Shows the delete confirmation page for a single non-deleted domain user.
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
             if (id == null)
             {
-                _logger.LogInformation($"{id} not found.");
+                _logger.LogInformation("{Id} not found.", id);
                 return NotFound();
             }
 
-            // Load user for confirmation display (non-deleted only).
             var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (user == null)
             {
-                _logger.LogInformation($"{user} not found.");
+                _logger.LogInformation("User not found.");
                 return NotFound();
             }
 
@@ -441,21 +298,12 @@ namespace A_New_Hope.Controllers
 
         // POST: Users/Delete/5
         /// <summary>
-        /// Executes the delete operation (soft delete) for a DomainUser.
-        ///
-        /// Soft delete strategy:
-        /// - Sets DeletedAt
-        /// - Updates UpdatedAt/UpdatedByUserId
-        /// - Keeps the record in the DB for history/audit
-        ///
-        /// Error handling:
-        /// - If SaveChanges fails, sets TempData["ErrorMessage"] and redirects back to the confirmation page.
+        /// Soft deletes a domain user.
         /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            // Load the record to be deleted (must not already be soft deleted).
             var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
@@ -467,10 +315,9 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Soft delete
             user.DeletedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedByUserId = null; // set later when auth is implemented
+            user.UpdatedByUserId = null;
 
             try
             {
@@ -487,51 +334,22 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// SyncIdentityAccessForDomainUserAsync
-        /// -----------------------------------
-        /// This helper method keeps the Identity login account in sync with the DomainUser record.
-        ///
-        /// It performs TWO major sync operations:
-        /// 1) Sync roles (Admin/Staff only)
-        ///    - Removes any existing managed roles ("Admin" and "Staff") from the Identity user.
-        ///    - Adds the target role based on DomainUser.UserType:
-        ///        - Admin => "Admin"
-        ///        - Staff => "Staff"
-        ///        - Client/other => no managed role
-        ///
-        /// 2) Sync login enabled/disabled status
-        ///    - Uses Identity lockout to control access:
-        ///        - DomainUser.IsActive == true  => LockoutEnd = null (login enabled)
-        ///        - DomainUser.IsActive == false => LockoutEnd = far-future date (login disabled)
-        ///
-        /// Behavior notes:
-        /// - If no Identity user exists for this DomainUser, the method returns without throwing.
-        /// - If Identity operations fail (removing roles, adding roles, updating lockout),
-        ///   the method throws InvalidOperationException with a user-friendly message.
+        /// Keeps a linked Identity account in sync with the domain user's role and active status.
         /// </summary>
         private async Task SyncIdentityAccessForDomainUserAsync(DomainUser domainUser)
         {
-            // Load the Identity user linked to this DomainUser.
             var appUser = await _context.Users
                 .FirstOrDefaultAsync(iu => iu.DomainUserId == domainUser.Id);
 
-            // No login account yet — nothing to sync
             if (appUser == null)
             {
-                _logger.LogError($"{appUser} cannot be found.");
+                _logger.LogInformation("No linked Identity user found for DomainUserId {DomainUserId}.", domainUser.Id);
                 return;
             }
 
-            // -----------------------------
-            // Sync roles (Admin / Staff only)
-            // -----------------------------
-            // Read the user's current Identity roles.
             var currentRoles = await _userManager.GetRolesAsync(appUser);
-
-            // We only manage Admin/Staff roles here. Other roles (if any) are left alone.
             var managedRoles = currentRoles.Where(r => r == "Admin" || r == "Staff").ToList();
 
-            // Remove existing managed roles first to ensure we don't end up with both Admin and Staff.
             if (managedRoles.Count > 0)
             {
                 var removeResult = await _userManager.RemoveFromRolesAsync(appUser, managedRoles);
@@ -543,15 +361,13 @@ namespace A_New_Hope.Controllers
                 }
             }
 
-            // Determine which role the Identity user should have based on DomainUser.UserType.
             var targetRole = domainUser.UserType switch
             {
                 UserType.Admin => "Admin",
                 UserType.Staff => "Staff",
-                _ => null // Client = no login role
+                _ => null
             };
 
-            // If a target role exists, assign it.
             if (!string.IsNullOrWhiteSpace(targetRole))
             {
                 var addResult = await _userManager.AddToRoleAsync(appUser, targetRole);
@@ -563,26 +379,17 @@ namespace A_New_Hope.Controllers
                 }
             }
 
-            // -----------------------------
-            // Sync login enabled/disabled with DomainUser.IsActive
-            // -----------------------------
-            // Identity uses lockout to disable login:
-            // - LockoutEnabled must be true
-            // - LockoutEnd far in the future effectively disables login
             appUser.LockoutEnabled = true;
 
             if (domainUser.IsActive)
             {
-                // Enable login (not locked out).
                 appUser.LockoutEnd = null;
             }
             else
             {
-                // Disable login (locked out until far future).
                 appUser.LockoutEnd = new DateTimeOffset(new DateTime(2099, 12, 31, 23, 59, 59), TimeSpan.Zero);
             }
 
-            // Persist Identity changes.
             var updateResult = await _userManager.UpdateAsync(appUser);
             if (!updateResult.Succeeded)
             {
@@ -593,8 +400,227 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// Helper method used by the Edit POST concurrency handler.
-        /// Confirms whether a non-deleted DomainUser exists for the provided Id.
+        /// Trims strings and normalizes optional values.
+        /// </summary>
+        private static void NormalizeDomainUser(DomainUser model)
+        {
+            model.Email = model.Email?.Trim() ?? string.Empty;
+            model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
+            model.FirstName = NullIfWhiteSpace(model.FirstName);
+            model.LastName = NullIfWhiteSpace(model.LastName);
+            model.AddressLine1 = NullIfWhiteSpace(model.AddressLine1);
+            model.AddressLine2 = NullIfWhiteSpace(model.AddressLine2);
+            model.City = NullIfWhiteSpace(model.City);
+            model.State = NullIfWhiteSpace(model.State)?.ToUpperInvariant();
+            model.PostalCode = NullIfWhiteSpace(model.PostalCode);
+        }
+
+        /// <summary>
+        /// Applies business-rule validation beyond data annotations.
+        /// </summary>
+        private async Task ApplyDomainUserValidationAsync(DomainUser model, ulong? currentId = null)
+        {
+            if (string.IsNullOrWhiteSpace(model.Email))
+            {
+                ModelState.AddModelError(nameof(DomainUser.Email), "Email is required.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
+            {
+                ModelState.AddModelError(nameof(DomainUser.Email), "Email format is invalid.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.Email))
+            {
+                var normalizedEmail = model.Email.ToLower();
+
+                var duplicateEmailExists = await _context.DomainUsers
+                    .AnyAsync(u =>
+                        u.DeletedAt == null &&
+                        u.Id != currentId &&
+                        u.Email.ToLower() == normalizedEmail);
+
+                if (duplicateEmailExists)
+                {
+                    ModelState.AddModelError(nameof(DomainUser.Email), "A user with this email already exists.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
+            {
+                ModelState.AddModelError(nameof(DomainUser.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.FirstName) && !IsValidPersonName(model.FirstName))
+            {
+                ModelState.AddModelError(nameof(DomainUser.FirstName), "First Name contains invalid characters.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.LastName) && !IsValidPersonName(model.LastName))
+            {
+                ModelState.AddModelError(nameof(DomainUser.LastName), "Last Name contains invalid characters.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
+            {
+                ModelState.AddModelError(nameof(DomainUser.City), "City contains invalid characters.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.State) && model.State != "WI")
+            {
+                ModelState.AddModelError(nameof(DomainUser.State), "State must be WI.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
+            {
+                ModelState.AddModelError(nameof(DomainUser.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
+            }
+
+            if (model.DateOfBirth.HasValue)
+            {
+                var minDate = new DateOnly(1900, 1, 1);
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+                if (model.DateOfBirth.Value > today)
+                {
+                    ModelState.AddModelError(nameof(DomainUser.DateOfBirth), "Date of Birth cannot be in the future.");
+                }
+
+                if (model.DateOfBirth.Value < minDate)
+                {
+                    ModelState.AddModelError(nameof(DomainUser.DateOfBirth), "Date of Birth is earlier than the allowed minimum.");
+                }
+            }
+
+            if (!Enum.IsDefined(typeof(PreferenceOption), model.DefaultPreference))
+            {
+                ModelState.AddModelError(nameof(DomainUser.DefaultPreference), "Select a valid default preference.");
+            }
+
+            if (!Enum.IsDefined(typeof(UserType), model.UserType))
+            {
+                ModelState.AddModelError(nameof(DomainUser.UserType), "Select a valid user type.");
+            }
+        }
+
+        /// <summary>
+        /// Returns null when the value is blank; otherwise returns the trimmed value.
+        /// </summary>
+        private static string? NullIfWhiteSpace(string? value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Validates a practical US-style phone number.
+        /// </summary>
+        private static bool IsValidPhoneNumber(string phoneNumber)
+        {
+            if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
+            {
+                return false;
+            }
+
+            var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
+
+            if (digitsOnly.Length == 10)
+            {
+                return true;
+            }
+
+            if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Validates a practical email format for this project.
+        /// </summary>
+        private static bool IsValidEmail(string email)
+        {
+            if (email.Contains(' '))
+            {
+                return false;
+            }
+
+            if (email.Count(c => c == '@') != 1)
+            {
+                return false;
+            }
+
+            if (email.Contains(".."))
+            {
+                return false;
+            }
+
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            var localPart = parts[0];
+            var domainPart = parts[1];
+
+            if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
+            {
+                return false;
+            }
+
+            if (localPart.StartsWith('.') || localPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            if (!domainPart.Contains('.'))
+            {
+                return false;
+            }
+
+            var domainLabels = domainPart.Split('.');
+            if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
+            {
+                return false;
+            }
+
+            return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
+                && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
+        }
+
+        /// <summary>
+        /// Validates a person name using a practical character set.
+        /// </summary>
+        private static bool IsValidPersonName(string name)
+        {
+            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
+        }
+
+        /// <summary>
+        /// Validates a city name using a practical character set.
+        /// </summary>
+        private static bool IsValidCity(string city)
+        {
+            return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
+        }
+
+        /// <summary>
+        /// Validates a US ZIP code or ZIP+4.
+        /// </summary>
+        private static bool IsValidUsPostalCode(string postalCode)
+        {
+            return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
+        }
+
+        /// <summary>
+        /// Returns true if the non-deleted domain user exists.
         /// </summary>
         private async Task<bool> UserExists(ulong id)
         {
