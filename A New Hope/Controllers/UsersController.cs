@@ -39,6 +39,7 @@ namespace A_New_Hope.Controllers
 
             try
             {
+                // Retrieve active domain users for display.
                 var domainUsers = await _context.DomainUsers
                     .Where(u => u.DeletedAt == null)
                     .OrderBy(u => u.LastName)
@@ -46,15 +47,18 @@ namespace A_New_Hope.Controllers
                     .ThenBy(u => u.Email)
                     .ToListAsync();
 
+                // Retrieve Identity-to-domain user links for login account display.
                 var identityLinks = await _context.Users
                     .Where(iu => iu.DomainUserId != null)
                     .Select(iu => new { iu.Id, iu.DomainUserId })
                     .ToListAsync();
 
+                // Build a lookup dictionary keyed by DomainUserId.
                 var identityByDomainUserId = identityLinks
                     .Where(x => x.DomainUserId.HasValue)
                     .ToDictionary(x => x.DomainUserId!.Value, x => x.Id);
 
+                // Project domain users into the index view model.
                 var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
                 {
                     Id = u.Id,
@@ -90,16 +94,19 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogInformation("Details requested with null id");
                 return NotFound();
             }
 
+            // Retrieve the requested non-deleted domain user.
             var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the user does not exist.
             if (user == null)
             {
                 _logger.LogInformation("User not found. UserId = {UserID}", id);
@@ -128,24 +135,29 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Creating user Email = {Email}", user.Email);
 
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(DomainUser.CreatedByUser));
             ModelState.Remove(nameof(DomainUser.UpdatedByUser));
             ModelState.Remove(nameof(DomainUser.ClientProfile));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeDomainUser(user);
             await ApplyDomainUserValidationAsync(user);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 return View(user);
             }
 
+            // Set audit fields for the new domain user record.
             var now = DateTime.UtcNow;
             user.CreatedAt = now;
             user.UpdatedAt = now;
             user.CreatedByUserId = null;
             user.UpdatedByUserId = null;
 
+            // Queue the new domain user for insert.
             _context.Add(user);
 
             try
@@ -168,14 +180,17 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 return NotFound();
             }
 
+            // Retrieve the requested non-deleted user for editing.
             var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
+            // Return not found when the user does not exist.
             if (user == null)
             {
                 _logger.LogWarning("User {UserId} not found for edit.", id);
@@ -195,32 +210,39 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Updating user UserId={UserId}", id);
 
+            // Ensure the route id matches the posted model id.
             if (id != formModel.Id)
             {
                 _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(DomainUser.CreatedByUser));
             ModelState.Remove(nameof(DomainUser.UpdatedByUser));
             ModelState.Remove(nameof(DomainUser.ClientProfile));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeDomainUser(formModel);
             await ApplyDomainUserValidationAsync(formModel, formModel.Id);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 return View(formModel);
             }
 
+            // Retrieve the existing non-deleted domain user record.
             var existing = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 return NotFound();
             }
 
+            // Copy validated form values into the tracked entity.
             existing.Email = formModel.Email;
             existing.PhoneNumber = formModel.PhoneNumber;
             existing.FirstName = formModel.FirstName;
@@ -241,6 +263,7 @@ namespace A_New_Hope.Controllers
             {
                 await _context.SaveChangesAsync();
 
+                // Sync linked Identity role and lockout status after saving domain changes.
                 await SyncIdentityAccessForDomainUserAsync(existing);
 
                 _logger.LogInformation("User updated successfully. UserId={UserId}", id);
@@ -249,6 +272,7 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
+                // Check whether the record was deleted during the edit attempt.
                 if (!await UserExists(formModel.Id))
                 {
                     _logger.LogError("User doesn't exist.");
@@ -277,16 +301,19 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogInformation("{Id} not found.", id);
                 return NotFound();
             }
 
+            // Retrieve the requested non-deleted user for delete confirmation.
             var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the user does not exist.
             if (user == null)
             {
                 _logger.LogInformation("User not found.");
@@ -304,17 +331,20 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
+            // Retrieve the active domain user targeted for soft delete.
             var user = await _context.DomainUsers
                 .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
             _logger.LogInformation("Soft deleting user UserId={UserId}", id);
 
+            // Return not found when the user does not exist.
             if (user == null)
             {
                 _logger.LogInformation("UserId={UserId} not found.", id);
                 return NotFound();
             }
 
+            // Apply soft-delete and audit values.
             user.DeletedAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
             user.UpdatedByUserId = null;
@@ -338,18 +368,22 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task SyncIdentityAccessForDomainUserAsync(DomainUser domainUser)
         {
+            // Find the linked Identity account for this domain user.
             var appUser = await _context.Users
                 .FirstOrDefaultAsync(iu => iu.DomainUserId == domainUser.Id);
 
+            // Exit when no linked Identity account exists.
             if (appUser == null)
             {
                 _logger.LogInformation("No linked Identity user found for DomainUserId {DomainUserId}.", domainUser.Id);
                 return;
             }
 
+            // Retrieve the user's current Identity roles.
             var currentRoles = await _userManager.GetRolesAsync(appUser);
             var managedRoles = currentRoles.Where(r => r == "Admin" || r == "Staff").ToList();
 
+            // Remove existing managed roles before applying the new one.
             if (managedRoles.Count > 0)
             {
                 var removeResult = await _userManager.RemoveFromRolesAsync(appUser, managedRoles);
@@ -361,6 +395,7 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Determine the correct Identity role from the domain user type.
             var targetRole = domainUser.UserType switch
             {
                 UserType.Admin => "Admin",
@@ -368,6 +403,7 @@ namespace A_New_Hope.Controllers
                 _ => null
             };
 
+            // Assign the appropriate managed role when applicable.
             if (!string.IsNullOrWhiteSpace(targetRole))
             {
                 var addResult = await _userManager.AddToRoleAsync(appUser, targetRole);
@@ -379,8 +415,10 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Ensure lockout is enabled so inactive users can be blocked from login.
             appUser.LockoutEnabled = true;
 
+            // Clear or apply lockout based on the domain user's active status.
             if (domainUser.IsActive)
             {
                 appUser.LockoutEnd = null;
@@ -390,6 +428,7 @@ namespace A_New_Hope.Controllers
                 appUser.LockoutEnd = new DateTimeOffset(new DateTime(2099, 12, 31, 23, 59, 59), TimeSpan.Zero);
             }
 
+            // Save Identity account changes.
             var updateResult = await _userManager.UpdateAsync(appUser);
             if (!updateResult.Succeeded)
             {
@@ -404,6 +443,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeDomainUser(DomainUser model)
         {
+            // Normalize and trim user-entered string values.
             model.Email = model.Email?.Trim() ?? string.Empty;
             model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
             model.FirstName = NullIfWhiteSpace(model.FirstName);
@@ -420,16 +460,19 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyDomainUserValidationAsync(DomainUser model, ulong? currentId = null)
         {
+            // Require email for all domain users.
             if (string.IsNullOrWhiteSpace(model.Email))
             {
                 ModelState.AddModelError(nameof(DomainUser.Email), "Email is required.");
             }
 
+            // Validate email format when provided.
             if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(DomainUser.Email), "Email format is invalid.");
             }
 
+            // Prevent duplicate active email addresses.
             if (!string.IsNullOrWhiteSpace(model.Email))
             {
                 var normalizedEmail = model.Email.ToLower();
@@ -446,36 +489,43 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Validate phone number format when provided.
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
             {
                 ModelState.AddModelError(nameof(DomainUser.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
+            // Validate first name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.FirstName) && !IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First Name contains invalid characters.");
             }
 
+            // Validate last name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.LastName) && !IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last Name contains invalid characters.");
             }
 
+            // Validate city characters when provided.
             if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
             {
                 ModelState.AddModelError(nameof(DomainUser.City), "City contains invalid characters.");
             }
 
+            // Restrict state values to Wisconsin for this project.
             if (!string.IsNullOrWhiteSpace(model.State) && model.State != "WI")
             {
                 ModelState.AddModelError(nameof(DomainUser.State), "State must be WI.");
             }
 
+            // Validate ZIP code format when provided.
             if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
             {
                 ModelState.AddModelError(nameof(DomainUser.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
             }
 
+            // Validate date of birth range when provided.
             if (model.DateOfBirth.HasValue)
             {
                 var minDate = new DateOnly(1900, 1, 1);
@@ -492,11 +542,13 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Validate that the selected default preference is defined.
             if (!Enum.IsDefined(typeof(PreferenceOption), model.DefaultPreference))
             {
                 ModelState.AddModelError(nameof(DomainUser.DefaultPreference), "Select a valid default preference.");
             }
 
+            // Validate that the selected user type is defined.
             if (!Enum.IsDefined(typeof(UserType), model.UserType))
             {
                 ModelState.AddModelError(nameof(DomainUser.UserType), "Select a valid user type.");
@@ -508,6 +560,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static string? NullIfWhiteSpace(string? value)
         {
+            // Convert blank strings to null after trimming.
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
@@ -516,18 +569,22 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidPhoneNumber(string phoneNumber)
         {
+            // Reject characters outside the allowed phone number pattern.
             if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
             {
                 return false;
             }
 
+            // Strip formatting characters to validate digit count.
             var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
 
+            // Accept standard 10-digit US phone numbers.
             if (digitsOnly.Length == 10)
             {
                 return true;
             }
 
+            // Accept 11-digit US phone numbers only when starting with 1.
             if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
             {
                 return true;
@@ -541,21 +598,25 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidEmail(string email)
         {
+            // Reject spaces in email addresses.
             if (email.Contains(' '))
             {
                 return false;
             }
 
+            // Require exactly one @ symbol.
             if (email.Count(c => c == '@') != 1)
             {
                 return false;
             }
 
+            // Reject consecutive periods.
             if (email.Contains(".."))
             {
                 return false;
             }
 
+            // Split the email into local and domain parts.
             var parts = email.Split('@');
             if (parts.Length != 2)
             {
@@ -565,32 +626,38 @@ namespace A_New_Hope.Controllers
             var localPart = parts[0];
             var domainPart = parts[1];
 
+            // Require non-empty local and domain parts.
             if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
             {
                 return false;
             }
 
+            // Reject local parts starting or ending with a period.
             if (localPart.StartsWith('.') || localPart.EndsWith('.'))
             {
                 return false;
             }
 
+            // Reject domain parts starting or ending with a period.
             if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
             {
                 return false;
             }
 
+            // Require a dot in the domain portion.
             if (!domainPart.Contains('.'))
             {
                 return false;
             }
 
+            // Reject empty domain labels.
             var domainLabels = domainPart.Split('.');
             if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
             {
                 return false;
             }
 
+            // Validate local and domain characters using project regex rules.
             return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
                 && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
         }
@@ -600,6 +667,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidPersonName(string name)
         {
+            // Allow letters plus common punctuation for personal names.
             return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
 
@@ -608,6 +676,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidCity(string city)
         {
+            // Allow letters plus common punctuation for city names.
             return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
 
@@ -616,6 +685,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidUsPostalCode(string postalCode)
         {
+            // Accept 5-digit ZIP codes and ZIP+4 values.
             return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
 
@@ -624,6 +694,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> UserExists(ulong id)
         {
+            // Check whether the requested active domain user still exists.
             return await _context.DomainUsers
                 .AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }

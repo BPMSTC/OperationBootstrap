@@ -31,6 +31,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Fetching client profiles list");
 
+            // Retrieve active client profiles with related user display data.
             var clientProfiles = await _context.ClientProfiles
                 .Where(c => c.DeletedAt == null)
                 .Include(c => c.User)
@@ -49,6 +50,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("ClientProfile Details requested with null id");
@@ -57,11 +59,13 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for ClientProfile UserId {Id}", id);
 
+            // Retrieve the requested active client profile with related user data.
             var clientProfile = await _context.ClientProfiles
                 .Where(c => c.DeletedAt == null)
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(m => m.UserId == id);
 
+            // Return not found when the client profile does not exist.
             if (clientProfile == null)
             {
                 _logger.LogWarning("ClientProfile UserId {Id} not found", id);
@@ -78,6 +82,8 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Create()
         {
             _logger.LogInformation("Loading Create ClientProfile page");
+
+            // Populate dropdown values for the create form.
             await PopulateDropdowns();
             return View();
         }
@@ -92,14 +98,16 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create ClientProfile for UserId {UserId}", clientProfile.UserId);
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(ClientProfile.User));
             ModelState.Remove(nameof(ClientProfile.CreatedByUser));
             ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeClientProfile(clientProfile);
             await ApplyClientProfileValidationAsync(clientProfile);
 
+            // Return the form with dropdowns restored when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create ClientProfile failed validation for UserId {UserId}", clientProfile.UserId);
@@ -107,12 +115,14 @@ namespace A_New_Hope.Controllers
                 return View(clientProfile);
             }
 
+            // Set audit fields for the new client profile record.
             var now = DateTime.UtcNow;
             clientProfile.CreatedAt = now;
             clientProfile.UpdatedAt = now;
             clientProfile.CreatedByUserId = null;
             clientProfile.UpdatedByUserId = null;
 
+            // Queue the new client profile for insert.
             _context.Add(clientProfile);
 
             try
@@ -138,6 +148,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit requested with null UserId");
@@ -146,10 +157,12 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for ClientProfile UserId {UserId}", id);
 
+            // Retrieve the requested active client profile for editing.
             var clientProfile = await _context.ClientProfiles
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
 
+            // Return not found when the client profile does not exist.
             if (clientProfile == null)
             {
                 _logger.LogWarning("ClientProfile UserId {UserId} not found for edit", id);
@@ -169,35 +182,41 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit ClientProfile UserId {UserId}", id);
 
+            // Ensure the route id matches the posted model user id.
             if (id != formModel.UserId)
             {
                 _logger.LogWarning("Edit mismatch: route UserId {RouteId} vs model UserId {ModelId}", id, formModel.UserId);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(ClientProfile.User));
             ModelState.Remove(nameof(ClientProfile.CreatedByUser));
             ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeClientProfile(formModel);
             await ApplyClientProfileValidationAsync(formModel, formModel.UserId);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit ClientProfile failed validation for UserId {UserId}", id);
                 return View(formModel);
             }
 
+            // Retrieve the existing active client profile record.
             var existing = await _context.ClientProfiles
                 .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("ClientProfile UserId {UserId} not found during edit save", id);
                 return NotFound();
             }
 
+            // Copy validated form values into the tracked entity.
             existing.EmploymentStatus = formModel.EmploymentStatus;
             existing.EarnedIncomeMonthly = formModel.EarnedIncomeMonthly;
             existing.IsUnhoused = formModel.IsUnhoused;
@@ -213,6 +232,7 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
+                // Check whether the record was deleted during the edit attempt.
                 if (!await ClientProfileExists(formModel.UserId))
                 {
                     _logger.LogWarning("ClientProfile UserId {UserId} no longer exists during concurrency check", id);
@@ -236,6 +256,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Delete requested with null UserId");
@@ -244,11 +265,13 @@ namespace A_New_Hope.Controllers
 
             _logger.LogWarning("Loading Delete confirmation for ClientProfile UserId {UserId}", id);
 
+            // Retrieve the requested active client profile with related user data.
             var clientProfile = await _context.ClientProfiles
                 .Where(c => c.DeletedAt == null)
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(m => m.UserId == id);
 
+            // Return not found when the client profile does not exist.
             if (clientProfile == null)
             {
                 _logger.LogWarning("ClientProfile UserId {UserId} not found for delete", id);
@@ -268,15 +291,18 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting ClientProfile UserId {UserId}", id);
 
+            // Retrieve the active client profile targeted for soft delete.
             var clientProfile = await _context.ClientProfiles
                 .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
 
+            // Return not found when the client profile does not exist.
             if (clientProfile == null)
             {
                 _logger.LogWarning("ClientProfile UserId {UserId} not found during delete", id);
                 return NotFound();
             }
 
+            // Apply soft-delete and audit values.
             clientProfile.DeletedAt = DateTime.UtcNow;
             clientProfile.UpdatedAt = DateTime.UtcNow;
             clientProfile.UpdatedByUserId = null;
@@ -305,11 +331,13 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogDebug("Populating dropdown for ClientProfiles");
 
+            // Retrieve user ids that already have active client profiles.
             var usersWithProfiles = await _context.ClientProfiles
                 .Where(cp => cp.DeletedAt == null)
                 .Select(cp => cp.UserId)
                 .ToListAsync();
 
+            // Retrieve active client users that do not already have profiles.
             var users = await _context.DomainUsers
                 .Where(u =>
                     u.DeletedAt == null &&
@@ -325,6 +353,7 @@ namespace A_New_Hope.Controllers
                 })
                 .ToListAsync();
 
+            // Store the user dropdown options in ViewData.
             ViewData["UserId"] = new SelectList(users, "Id", "DisplayName", selectedUserId);
         }
 
@@ -333,6 +362,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> ClientProfileExists(ulong id)
         {
+            // Check whether the requested active client profile still exists.
             return await _context.ClientProfiles
                 .AnyAsync(e => e.UserId == id && e.DeletedAt == null);
         }
@@ -342,6 +372,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeClientProfile(ClientProfile model)
         {
+            // Normalize optional string values before validation and save.
             model.EmploymentStatus = NullIfWhiteSpace(model.EmploymentStatus);
         }
 
@@ -350,6 +381,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyClientProfileValidationAsync(ClientProfile model, ulong? currentUserId = null)
         {
+            // Validate that the selected user exists, is active, and is a client.
             var validUser = await _context.DomainUsers
                 .AnyAsync(u =>
                     u.Id == model.UserId &&
@@ -362,6 +394,7 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(ClientProfile.UserId), "Select a valid active client.");
             }
 
+            // Prevent duplicate active client profiles for the same user.
             var duplicateProfileExists = await _context.ClientProfiles
                 .AnyAsync(cp =>
                     cp.DeletedAt == null &&
@@ -373,11 +406,13 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(ClientProfile.UserId), "A client profile already exists for the selected user.");
             }
 
+            // Validate employment status content when provided.
             if (!string.IsNullOrWhiteSpace(model.EmploymentStatus) && !ContainsLetterOrDigit(model.EmploymentStatus))
             {
                 ModelState.AddModelError(nameof(ClientProfile.EmploymentStatus), "Employment Status must contain letters or numbers.");
             }
 
+            // Validate earned income range and precision when provided.
             if (model.EarnedIncomeMonthly.HasValue)
             {
                 if (model.EarnedIncomeMonthly.Value < 0)
@@ -402,6 +437,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static string? NullIfWhiteSpace(string? value)
         {
+            // Convert blank strings to null after trimming.
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
@@ -410,6 +446,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool ContainsLetterOrDigit(string value)
         {
+            // Require at least one alphanumeric character in the value.
             return value.Any(char.IsLetterOrDigit);
         }
     }

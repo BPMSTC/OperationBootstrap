@@ -32,6 +32,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Loading HouseholdMembers Index page");
 
+            // Retrieve active household members with their related client user.
             var householdMembers = await _context.HouseholdMembers
                 .Where(h => h.DeletedAt == null)
                 .Include(h => h.ClientUser)
@@ -50,6 +51,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Details requested with null id");
@@ -58,11 +60,13 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for HouseholdMember Id {Id}", id);
 
+            // Retrieve the requested active household member with related client user data.
             var householdMember = await _context.HouseholdMembers
                 .Where(h => h.DeletedAt == null)
                 .Include(h => h.ClientUser)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the household member does not exist.
             if (householdMember == null)
             {
                 _logger.LogWarning("HouseholdMember Id {Id} not found", id);
@@ -79,6 +83,8 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Create()
         {
             _logger.LogInformation("Loading Create HouseholdMember page");
+
+            // Populate dropdown values for the create form.
             await PopulateDropdowns();
             return View();
         }
@@ -93,14 +99,16 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create HouseholdMember for ClientUserId {ClientUserId}", householdMember.ClientUserId);
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(HouseholdMember.ClientUser));
             ModelState.Remove(nameof(HouseholdMember.CreatedByUser));
             ModelState.Remove(nameof(HouseholdMember.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeHouseholdMember(householdMember);
             await ApplyHouseholdMemberValidationAsync(householdMember);
 
+            // Return the form with dropdowns restored when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create HouseholdMember failed validation for ClientUserId {ClientUserId}", householdMember.ClientUserId);
@@ -108,12 +116,14 @@ namespace A_New_Hope.Controllers
                 return View(householdMember);
             }
 
+            // Set audit fields for the new household member record.
             var now = DateTime.UtcNow;
             householdMember.CreatedAt = now;
             householdMember.UpdatedAt = now;
             householdMember.CreatedByUserId = null; // Placeholder until auth integration.
             householdMember.UpdatedByUserId = null; // Placeholder until auth integration.
 
+            // Queue the new household member for insert.
             _context.Add(householdMember);
 
             try
@@ -139,6 +149,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit requested with null id");
@@ -147,15 +158,18 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for HouseholdMember Id {Id}", id);
 
+            // Retrieve the requested active household member for editing.
             var householdMember = await _context.HouseholdMembers
                 .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
 
+            // Return not found when the household member does not exist.
             if (householdMember == null)
             {
                 _logger.LogWarning("HouseholdMember Id {Id} not found for edit", id);
                 return NotFound();
             }
 
+            // Populate dropdown values using the current record selection.
             await PopulateDropdowns(householdMember.ClientUserId);
 
             return View(householdMember);
@@ -171,20 +185,23 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit HouseholdMember Id {Id}", id);
 
+            // Ensure the route id matches the posted model id.
             if (id != formModel.Id)
             {
                 _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(HouseholdMember.ClientUser));
             ModelState.Remove(nameof(HouseholdMember.CreatedByUser));
             ModelState.Remove(nameof(HouseholdMember.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeHouseholdMember(formModel);
             await ApplyHouseholdMemberValidationAsync(formModel, formModel.Id);
 
+            // Return the form with dropdowns restored when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit HouseholdMember failed validation for Id {Id}", id);
@@ -192,15 +209,18 @@ namespace A_New_Hope.Controllers
                 return View(formModel);
             }
 
+            // Retrieve the existing active household member record.
             var existing = await _context.HouseholdMembers
                 .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("HouseholdMember Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
+            // Copy validated form values into the tracked entity.
             existing.ClientUserId = formModel.ClientUserId;
             existing.FirstName = formModel.FirstName;
             existing.LastName = formModel.LastName;
@@ -218,6 +238,7 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
+                // Check whether the record was deleted during the edit attempt.
                 if (!await HouseholdMemberExists(formModel.Id))
                 {
                     _logger.LogWarning("HouseholdMember Id {Id} no longer exists during concurrency check", id);
@@ -242,6 +263,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Delete requested with null Id");
@@ -250,11 +272,13 @@ namespace A_New_Hope.Controllers
 
             _logger.LogWarning("Loading Delete confirmation for HouseholdMember Id {Id}", id);
 
+            // Retrieve the requested active household member with related client user data.
             var householdMember = await _context.HouseholdMembers
                 .Where(h => h.DeletedAt == null)
                 .Include(h => h.ClientUser)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the household member does not exist.
             if (householdMember == null)
             {
                 _logger.LogWarning("HouseholdMember Id {Id} not found for delete", id);
@@ -274,15 +298,18 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting HouseholdMember Id {Id}", id);
 
+            // Retrieve the active household member targeted for soft delete.
             var householdMember = await _context.HouseholdMembers
                 .FirstOrDefaultAsync(h => h.Id == id && h.DeletedAt == null);
 
+            // Return not found when the household member does not exist.
             if (householdMember == null)
             {
                 _logger.LogWarning("HouseholdMember Id {Id} not found during delete", id);
                 return NotFound();
             }
 
+            // Apply soft-delete and audit values.
             householdMember.DeletedAt = DateTime.UtcNow;
             householdMember.UpdatedAt = DateTime.UtcNow;
             householdMember.UpdatedByUserId = null; // Placeholder until auth integration.
@@ -311,6 +338,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogDebug("Populating ClientUser dropdown for HouseholdMember");
 
+            // Retrieve active client users for the dropdown list.
             var users = await _context.DomainUsers
                 .Where(u =>
                     u.DeletedAt == null &&
@@ -325,6 +353,7 @@ namespace A_New_Hope.Controllers
                 })
                 .ToListAsync();
 
+            // Store the client user dropdown options in ViewData.
             ViewData["ClientUserId"] = new SelectList(users, "Id", "DisplayName", selectedClientUserId);
         }
 
@@ -333,6 +362,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> HouseholdMemberExists(ulong id)
         {
+            // Check whether the requested active household member still exists.
             return await _context.HouseholdMembers
                 .AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
@@ -342,6 +372,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeHouseholdMember(HouseholdMember model)
         {
+            // Normalize and trim required name values.
             model.FirstName = model.FirstName?.Trim() ?? string.Empty;
             model.LastName = model.LastName?.Trim() ?? string.Empty;
         }
@@ -351,6 +382,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyHouseholdMemberValidationAsync(HouseholdMember model, ulong? currentId = null)
         {
+            // Validate that the selected client exists, is active, and is not deleted.
             var validClient = await _context.DomainUsers
                 .AnyAsync(u =>
                     u.Id == model.ClientUserId &&
@@ -363,26 +395,31 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(HouseholdMember.ClientUserId), "Select a valid active client.");
             }
 
+            // Require first name for all household members.
             if (string.IsNullOrWhiteSpace(model.FirstName))
             {
                 ModelState.AddModelError(nameof(HouseholdMember.FirstName), "First Name is required.");
             }
 
+            // Require last name for all household members.
             if (string.IsNullOrWhiteSpace(model.LastName))
             {
                 ModelState.AddModelError(nameof(HouseholdMember.LastName), "Last Name is required.");
             }
 
+            // Validate first name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.FirstName) && !IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(HouseholdMember.FirstName), "First Name contains invalid characters.");
             }
 
+            // Validate last name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.LastName) && !IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(HouseholdMember.LastName), "Last Name contains invalid characters.");
             }
 
+            // Validate date of birth range when provided.
             if (model.DateOfBirth.HasValue)
             {
                 var minDate = new DateTime(1900, 1, 1);
@@ -398,6 +435,7 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Ensure Age As Of Date is not earlier than Date of Birth.
             if (model.AgeAsOfDate.HasValue && model.DateOfBirth.HasValue &&
                 model.AgeAsOfDate.Value.Date < model.DateOfBirth.Value.Date)
             {
@@ -410,6 +448,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidPersonName(string name)
         {
+            // Allow letters plus common punctuation for personal names.
             return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
     }

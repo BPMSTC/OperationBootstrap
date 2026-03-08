@@ -14,6 +14,7 @@ namespace A_New_Hope.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ReferringOrganizationsController> _logger;
 
+        // Store the allowed 2-letter US state codes for validation.
         private static readonly HashSet<string> ValidUsStateCodes = new(StringComparer.OrdinalIgnoreCase)
         {
             "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
@@ -40,6 +41,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Loading Referring Organizations Index page");
 
+            // Retrieve active referring organizations for display.
             var referringOrganizations = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
                 .OrderBy(r => r.Name)
@@ -56,6 +58,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Details requested with null Id");
@@ -64,10 +67,12 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for Referring Organization Id {Id}", id);
 
+            // Retrieve the requested active referring organization.
             var referringOrganization = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found", id);
@@ -85,6 +90,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Loading Create Referring Organization page");
 
+            // Initialize the form with the default state value.
             var model = new ReferringOrganization
             {
                 State = "WI"
@@ -103,7 +109,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create Referring Organization '{Name}'", referringOrganization.Name);
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(ReferringOrganization.Referrals));
             ModelState.Remove(nameof(ReferringOrganization.CreatedByUser));
             ModelState.Remove(nameof(ReferringOrganization.UpdatedByUser));
@@ -112,18 +118,21 @@ namespace A_New_Hope.Controllers
             NormalizeReferringOrganization(referringOrganization);
             await ApplyReferringOrganizationValidationAsync(referringOrganization);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create Referring Organization failed validation for '{Name}'", referringOrganization.Name);
                 return View(referringOrganization);
             }
 
+            // Set audit fields for the new referring organization record.
             var now = DateTime.UtcNow;
             referringOrganization.CreatedAt = now;
             referringOrganization.UpdatedAt = now;
             referringOrganization.CreatedByUserId = null; // Replace when auth/user tracking is added.
             referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
+            // Queue the new referring organization for insert.
             _context.Add(referringOrganization);
 
             try
@@ -148,6 +157,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit requested with null Id");
@@ -156,9 +166,11 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for Referring Organization Id {Id}", id);
 
+            // Retrieve the requested active referring organization for editing.
             var referringOrganization = await _context.ReferringOrganizations
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found for edit", id);
@@ -178,14 +190,14 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit Referring Organization Id {Id}", id);
 
-            // Prevent route/model mismatches.
+            // Ensure the route id matches the posted model id.
             if (id != formModel.Id)
             {
                 _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(ReferringOrganization.Referrals));
             ModelState.Remove(nameof(ReferringOrganization.CreatedByUser));
             ModelState.Remove(nameof(ReferringOrganization.UpdatedByUser));
@@ -194,6 +206,7 @@ namespace A_New_Hope.Controllers
             NormalizeReferringOrganization(formModel);
             await ApplyReferringOrganizationValidationAsync(formModel, formModel.Id);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit Referring Organization failed validation for Id {Id}", id);
@@ -204,12 +217,14 @@ namespace A_New_Hope.Controllers
             var existing = await _context.ReferringOrganizations
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
+            // Copy validated form values into the tracked entity.
             existing.Name = formModel.Name;
             existing.Type = formModel.Type;
             existing.PhoneNumber = formModel.PhoneNumber;
@@ -235,6 +250,7 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
+                // Check whether the record was deleted during the edit attempt.
                 if (!await ReferringOrganizationExists(formModel.Id))
                 {
                     _logger.LogWarning("Referring Organization Id {Id} no longer exists during concurrency check", id);
@@ -258,6 +274,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Delete requested with null Id");
@@ -266,10 +283,12 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Delete confirmation for Referring Organization Id {Id}", id);
 
+            // Retrieve the requested active referring organization for delete confirmation.
             var referringOrganization = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found for delete", id);
@@ -289,16 +308,18 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting Referring Organization Id {Id}", id);
 
+            // Retrieve the active referring organization targeted for soft delete.
             var referringOrganization = await _context.ReferringOrganizations
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found during delete", id);
                 return NotFound();
             }
 
-            // Soft delete instead of physically removing the row.
+            // Apply soft-delete and audit values.
             referringOrganization.DeletedAt = DateTime.UtcNow;
             referringOrganization.UpdatedAt = DateTime.UtcNow;
             referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
@@ -325,6 +346,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> ReferringOrganizationExists(ulong id)
         {
+            // Check whether the requested active organization still exists.
             return await _context.ReferringOrganizations
                 .AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
@@ -334,9 +356,10 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeReferringOrganization(ReferringOrganization model)
         {
-            // Name is required, so keep it as an empty string instead of null for validation.
+            // Keep the required organization name as an empty string instead of null for validation.
             model.Name = model.Name?.Trim() ?? string.Empty;
 
+            // Normalize optional text values before validation and save.
             model.Type = NullIfWhiteSpace(model.Type);
             model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
             model.Email = NullIfWhiteSpace(model.Email);
@@ -354,16 +377,19 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyReferringOrganizationValidationAsync(ReferringOrganization model, ulong? currentId = null)
         {
+            // Require an organization name.
             if (string.IsNullOrWhiteSpace(model.Name))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.Name), "Organization name is required.");
             }
 
+            // Require at least one letter or number in the organization name.
             if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.Name), "Organization name must contain letters or numbers.");
             }
 
+            // Prevent duplicate active organization names.
             if (!string.IsNullOrWhiteSpace(model.Name))
             {
                 // Only check against non-deleted rows and ignore the current record during edit.
@@ -381,46 +407,55 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Validate organization type content when provided.
             if (!string.IsNullOrWhiteSpace(model.Type) && !ContainsLetterOrDigit(model.Type))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.Type), "Type must contain letters or numbers.");
             }
 
+            // Validate address line 1 content when provided.
             if (!string.IsNullOrWhiteSpace(model.AddressLine1) && !ContainsLetterOrDigit(model.AddressLine1))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.AddressLine1), "Address Line 1 must contain letters or numbers.");
             }
 
+            // Validate address line 2 content when provided.
             if (!string.IsNullOrWhiteSpace(model.AddressLine2) && !ContainsLetterOrDigit(model.AddressLine2))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.AddressLine2), "Address Line 2 must contain letters or numbers.");
             }
 
+            // Validate phone number format when provided.
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
+            // Validate email format when provided.
             if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.Email), "Email format is invalid.");
             }
 
+            // Validate city characters when provided.
             if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.City), "City contains invalid characters.");
             }
 
+            // Validate state code when provided.
             if (!string.IsNullOrWhiteSpace(model.State) && !IsValidUsStateCode(model.State))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.State), "Enter a valid 2-letter US state code.");
             }
 
+            // Validate ZIP code format when provided.
             if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
             }
 
+            // Validate primary contact name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.PrimaryContactName) && !IsValidPersonName(model.PrimaryContactName))
             {
                 ModelState.AddModelError(nameof(ReferringOrganization.PrimaryContactName), "Primary contact name contains invalid characters.");
@@ -432,6 +467,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static string? NullIfWhiteSpace(string? value)
         {
+            // Convert blank strings to null after trimming.
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
@@ -440,6 +476,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool ContainsLetterOrDigit(string value)
         {
+            // Require at least one alphanumeric character in the value.
             return value.Any(char.IsLetterOrDigit);
         }
 
@@ -450,18 +487,22 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidPhoneNumber(string phoneNumber)
         {
+            // Reject characters outside the allowed phone number pattern.
             if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
             {
                 return false;
             }
 
+            // Strip formatting characters to validate digit count.
             var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
 
+            // Accept standard 10-digit US phone numbers.
             if (digitsOnly.Length == 10)
             {
                 return true;
             }
 
+            // Accept 11-digit US phone numbers only when starting with 1.
             if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
             {
                 return true;
@@ -475,21 +516,25 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidEmail(string email)
         {
+            // Reject spaces in email addresses.
             if (email.Contains(' '))
             {
                 return false;
             }
 
+            // Require exactly one @ symbol.
             if (email.Count(c => c == '@') != 1)
             {
                 return false;
             }
 
+            // Reject consecutive periods.
             if (email.Contains(".."))
             {
                 return false;
             }
 
+            // Split the email into local and domain parts.
             var parts = email.Split('@');
             if (parts.Length != 2)
             {
@@ -499,32 +544,38 @@ namespace A_New_Hope.Controllers
             var localPart = parts[0];
             var domainPart = parts[1];
 
+            // Require non-empty local and domain parts.
             if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
             {
                 return false;
             }
 
+            // Reject local parts starting or ending with a period.
             if (localPart.StartsWith('.') || localPart.EndsWith('.'))
             {
                 return false;
             }
 
+            // Reject domain parts starting or ending with a period.
             if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
             {
                 return false;
             }
 
+            // Require a dot in the domain portion.
             if (!domainPart.Contains('.'))
             {
                 return false;
             }
 
+            // Reject empty domain labels.
             var domainLabels = domainPart.Split('.');
             if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
             {
                 return false;
             }
 
+            // Validate local and domain characters using project regex rules.
             return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
                 && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
         }
@@ -534,6 +585,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidCity(string city)
         {
+            // Allow letters plus common punctuation for city names.
             return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
 
@@ -542,6 +594,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidPersonName(string name)
         {
+            // Allow letters plus common punctuation for personal names.
             return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
 
@@ -550,6 +603,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidUsStateCode(string state)
         {
+            // Require a 2-letter state code from the approved US state set.
             return state.Length == 2 && ValidUsStateCodes.Contains(state);
         }
 
@@ -558,6 +612,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool IsValidUsPostalCode(string postalCode)
         {
+            // Accept 5-digit ZIP codes and ZIP+4 values.
             return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
     }

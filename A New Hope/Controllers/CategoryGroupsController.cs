@@ -31,6 +31,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Fetching category groups list");
 
+            // Retrieve active category groups for display.
             var categoryGroups = await _context.CategoryGroups
                 .Where(cg => cg.DeletedAt == null)
                 .OrderBy(cg => cg.SortOrder)
@@ -48,6 +49,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("CategoryGroup Details requested with null id");
@@ -56,9 +58,11 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for CategoryGroupId {Id}", id);
 
+            // Retrieve the requested active category group.
             var categoryGroup = await _context.CategoryGroups
                 .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
 
+            // Return not found when the category group does not exist.
             if (categoryGroup == null)
             {
                 _logger.LogWarning("CategoryGroup {Id} not found", id);
@@ -88,26 +92,30 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create CategoryGroup {Name}", categoryGroup.Name);
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(CategoryGroup.Categories));
             ModelState.Remove(nameof(CategoryGroup.CreatedByUser));
             ModelState.Remove(nameof(CategoryGroup.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeCategoryGroup(categoryGroup);
             await ApplyCategoryGroupValidationAsync(categoryGroup);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create CategoryGroup failed validation");
                 return View(categoryGroup);
             }
 
+            // Set audit fields for the new category group record.
             var now = DateTime.UtcNow;
             categoryGroup.CreatedAt = now;
             categoryGroup.UpdatedAt = now;
             categoryGroup.CreatedByUserId = null; // Replace when auth/user tracking is added.
             categoryGroup.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
+            // Queue the new category group for insert.
             _context.Add(categoryGroup);
 
             try
@@ -136,15 +144,18 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit CategoryGroup requested with null id");
                 return NotFound();
             }
 
+            // Retrieve the requested active category group for editing.
             var categoryGroup = await _context.CategoryGroups
                 .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
 
+            // Return not found when the category group does not exist.
             if (categoryGroup == null)
             {
                 _logger.LogWarning("CategoryGroup {Id} not found for edit", id);
@@ -166,6 +177,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit CategoryGroupId {Id}", id);
 
+            // Ensure the route id matches the posted model id.
             if (id != formModel.Id)
             {
                 _logger.LogWarning(
@@ -176,29 +188,34 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(CategoryGroup.Categories));
             ModelState.Remove(nameof(CategoryGroup.CreatedByUser));
             ModelState.Remove(nameof(CategoryGroup.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeCategoryGroup(formModel);
             await ApplyCategoryGroupValidationAsync(formModel, formModel.Id);
 
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit CategoryGroupId {Id} failed validation", id);
                 return View(formModel);
             }
 
+            // Retrieve the existing active category group record.
             var existing = await _context.CategoryGroups
                 .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("CategoryGroup {Id} not found during edit save", id);
                 return NotFound();
             }
 
+            // Copy validated form values into the tracked entity.
             existing.Name = formModel.Name;
             existing.SortOrder = formModel.SortOrder;
             existing.IsActive = formModel.IsActive;
@@ -228,15 +245,18 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Delete CategoryGroup requested with null id");
                 return NotFound();
             }
 
+            // Retrieve the requested active category group for delete confirmation.
             var categoryGroup = await _context.CategoryGroups
                 .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
 
+            // Return not found when the category group does not exist.
             if (categoryGroup == null)
             {
                 _logger.LogWarning("CategoryGroup {Id} not found for delete", id);
@@ -258,15 +278,18 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting CategoryGroupId {Id}", id);
 
+            // Retrieve the active category group targeted for soft delete.
             var categoryGroup = await _context.CategoryGroups
                 .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
 
+            // Return not found when the category group does not exist.
             if (categoryGroup == null)
             {
                 _logger.LogWarning("CategoryGroup {Id} not found during delete", id);
                 return NotFound();
             }
 
+            // Apply soft-delete and audit values.
             categoryGroup.DeletedAt = DateTime.UtcNow;
             categoryGroup.UpdatedAt = DateTime.UtcNow;
             categoryGroup.UpdatedByUserId = null; // Placeholder until auth is implemented.
@@ -293,6 +316,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> CategoryGroupExists(ulong id)
         {
+            // Check whether the requested active category group still exists.
             return await _context.CategoryGroups.AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
 
@@ -301,7 +325,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeCategoryGroup(CategoryGroup model)
         {
-            // Name is required, so keep it as empty string instead of null for validation.
+            // Normalize and trim the required category group name.
             model.Name = model.Name?.Trim() ?? string.Empty;
         }
 
@@ -310,16 +334,19 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyCategoryGroupValidationAsync(CategoryGroup model, ulong? currentId = null)
         {
+            // Require a category group name.
             if (string.IsNullOrWhiteSpace(model.Name))
             {
                 ModelState.AddModelError(nameof(CategoryGroup.Name), "Category group name is required.");
             }
 
+            // Require at least one letter or number in the category group name.
             if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
             {
                 ModelState.AddModelError(nameof(CategoryGroup.Name), "Category group name must contain letters or numbers.");
             }
 
+            // Prevent duplicate active category group names.
             if (!string.IsNullOrWhiteSpace(model.Name))
             {
                 var normalizedName = model.Name.ToLower();
@@ -336,6 +363,7 @@ namespace A_New_Hope.Controllers
                 }
             }
 
+            // Prevent negative sort order values.
             if (model.SortOrder < 0)
             {
                 ModelState.AddModelError(nameof(CategoryGroup.SortOrder), "Sort Order cannot be less than 0.");
@@ -347,6 +375,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool ContainsLetterOrDigit(string value)
         {
+            // Require at least one alphanumeric character in the value.
             return value.Any(char.IsLetterOrDigit);
         }
     }

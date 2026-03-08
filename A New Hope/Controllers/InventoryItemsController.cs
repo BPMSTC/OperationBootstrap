@@ -31,6 +31,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Loading InventoryItems Index page");
 
+            // Retrieve active inventory items with related category display data.
             var inventoryItems = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
@@ -50,6 +51,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Details requested with null Id");
@@ -58,12 +60,14 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for InventoryItem Id {Id}", id);
 
+            // Retrieve the requested active inventory item with related category data.
             var inventoryItem = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
                     .ThenInclude(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the inventory item does not exist.
             if (inventoryItem == null)
             {
                 _logger.LogWarning("InventoryItem Id {Id} not found", id);
@@ -80,6 +84,8 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Create()
         {
             _logger.LogInformation("Loading Create InventoryItem page");
+
+            // Populate dropdown values for the create form.
             await PopulateDropdowns();
             return View();
         }
@@ -94,14 +100,16 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create InventoryItem {Name}", inventoryItem.Name);
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(InventoryItem.Category));
             ModelState.Remove(nameof(InventoryItem.CreatedByUser));
             ModelState.Remove(nameof(InventoryItem.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeInventoryItem(inventoryItem);
             await ApplyInventoryItemValidationAsync(inventoryItem);
 
+            // Return the form with dropdowns restored when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create InventoryItem failed validation for {Name}", inventoryItem.Name);
@@ -109,12 +117,14 @@ namespace A_New_Hope.Controllers
                 return View(inventoryItem);
             }
 
+            // Set audit fields for the new inventory item record.
             var now = DateTime.UtcNow;
             inventoryItem.CreatedAt = now;
             inventoryItem.UpdatedAt = now;
             inventoryItem.CreatedByUserId = null; // Replace when auth integration is added.
             inventoryItem.UpdatedByUserId = null; // Replace when auth integration is added.
 
+            // Queue the new inventory item for insert.
             _context.Add(inventoryItem);
 
             try
@@ -140,6 +150,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit requested with null Id");
@@ -148,15 +159,18 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for InventoryItem Id {Id}", id);
 
+            // Retrieve the requested active inventory item for editing.
             var inventoryItem = await _context.InventoryItems
                 .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
 
+            // Return not found when the inventory item does not exist.
             if (inventoryItem == null)
             {
                 _logger.LogWarning("InventoryItem Id {Id} not found for edit", id);
                 return NotFound();
             }
 
+            // Populate dropdown values using the current record selection.
             await PopulateDropdowns(inventoryItem.CategoryId);
 
             return View(inventoryItem);
@@ -172,20 +186,23 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit InventoryItem Id {Id}", id);
 
+            // Ensure the route id matches the posted model id.
             if (id != formModel.Id)
             {
                 _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted by the form.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(InventoryItem.Category));
             ModelState.Remove(nameof(InventoryItem.CreatedByUser));
             ModelState.Remove(nameof(InventoryItem.UpdatedByUser));
 
+            // Normalize incoming values before business-rule validation.
             NormalizeInventoryItem(formModel);
             await ApplyInventoryItemValidationAsync(formModel, formModel.Id);
 
+            // Return the form with dropdowns restored when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit InventoryItem failed validation for Id {Id}", id);
@@ -193,15 +210,18 @@ namespace A_New_Hope.Controllers
                 return View(formModel);
             }
 
+            // Retrieve the existing active inventory item record.
             var existing = await _context.InventoryItems
                 .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("InventoryItem Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
+            // Copy validated form values into the tracked entity.
             existing.Name = formModel.Name;
             existing.CategoryId = formModel.CategoryId;
             existing.IsBaseline = formModel.IsBaseline;
@@ -219,6 +239,7 @@ namespace A_New_Hope.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
+                // Check whether the record was deleted during the edit attempt.
                 if (!await InventoryItemExists(formModel.Id))
                 {
                     _logger.LogWarning("InventoryItem Id {Id} no longer exists during concurrency check", id);
@@ -243,6 +264,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Delete requested with null Id");
@@ -251,12 +273,14 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Delete confirmation for InventoryItem Id {Id}", id);
 
+            // Retrieve the requested active inventory item with related category data.
             var inventoryItem = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
                     .ThenInclude(c => c.CategoryGroup)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the inventory item does not exist.
             if (inventoryItem == null)
             {
                 _logger.LogWarning("InventoryItem Id {Id} not found for delete", id);
@@ -276,15 +300,18 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting InventoryItem Id {Id}", id);
 
+            // Retrieve the active inventory item targeted for soft delete.
             var inventoryItem = await _context.InventoryItems
                 .FirstOrDefaultAsync(i => i.Id == id && i.DeletedAt == null);
 
+            // Return not found when the inventory item does not exist.
             if (inventoryItem == null)
             {
                 _logger.LogWarning("InventoryItem Id {Id} not found during delete", id);
                 return NotFound();
             }
 
+            // Apply soft-delete and audit values.
             inventoryItem.DeletedAt = DateTime.UtcNow;
             inventoryItem.UpdatedAt = DateTime.UtcNow;
             inventoryItem.UpdatedByUserId = null; // Replace when auth integration is added.
@@ -312,6 +339,7 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogDebug("Populating Category dropdown for InventoryItem");
 
+            // Retrieve active categories with active category groups for the dropdown list.
             var categories = await _context.Categories
                 .Where(c => c.DeletedAt == null && c.CategoryGroup.DeletedAt == null)
                 .Include(c => c.CategoryGroup)
@@ -320,6 +348,7 @@ namespace A_New_Hope.Controllers
                 .ThenBy(c => c.Name)
                 .ToListAsync();
 
+            // Build display-friendly category dropdown options.
             var categoryOptions = categories
                 .Select(c => new
                 {
@@ -330,6 +359,7 @@ namespace A_New_Hope.Controllers
 
             _logger.LogDebug("Loaded {Count} categories for dropdown", categoryOptions.Count);
 
+            // Store the category dropdown options in ViewData.
             ViewData["CategoryId"] = new SelectList(categoryOptions, "Id", "DisplayName", selectedCategoryId);
         }
 
@@ -338,6 +368,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> InventoryItemExists(ulong id)
         {
+            // Check whether the requested active inventory item still exists.
             return await _context.InventoryItems.AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
 
@@ -346,6 +377,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeInventoryItem(InventoryItem model)
         {
+            // Normalize and trim the required inventory item name.
             model.Name = model.Name?.Trim() ?? string.Empty;
         }
 
@@ -354,6 +386,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyInventoryItemValidationAsync(InventoryItem model, ulong? currentId = null)
         {
+            // Validate that the selected category exists and is not deleted.
             var categoryExists = await _context.Categories
                 .AnyAsync(c =>
                     c.Id == model.CategoryId &&
@@ -365,16 +398,19 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(InventoryItem.CategoryId), "Select a valid category.");
             }
 
+            // Require an inventory item name.
             if (string.IsNullOrWhiteSpace(model.Name))
             {
                 ModelState.AddModelError(nameof(InventoryItem.Name), "Inventory item name is required.");
             }
 
+            // Require at least one letter or number in the inventory item name.
             if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
             {
                 ModelState.AddModelError(nameof(InventoryItem.Name), "Inventory item name must contain letters or numbers.");
             }
 
+            // Prevent duplicate active inventory item names within the same category.
             if (!string.IsNullOrWhiteSpace(model.Name))
             {
                 var normalizedName = model.Name.ToLower();
@@ -398,6 +434,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static bool ContainsLetterOrDigit(string value)
         {
+            // Require at least one alphanumeric character in the value.
             return value.Any(char.IsLetterOrDigit);
         }
     }
