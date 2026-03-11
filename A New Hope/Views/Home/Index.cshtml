@@ -247,6 +247,7 @@
 
         input.addEventListener("input", function () {
             const query = input.value;
+          
             if (query.length === 0) {
                 fetch(`/Home/Index`).then(() => location.reload());
                 return;
@@ -256,11 +257,13 @@
                 .then(r => r.json())
                 .then(data => {
                     resultsBody.innerHTML = "";
+              
                     if (data.length === 0) {
                         resultsBody.innerHTML =
                             `<tr><td colspan="3" class="text-center">No results found</td></tr>`;
                         return;
                     }
+              
                     data.forEach(user => {
                         resultsBody.innerHTML += `
                             <tr class="clickable-row" data-id="${user.id}">
@@ -274,8 +277,11 @@
 
         document.addEventListener("click", function (e) {
             const row = e.target.closest(".clickable-row");
-            if (row)
-                window.location.href = `/ClientProfiles/Details/${row.getAttribute("data-id")}`;
+          
+            if (row) {
+                const id = row.getAttribute("data-id");
+                window.location.href = `/ClientProfiles/Details/${id}`;
+            }
         });
     </script>
 }
