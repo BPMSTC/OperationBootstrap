@@ -238,6 +238,7 @@ namespace A_New_Hope.Data
             var foodGroup = await context.CategoryGroups.FirstAsync(g => g.Name == "Food");
             var nonFoodGroup = await context.CategoryGroups.FirstAsync(g => g.Name == "Non-Food");
 
+            /*
             // ============================================================
             // CATEGORIES
             // ============================================================
@@ -300,6 +301,170 @@ namespace A_New_Hope.Data
             var produce = await context.Categories.FirstAsync(c => c.Name == "Produce");
             var hygiene = await context.Categories.FirstAsync(c => c.Name == "Hygiene");
             var household = await context.Categories.FirstAsync(c => c.Name == "Household Supplies");
+            */
+
+            // ============================================================
+            // CATEGORIES
+            // ============================================================
+            // Categories belong to CategoryGroups and are used to classify InventoryItems.
+            if (!await context.Categories.AnyAsync())
+            {
+                context.Categories.AddRange(
+                    // ------------------------------
+                    // FOOD
+                    // ------------------------------
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Canned Goods",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Pasta / Grains",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Breakfast / Pantry",
+                        SortOrder = 3,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Produce",
+                        SortOrder = 4,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Refrigerated",
+                        SortOrder = 5,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Frozen Protein",
+                        SortOrder = 6,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = foodGroup.Id,
+                        Name = "Condiments / Baking Staples",
+                        SortOrder = 7,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // ------------------------------
+                    // NON-FOOD
+                    // ------------------------------
+                    new Category
+                    {
+                        CategoryGroupId = nonFoodGroup.Id,
+                        Name = "Paper Goods",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = nonFoodGroup.Id,
+                        Name = "Personal Care",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new Category
+                    {
+                        CategoryGroupId = nonFoodGroup.Id,
+                        Name = "Cleaning Supplies",
+                        SortOrder = 3,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
+            // Pull categories for FK use in InventoryItems seeding.
+            // Defensive lookups: include CategoryGroupId so the seeder does not become ambiguous
+            // if duplicate category names are ever added under different groups.
+            var cannedGoods = await context.Categories
+                .FirstAsync(c => c.Name == "Canned Goods" && c.CategoryGroupId == foodGroup.Id);
+
+            var pastaGrains = await context.Categories
+                .FirstAsync(c => c.Name == "Pasta / Grains" && c.CategoryGroupId == foodGroup.Id);
+
+            var breakfastPantry = await context.Categories
+                .FirstAsync(c => c.Name == "Breakfast / Pantry" && c.CategoryGroupId == foodGroup.Id);
+
+            var produce = await context.Categories
+                .FirstAsync(c => c.Name == "Produce" && c.CategoryGroupId == foodGroup.Id);
+
+            var refrigerated = await context.Categories
+                .FirstAsync(c => c.Name == "Refrigerated" && c.CategoryGroupId == foodGroup.Id);
+
+            var frozenProtein = await context.Categories
+                .FirstAsync(c => c.Name == "Frozen Protein" && c.CategoryGroupId == foodGroup.Id);
+
+            var condimentsBaking = await context.Categories
+                .FirstAsync(c => c.Name == "Condiments / Baking Staples" && c.CategoryGroupId == foodGroup.Id);
+
+            var paperGoods = await context.Categories
+                .FirstAsync(c => c.Name == "Paper Goods" && c.CategoryGroupId == nonFoodGroup.Id);
+
+            var personalCare = await context.Categories
+                .FirstAsync(c => c.Name == "Personal Care" && c.CategoryGroupId == nonFoodGroup.Id);
+
+            var cleaningSupplies = await context.Categories
+                .FirstAsync(c => c.Name == "Cleaning Supplies" && c.CategoryGroupId == nonFoodGroup.Id);
+
 
             // ============================================================
             // REFERRING ORGANIZATIONS
@@ -349,6 +514,7 @@ namespace A_New_Hope.Data
             // Pull a specific organization for FK use in Referrals seeding.
             var org1 = await context.ReferringOrganizations.FirstAsync(o => o.Name == "Portage County Social Services");
 
+
             // ============================================================
             // INVENTORY ITEMS
             // ============================================================
@@ -357,6 +523,71 @@ namespace A_New_Hope.Data
             if (!await context.InventoryItems.AnyAsync())
             {
                 context.InventoryItems.AddRange(
+                    // ========================================================
+                    // BASELINE ITEMS (from stakeholder "always available" form)
+                    // ========================================================
+
+                    // Food -> Canned Goods
+                    new InventoryItem
+                    {
+                        Name = "Diced Tomato",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Canned Vegetables",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Canned Fruit",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Canned Chicken",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Canned Tuna",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
                     new InventoryItem
                     {
                         Name = "Canned Soup",
@@ -371,7 +602,97 @@ namespace A_New_Hope.Data
                     },
                     new InventoryItem
                     {
-                        Name = "Apples",
+                        Name = "Pork and Beans",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Pasta / Grains
+                    new InventoryItem
+                    {
+                        Name = "Pasta Sauce",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Mac n Cheese",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Pasta",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Breakfast / Pantry
+                    new InventoryItem
+                    {
+                        Name = "Graham Crackers",
+                        CategoryId = breakfastPantry.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Peanut Butter",
+                        CategoryId = breakfastPantry.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Cereal",
+                        CategoryId = breakfastPantry.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Produce
+                    new InventoryItem
+                    {
+                        Name = "Fresh Fruit",
                         CategoryId = produce.Id,
                         IsBaseline = true,
                         IsAvailable = true,
@@ -383,8 +704,22 @@ namespace A_New_Hope.Data
                     },
                     new InventoryItem
                     {
-                        Name = "Toothpaste",
-                        CategoryId = hygiene.Id,
+                        Name = "Carrots",
+                        CategoryId = produce.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Refrigerated
+                    new InventoryItem
+                    {
+                        Name = "Margarine",
+                        CategoryId = refrigerated.Id,
                         IsBaseline = true,
                         IsAvailable = true,
                         IsActive = true,
@@ -395,9 +730,368 @@ namespace A_New_Hope.Data
                     },
                     new InventoryItem
                     {
-                        Name = "Laundry Detergent",
-                        CategoryId = household.Id,
+                        Name = "Eggs",
+                        CategoryId = refrigerated.Id,
                         IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Frozen Protein
+                    new InventoryItem
+                    {
+                        Name = "Hot Dogs",
+                        CategoryId = frozenProtein.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Ground Meats",
+                        CategoryId = frozenProtein.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Frozen Chicken",
+                        CategoryId = frozenProtein.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Non-Food -> Paper Goods
+                    new InventoryItem
+                    {
+                        Name = "Toilet Paper",
+                        CategoryId = paperGoods.Id,
+                        IsBaseline = true,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // ========================================================
+                    // VARIABLE / NON-BASELINE ITEMS
+                    // (from stakeholder "may not have" / on-site form)
+                    // ========================================================
+
+                    // Food -> Refrigerated
+                    new InventoryItem
+                    {
+                        Name = "Milk",
+                        CategoryId = refrigerated.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Bread",
+                        CategoryId = refrigerated.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Produce
+                    new InventoryItem
+                    {
+                        Name = "Potatoes",
+                        CategoryId = produce.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Bananas",
+                        CategoryId = produce.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Non-Food -> Cleaning Supplies
+                    new InventoryItem
+                    {
+                        Name = "Laundry Soap",
+                        CategoryId = cleaningSupplies.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Dish Soap",
+                        CategoryId = cleaningSupplies.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Non-Food -> Personal Care
+                    new InventoryItem
+                    {
+                        Name = "Shampoo",
+                        CategoryId = personalCare.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Toothpaste",
+                        CategoryId = personalCare.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Bar Soap",
+                        CategoryId = personalCare.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Condiments / Baking Staples
+                    new InventoryItem
+                    {
+                        Name = "Vegetable Oil",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Mayo",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Ketchup",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Mustard",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Sugar",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Flour",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Pancake Syrup",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Jelly",
+                        CategoryId = condimentsBaking.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Pasta / Grains
+                    new InventoryItem
+                    {
+                        Name = "Rice",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Split Peas",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Lentils",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Pancake Mix",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Oatmeal",
+                        CategoryId = pastaGrains.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Food -> Canned Goods
+                    new InventoryItem
+                    {
+                        Name = "Pinto Beans",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = false,
+                        IsAvailable = true,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItem
+                    {
+                        Name = "Black Beans",
+                        CategoryId = cannedGoods.Id,
+                        IsBaseline = false,
                         IsAvailable = true,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
@@ -454,7 +1148,7 @@ namespace A_New_Hope.Data
             {
                 // Pull inventory items needed for preference rows.
                 var toothpaste = await context.InventoryItems.FirstAsync(i => i.Name == "Toothpaste");
-                var applesItem = await context.InventoryItems.FirstAsync(i => i.Name == "Apples");
+                var freshFruit = await context.InventoryItems.FirstAsync(i => i.Name == "Fresh Fruit");
 
                 context.UserItemPreferences.AddRange(
                     new UserItemPreference
@@ -470,7 +1164,7 @@ namespace A_New_Hope.Data
                     new UserItemPreference
                     {
                         UserId = clientUser1.Id,
-                        InventoryItemId = applesItem.Id,
+                        InventoryItemId = freshFruit.Id,
                         Preference = PreferenceOption.Ask,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
