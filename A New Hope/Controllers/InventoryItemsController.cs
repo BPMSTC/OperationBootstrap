@@ -36,6 +36,8 @@ namespace A_New_Hope.Controllers
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
                     .ThenInclude(c => c.CategoryGroup)
+                .Include(i => i.InventoryItemOptions
+                    .Where(o => o.DeletedAt == null))
                 .OrderBy(i => i.Category.Name)
                 .ThenBy(i => i.Name)
                 .ToListAsync();
@@ -65,6 +67,8 @@ namespace A_New_Hope.Controllers
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.Category)
                     .ThenInclude(c => c.CategoryGroup)
+                .Include(i => i.InventoryItemOptions
+                    .Where(o => o.DeletedAt == null))
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             // Return not found when the inventory item does not exist.

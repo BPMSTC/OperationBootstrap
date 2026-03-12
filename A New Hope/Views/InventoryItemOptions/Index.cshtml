@@ -1,0 +1,53 @@
+@model IEnumerable<A_New_Hope.Models.InventoryItemOption>
+
+@{
+    ViewData["Title"] = "Inventory Item Options";
+}
+
+<div class="page-header">
+    <h1>Inventory Item Options</h1>
+</div>
+
+<div class="mb-3">
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Inventory Item</th>
+                <th>Category</th>
+                <th>@Html.DisplayNameFor(model => model.Name)</th>
+                <th>@Html.DisplayNameFor(model => model.SortOrder)</th>
+                <th>@Html.DisplayNameFor(model => model.IsActive)</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@(item.InventoryItem?.Name ?? "")</td>
+                    <td>
+                        @(
+                            item.InventoryItem?.Category != null
+                            ? (item.InventoryItem.Category.CategoryGroup != null
+                            ? $"{item.InventoryItem.Category.CategoryGroup.Name} - {item.InventoryItem.Category.Name}"
+                            : item.InventoryItem.Category.Name)
+                            : ""
+                        )
+                    </td>
+                    <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                    <td>@Html.DisplayFor(modelItem => item.SortOrder)</td>
+                    <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
