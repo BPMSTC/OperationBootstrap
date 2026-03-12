@@ -86,6 +86,7 @@ namespace A_New_Hope.Data
         public DbSet<CategoryGroup> CategoryGroups => Set<CategoryGroup>();
         public DbSet<Category> Categories => Set<Category>();
         public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+        public DbSet<InventoryItemOption> InventoryItemOptions => Set<InventoryItemOption>();
         public DbSet<UserItemPreference> UserItemPreferences => Set<UserItemPreference>();
         public DbSet<ReferringOrganization> ReferringOrganizations => Set<ReferringOrganization>();
         public DbSet<Referral> Referrals => Set<Referral>();
@@ -377,6 +378,47 @@ namespace A_New_Hope.Data
                     .HasForeignKey(e => e.UpdatedByUserId)
                     .OnDelete(DeleteBehavior.SetNull);
             });
+
+            // =============================================================
+            // INVENTORY ITEM OPTIONS (belongs to InventoryItem)
+            // =============================================================
+            modelBuilder.Entity<InventoryItemOption>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .HasMaxLength(100);
+
+                // Helpful indexes for common filtering/sorting
+                entity.HasIndex(e => e.InventoryItemId);
+                entity.HasIndex(e => new { e.InventoryItemId, e.Name }).IsUnique();
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.DeletedAt);
+
+                // Soft delete filter
+                entity.HasQueryFilter(e => e.DeletedAt == null);
+
+                // Relationship:
+                // InventoryItemOption belongs to one InventoryItem.
+                // InventoryItem can have many options.
+                // Cascade is reasonable here because options are children of the parent item.
+                entity.HasOne(e => e.InventoryItem)
+                    .WithMany(i => i.InventoryItemOptions)
+                    .HasForeignKey(e => e.InventoryItemId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Audit relationships
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
 
             // =============================================================
             // USER ITEM PREFERENCES (unique per user + inventory item)

@@ -1105,6 +1105,185 @@ namespace A_New_Hope.Data
             }
 
             // ============================================================
+            // INVENTORY ITEM OPTIONS
+            // ============================================================
+            // InventoryItemOptions represent true variants/sub-selections
+            // of the same InventoryItem.
+            //
+            // Examples:
+            // - Milk -> 1%, 2%
+            // - Bread -> White, Wheat, Both
+            // - Rice -> White, Brown
+            if (!await context.InventoryItemOptions.AnyAsync())
+            {
+                var milk = await context.InventoryItems.FirstAsync(i => i.Name == "Milk");
+                var bread = await context.InventoryItems.FirstAsync(i => i.Name == "Bread");
+                var rice = await context.InventoryItems.FirstAsync(i => i.Name == "Rice");
+                var oatmeal = await context.InventoryItems.FirstAsync(i => i.Name == "Oatmeal");
+                var pintoBeans = await context.InventoryItems.FirstAsync(i => i.Name == "Pinto Beans");
+                var blackBeans = await context.InventoryItems.FirstAsync(i => i.Name == "Black Beans");
+
+                context.InventoryItemOptions.AddRange(
+                    // Milk
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = milk.Id,
+                        Name = "1%",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = milk.Id,
+                        Name = "2%",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Bread
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = bread.Id,
+                        Name = "White",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = bread.Id,
+                        Name = "Wheat",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = bread.Id,
+                        Name = "Both",
+                        SortOrder = 3,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Rice
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = rice.Id,
+                        Name = "White",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = rice.Id,
+                        Name = "Brown",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Oatmeal
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = oatmeal.Id,
+                        Name = "Instant",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = oatmeal.Id,
+                        Name = "Quick",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Pinto Beans
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = pintoBeans.Id,
+                        Name = "Canned",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = pintoBeans.Id,
+                        Name = "Dry",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Black Beans
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = blackBeans.Id,
+                        Name = "Canned",
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryItemOption
+                    {
+                        InventoryItemId = blackBeans.Id,
+                        Name = "Dry",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
+            // ============================================================
             // REFERRALS
             // ============================================================
             // Referrals link a client (ClientUserId) to an organization (ReferringOrganizationId)

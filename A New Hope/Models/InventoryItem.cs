@@ -109,5 +109,7 @@ namespace A_New_Hope.Models
         /// Navigation to the DomainUser who last updated this record.
         /// </summary>
         public DomainUser? UpdatedByUser { get; set; } // Same; makes admin auditing/UX much easier
+
+        public ICollection<InventoryItemOption> InventoryItemOptions { get; set; } = new List<InventoryItemOption>();
     }
 }
