@@ -1,4 +1,6 @@
-﻿namespace A_New_Hope.Models
+﻿using System.ComponentModel.DataAnnotations; // Added for [Required], etc.
+
+namespace A_New_Hope.Models
 {
     /// <summary>
     /// UserItemPreference
@@ -33,29 +35,35 @@
 
         /// <summary>
         /// Foreign key to the DomainUser this preference belongs to.
+        /// Required for validation and form submission.
         /// </summary>
+        [Required(ErrorMessage = "User is required.")]
         public ulong UserId { get; set; }
 
         /// <summary>
         /// Foreign key to the InventoryItem this preference applies to.
+        /// Required for validation and form submission.
         /// </summary>
+        [Required(ErrorMessage = "Inventory Item is required.")]
         public ulong InventoryItemId { get; set; }
 
         /// <summary>
         /// Preference value (Always / Ask / Never).
         /// Using an enum prevents invalid values and keeps preference logic consistent.
+        /// Required for front-end forms.
         /// </summary>
+        [Required(ErrorMessage = "Preference selection is required.")]
         public PreferenceOption Preference { get; set; } = PreferenceOption.Ask;
 
         /// <summary>
         /// Audit: DomainUser who initially created/set this preference (nullable until auth is wired).
         /// </summary>
-        public ulong? CreatedByUserId { get; set; } // Added so you know who initially set the preference
+        public ulong? CreatedByUserId { get; set; }
 
         /// <summary>
         /// Audit: DomainUser who last updated/changed this preference (nullable until auth is wired).
         /// </summary>
-        public ulong? UpdatedByUserId { get; set; } // Keeps track of who last changed it
+        public ulong? UpdatedByUserId { get; set; }
 
         /// <summary>
         /// Timestamp when the record was created (typically set server-side in UTC).
@@ -72,7 +80,7 @@
         /// - null = not deleted
         /// - non-null = deleted (excluded by global query filters in ApplicationDbContext)
         /// </summary>
-        public DateTime? DeletedAt { get; set; } // Optional but recommended for soft-delete consistency
+        public DateTime? DeletedAt { get; set; }
 
         // -----------------------------------------------------------------
         // Navigation properties (EF Core relationships)
@@ -91,7 +99,7 @@
         /// <summary>
         /// Navigation to the DomainUser who created the preference (useful for Include() and admin auditing).
         /// </summary>
-        public DomainUser? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in MVC/admin views
+        public DomainUser? CreatedByUser { get; set; }
 
         /// <summary>
         /// Navigation to the DomainUser who last updated the preference.

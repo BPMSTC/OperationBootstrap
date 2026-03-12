@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength]
+﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength], [Range], [Required]
 
 namespace A_New_Hope.Models
 {
@@ -23,6 +23,10 @@ namespace A_New_Hope.Models
     /// Audit fields:
     /// - CreatedByUserId / UpdatedByUserId store the DomainUser responsible for changes (once auth is wired).
     /// - CreatedAt / UpdatedAt store timestamps (UTC recommended).
+    ///
+    /// Front-end validation:
+    /// - MaxLength enforces character limits in forms.
+    /// - Range ensures numeric fields stay in valid ranges.
     /// </summary>
     public class ClientProfile
     {
@@ -35,15 +39,18 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Optional employment status text (e.g., "Full-time", "Part-time", "Unemployed").
         /// MaxLength keeps storage predictable and avoids LONGTEXT on MySQL.
+        /// Added [StringLength] for front-end validation.
         /// </summary>
-        [MaxLength(50)] // Keeps MySQL from using LONGTEXT and prevents overly-long values; also improves indexing if you ever filter by status
+        [StringLength(50, ErrorMessage = "Employment status cannot exceed 50 characters.")]
         public string? EmploymentStatus { get; set; }
 
         /// <summary>
         /// Optional monthly earned income amount.
         /// Precision/scale is configured in ApplicationDbContext (HasPrecision(10, 2)).
+        /// Added [Range] to enforce positive values for front-end validation.
         /// </summary>
-        public decimal? EarnedIncomeMonthly { get; set; } // Precision should stay configured in DbContext (you already set 10,2 there)
+        [Range(0, 9999999999.99, ErrorMessage = "Monthly earned income must be 0 or greater.")]
+        public decimal? EarnedIncomeMonthly { get; set; }
 
         /// <summary>
         /// Indicates whether the client is currently unhoused.
@@ -76,7 +83,7 @@ namespace A_New_Hope.Models
         /// - null = not deleted
         /// - non-null = deleted (excluded by global query filters in ApplicationDbContext)
         /// </summary>
-        public DateTime? DeletedAt { get; set; }   // <-- add this
+        public DateTime? DeletedAt { get; set; }
 
         // -----------------------------------------------------------------
         // Navigation properties (EF Core relationships)
