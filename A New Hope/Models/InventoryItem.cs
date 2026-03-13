@@ -110,6 +110,14 @@ namespace A_New_Hope.Models
         /// </summary>
         public DomainUser? UpdatedByUser { get; set; } // Same; makes admin auditing/UX much easier
 
+        /// <summary>
+        /// An item can have multiple options (e.g. Milk, 1% or 2%).
+        /// </summary>
         public ICollection<InventoryItemOption> InventoryItemOptions { get; set; } = new List<InventoryItemOption>();
+
+        /// <summary>
+        /// An item can participate in multiple InventoryChoiceGroups (e.g. "Vegetable Oil or Mayo" and "Ketchup or Mustard").
+        /// </summary>
+        public ICollection<InventoryChoiceGroupItem> InventoryChoiceGroupItems { get; set; } = new List<InventoryChoiceGroupItem>();
     }
 }

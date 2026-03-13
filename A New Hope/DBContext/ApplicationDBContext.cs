@@ -90,6 +90,8 @@ namespace A_New_Hope.Data
         public DbSet<UserItemPreference> UserItemPreferences => Set<UserItemPreference>();
         public DbSet<ReferringOrganization> ReferringOrganizations => Set<ReferringOrganization>();
         public DbSet<Referral> Referrals => Set<Referral>();
+        public DbSet<InventoryChoiceGroup> InventoryChoiceGroups => Set<InventoryChoiceGroup>();
+        public DbSet<InventoryChoiceGroupItem> InventoryChoiceGroupItems => Set<InventoryChoiceGroupItem>();
 
         /// <summary>
         /// OnModelCreating is where you configure EF Core mapping rules:
@@ -419,6 +421,83 @@ namespace A_New_Hope.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
+
+            // =============================================================
+            // INVENTORY CHOICE GROUPS
+            // =============================================================
+            modelBuilder.Entity<InventoryChoiceGroup>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .HasMaxLength(150);
+
+                entity.Property(e => e.DisplayLabel)
+                    .HasMaxLength(150);
+
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.DeletedAt);
+
+                // Soft delete filter
+                entity.HasQueryFilter(e => e.DeletedAt == null);
+
+                // Audit relationships
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // =============================================================
+            // INVENTORY CHOICE GROUP ITEMS
+            // =============================================================
+            modelBuilder.Entity<InventoryChoiceGroupItem>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.InventoryChoiceGroupId);
+                entity.HasIndex(e => e.InventoryItemId);
+
+                // Prevent duplicate membership of the same item in the same group
+                entity.HasIndex(e => new { e.InventoryChoiceGroupId, e.InventoryItemId }).IsUnique();
+
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.DeletedAt);
+
+                // Soft delete filter
+                entity.HasQueryFilter(e => e.DeletedAt == null);
+
+                // Relationship:
+                // ChoiceGroupItem belongs to one InventoryChoiceGroup.
+                entity.HasOne(e => e.InventoryChoiceGroup)
+                    .WithMany(g => g.InventoryChoiceGroupItems)
+                    .HasForeignKey(e => e.InventoryChoiceGroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relationship:
+                // ChoiceGroupItem belongs to one InventoryItem.
+                entity.HasOne(e => e.InventoryItem)
+                    .WithMany(i => i.InventoryChoiceGroupItems)
+                    .HasForeignKey(e => e.InventoryItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Audit relationships
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
 
             // =============================================================
             // USER ITEM PREFERENCES (unique per user + inventory item)
