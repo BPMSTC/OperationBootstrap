@@ -189,7 +189,7 @@ td a:hover {
 }
 
 /* Responsive adjustments */
-@media (max-width: 1200px) {
+/*@media (max-width: 1200px) {
     .container {
         width: 95%;
     }
@@ -209,7 +209,7 @@ td a:hover {
         font-size: 0.8rem;
         padding: 4px;
     }
-}
+}*/
 
 /* =========================
    TABLES MATCH HEADER WIDTH SITE-WIDE
@@ -229,60 +229,7 @@ td a:hover {
     table-layout: auto;
 }
 
-/* =========================
-   DETAILS PAGE STYLING
-========================= */
 
-dl.row {
-    background-color: #ffffff;
-    border: 2px solid #ced4da;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-}
-
-dl.row dt {
-    font-weight: 600;
-    color: #343a40;
-    padding: 8px 10px;
-    border-bottom: 1px solid #e9ecef;
-}
-
-dl.row dd {
-    margin-bottom: 0;
-    padding: 8px 10px;
-    border-bottom: 1px solid #e9ecef;
-    color: #212529;
-    word-break: break-word;
-}
-
-dl.row dt:last-of-type,
-dl.row dd:last-of-type {
-    border-bottom: none;
-}
-
-dl.row dt + dd {
-    margin-bottom: 6px;
-}
-
-/* Action buttons area */
-.details-actions {
-    margin-top: 10px;
-}
-
-.details-actions a {
-    margin-right: 8px;
-    margin-bottom: 6px;
-}
-
-@media (max-width: 768px) {
-
-    dl.row dt,
-    dl.row dd {
-        font-size: 0.9rem;
-        padding: 6px 8px;
-    }
-}
 
 /* =========================
    DELETE PAGE STYLING
@@ -321,4 +268,54 @@ form[asp-action="Delete"] a {
 
 .btn-danger:hover {
     background-color: #3f1c1c !important;
+}
+
+/* =========================
+   DETAILS PAGE ROW-STYLE
+========================= */
+
+dl.row {
+    width: 100%;
+    border: 2px solid #ced4da;
+    border-radius: 8px;
+    background-color: #ffffff;
+    margin-bottom: 20px;
+}
+
+    dl.row dt,
+    dl.row dd {
+        display: block; /* Each item gets its own row */
+        padding: 12px 15px;
+        border-bottom: 1px solid #ced4da;
+    }
+
+    dl.row dt {
+        font-weight: 600;
+        background-color: #f8f9fa;
+        color: #495057;
+    }
+
+    dl.row dd {
+        background-color: #ffffff;
+        color: #212529;
+        margin: 0 0 0 0; /* Remove default margin */
+    }
+
+        dl.row dt:last-of-type,
+        dl.row dd:last-of-type {
+            border-bottom: none; /* No border on last row */
+        }
+
+        /* Optional: subtle hover highlight for each info row */
+        dl.row dt:hover,
+        dl.row dd:hover {
+            background-color: #e9ecef;
+        }
+
+/* Buttons spacing */
+div > a.btn,
+div > a.btn-primary,
+div > a.btn-secondary {
+    margin-top: 10px;
+    margin-right: 8px;
 }
