@@ -238,71 +238,6 @@ namespace A_New_Hope.Data
             var foodGroup = await context.CategoryGroups.FirstAsync(g => g.Name == "Food");
             var nonFoodGroup = await context.CategoryGroups.FirstAsync(g => g.Name == "Non-Food");
 
-            /*
-            // ============================================================
-            // CATEGORIES
-            // ============================================================
-            // Categories belong to CategoryGroups and are used to classify InventoryItems.
-            if (!await context.Categories.AnyAsync())
-            {
-                context.Categories.AddRange(
-                    new Category
-                    {
-                        CategoryGroupId = foodGroup.Id,
-                        Name = "Canned Goods",
-                        SortOrder = 1,
-                        IsActive = true,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    },
-                    new Category
-                    {
-                        CategoryGroupId = foodGroup.Id,
-                        Name = "Produce",
-                        SortOrder = 2,
-                        IsActive = true,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    },
-                    new Category
-                    {
-                        CategoryGroupId = nonFoodGroup.Id,
-                        Name = "Hygiene",
-                        SortOrder = 1,
-                        IsActive = true,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    },
-                    new Category
-                    {
-                        CategoryGroupId = nonFoodGroup.Id,
-                        Name = "Household Supplies",
-                        SortOrder = 2,
-                        IsActive = true,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }
-                );
-
-                await context.SaveChangesAsync();
-            }
-
-            // Pull categories for FK use in InventoryItems seeding.
-            // NOTE: If you ever add duplicate category names across groups, these lookups will become ambiguous.
-            var cannedGoods = await context.Categories.FirstAsync(c => c.Name == "Canned Goods");
-            var produce = await context.Categories.FirstAsync(c => c.Name == "Produce");
-            var hygiene = await context.Categories.FirstAsync(c => c.Name == "Hygiene");
-            var household = await context.Categories.FirstAsync(c => c.Name == "Household Supplies");
-            */
-
             // ============================================================
             // CATEGORIES
             // ============================================================
@@ -1271,6 +1206,196 @@ namespace A_New_Hope.Data
                     {
                         InventoryItemId = blackBeans.Id,
                         Name = "Dry",
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
+            // ============================================================
+            // INVENTORY CHOICE GROUPS
+            // ============================================================
+            // InventoryChoiceGroups represent grouped client choices where one selection
+            // is made from multiple different InventoryItems.
+            // Examples:
+            // - Vegetable Oil or Mayo
+            // - Ketchup or Mustard
+            // - Sugar or Flour
+            // - Pancake Syrup or Jelly
+            if (!await context.InventoryChoiceGroups.AnyAsync())
+            {
+                context.InventoryChoiceGroups.AddRange(
+                    new InventoryChoiceGroup
+                    {
+                        Name = "OilOrMayo",
+                        DisplayLabel = "Vegetable Oil or Mayo",
+                        MaxSelections = 1,
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroup
+                    {
+                        Name = "KetchupOrMustard",
+                        DisplayLabel = "Ketchup or Mustard",
+                        MaxSelections = 1,
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroup
+                    {
+                        Name = "SugarOrFlour",
+                        DisplayLabel = "Sugar or Flour",
+                        MaxSelections = 1,
+                        SortOrder = 3,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroup
+                    {
+                        Name = "PancakeSyrupOrJelly",
+                        DisplayLabel = "Pancake Syrup or Jelly",
+                        MaxSelections = 1,
+                        SortOrder = 4,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
+            // ============================================================
+            // INVENTORY CHOICE GROUP ITEMS
+            // ============================================================
+            // InventoryChoiceGroupItems link grouped client choices to the real inventory items
+            // that belong to that group.
+            if (!await context.InventoryChoiceGroupItems.AnyAsync())
+            {
+                // Pull choice groups for FK use in InventoryChoiceGroupItems seeding.
+                var oilOrMayoGroup = await context.InventoryChoiceGroups.FirstAsync(g => g.Name == "OilOrMayo");
+                var ketchupOrMustardGroup = await context.InventoryChoiceGroups.FirstAsync(g => g.Name == "KetchupOrMustard");
+                var sugarOrFlourGroup = await context.InventoryChoiceGroups.FirstAsync(g => g.Name == "SugarOrFlour");
+                var pancakeSyrupOrJellyGroup = await context.InventoryChoiceGroups.FirstAsync(g => g.Name == "PancakeSyrupOrJelly");
+
+                // Pull inventory items for FK use in InventoryChoiceGroupItems seeding.
+                var vegetableOil = await context.InventoryItems.FirstAsync(i => i.Name == "Vegetable Oil");
+                var mayo = await context.InventoryItems.FirstAsync(i => i.Name == "Mayo");
+                var ketchup = await context.InventoryItems.FirstAsync(i => i.Name == "Ketchup");
+                var mustard = await context.InventoryItems.FirstAsync(i => i.Name == "Mustard");
+                var sugar = await context.InventoryItems.FirstAsync(i => i.Name == "Sugar");
+                var flour = await context.InventoryItems.FirstAsync(i => i.Name == "Flour");
+                var pancakeSyrup = await context.InventoryItems.FirstAsync(i => i.Name == "Pancake Syrup");
+                var jelly = await context.InventoryItems.FirstAsync(i => i.Name == "Jelly");
+
+                context.InventoryChoiceGroupItems.AddRange(
+                    // Vegetable Oil or Mayo
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = oilOrMayoGroup.Id,
+                        InventoryItemId = vegetableOil.Id,
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = oilOrMayoGroup.Id,
+                        InventoryItemId = mayo.Id,
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Ketchup or Mustard
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = ketchupOrMustardGroup.Id,
+                        InventoryItemId = ketchup.Id,
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = ketchupOrMustardGroup.Id,
+                        InventoryItemId = mustard.Id,
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Sugar or Flour
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = sugarOrFlourGroup.Id,
+                        InventoryItemId = sugar.Id,
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = sugarOrFlourGroup.Id,
+                        InventoryItemId = flour.Id,
+                        SortOrder = 2,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+
+                    // Pancake Syrup or Jelly
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = pancakeSyrupOrJellyGroup.Id,
+                        InventoryItemId = pancakeSyrup.Id,
+                        SortOrder = 1,
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new InventoryChoiceGroupItem
+                    {
+                        InventoryChoiceGroupId = pancakeSyrupOrJellyGroup.Id,
+                        InventoryItemId = jelly.Id,
                         SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
