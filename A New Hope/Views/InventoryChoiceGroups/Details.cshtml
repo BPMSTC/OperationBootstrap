@@ -28,7 +28,7 @@
         <dd class="col-sm-9">
             @if (Model.InventoryChoiceGroupItems != null && Model.InventoryChoiceGroupItems.Any())
             {
-                <ul class="mb-0">
+                <ul class="mb-3">
                     @foreach (var item in Model.InventoryChoiceGroupItems
                         .OrderBy(i => i.SortOrder)
                         .ThenBy(i => i.InventoryItem.Name))
@@ -49,8 +49,24 @@
             }
             else
             {
-                <span class="text-muted">No items assigned to this group.</span>
+                <div class="text-muted mb-3">No items assigned to this group.</div>
             }
+
+            <div>
+                <a asp-controller="InventoryChoiceGroupItems"
+                   asp-action="Create"
+                   asp-route-inventoryChoiceGroupId="@Model.Id"
+                   class="btn btn-sm btn-outline-primary">
+                    Add Item to Group
+                </a>
+
+                <a asp-controller="InventoryChoiceGroupItems"
+                   asp-action="Index"
+                   asp-route-inventoryChoiceGroupId="@Model.Id"
+                   class="btn btn-sm btn-outline-secondary ms-1">
+                    Manage Group Items
+                </a>
+            </div>
         </dd>
     </dl>
 </div>

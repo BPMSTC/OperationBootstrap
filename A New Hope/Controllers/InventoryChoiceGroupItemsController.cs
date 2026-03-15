@@ -27,16 +27,37 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted inventory choice group items.
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(ulong? inventoryChoiceGroupId = null)
         {
             _logger.LogInformation("Loading InventoryChoiceGroupItems Index page");
 
-            var inventoryChoiceGroupItems = await _context.InventoryChoiceGroupItems
+            var query = _context.InventoryChoiceGroupItems
                 .Where(i => i.DeletedAt == null)
                 .Include(i => i.InventoryChoiceGroup)
                 .Include(i => i.InventoryItem)
                     .ThenInclude(ii => ii.Category)
                         .ThenInclude(c => c.CategoryGroup)
+                .AsQueryable();
+
+            if (inventoryChoiceGroupId.HasValue)
+            {
+                query = query.Where(i => i.InventoryChoiceGroupId == inventoryChoiceGroupId.Value);
+
+                var selectedGroup = await _context.InventoryChoiceGroups
+                    .Where(g => g.DeletedAt == null)
+                    .FirstOrDefaultAsync(g => g.Id == inventoryChoiceGroupId.Value);
+
+                if (selectedGroup != null)
+                {
+                    ViewData["SelectedChoiceGroupId"] = selectedGroup.Id;
+                    ViewData["SelectedChoiceGroupName"] =
+                        string.IsNullOrWhiteSpace(selectedGroup.DisplayLabel)
+                            ? selectedGroup.Name
+                            : selectedGroup.DisplayLabel;
+                }
+            }
+
+            var inventoryChoiceGroupItems = await query
                 .OrderBy(i => i.InventoryChoiceGroup.Name)
                 .ThenBy(i => i.SortOrder)
                 .ThenBy(i => i.InventoryItem.Name)
@@ -82,12 +103,20 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Shows the create form.
         /// </summary>
-        public async Task<IActionResult> Create()
+        public async Task<IActionResult> Create(ulong? inventoryChoiceGroupId = null)
         {
             _logger.LogInformation("Loading Create InventoryChoiceGroupItem page");
 
-            await PopulateDropdowns();
-            return View();
+            await PopulateDropdowns(inventoryChoiceGroupId, null);
+
+            var model = new InventoryChoiceGroupItem();
+
+            if (inventoryChoiceGroupId.HasValue)
+            {
+                model.InventoryChoiceGroupId = inventoryChoiceGroupId.Value;
+            }
+
+            return View(model);
         }
 
         // POST: InventoryChoiceGroupItems/Create

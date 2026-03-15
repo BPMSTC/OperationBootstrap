@@ -511,6 +511,7 @@ namespace A_New_Hope.Data
                 entity.HasIndex(e => new { e.UserId, e.InventoryItemId }).IsUnique();
 
                 entity.HasIndex(e => e.InventoryItemId);
+                entity.HasIndex(e => e.InventoryItemOptionId);
                 entity.HasIndex(e => e.DeletedAt);
 
                 // Store Preference enum as string for readability.
@@ -535,6 +536,14 @@ namespace A_New_Hope.Data
                     .HasForeignKey(e => e.InventoryItemId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                // Relationship:
+                // Preference may optionally belong to an inventory item option.
+                // SetNull keeps the preference record if the option is physically deleted.
+                entity.HasOne(e => e.InventoryItemOption)
+                    .WithMany()
+                    .HasForeignKey(e => e.InventoryItemOptionId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 // Audit relationships.
                 entity.HasOne(e => e.CreatedByUser)
                     .WithMany()
@@ -546,7 +555,6 @@ namespace A_New_Hope.Data
                     .HasForeignKey(e => e.UpdatedByUserId)
                     .OnDelete(DeleteBehavior.SetNull);
             });
-
             // =============================================================
             // REFERRING ORGANIZATIONS
             // =============================================================
