@@ -88,10 +88,12 @@ namespace A_New_Hope.Data
         public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
         public DbSet<InventoryItemOption> InventoryItemOptions => Set<InventoryItemOption>();
         public DbSet<UserItemPreference> UserItemPreferences => Set<UserItemPreference>();
+        public DbSet<UserChoiceGroupPreference> UserChoiceGroupPreferences => Set<UserChoiceGroupPreference>();
         public DbSet<ReferringOrganization> ReferringOrganizations => Set<ReferringOrganization>();
         public DbSet<Referral> Referrals => Set<Referral>();
         public DbSet<InventoryChoiceGroup> InventoryChoiceGroups => Set<InventoryChoiceGroup>();
         public DbSet<InventoryChoiceGroupItem> InventoryChoiceGroupItems => Set<InventoryChoiceGroupItem>();
+
 
         /// <summary>
         /// OnModelCreating is where you configure EF Core mapping rules:
@@ -555,6 +557,58 @@ namespace A_New_Hope.Data
                     .HasForeignKey(e => e.UpdatedByUserId)
                     .OnDelete(DeleteBehavior.SetNull);
             });
+
+            // =============================================================
+            // USER CHOICE GROUP PREFERENCES (unique per user + choice group)
+            // =============================================================
+            modelBuilder.Entity<UserChoiceGroupPreference>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                // Unique constraint prevents duplicates:
+                // A given user can have only one preference per choice group.
+                entity.HasIndex(e => new { e.UserId, e.InventoryChoiceGroupId }).IsUnique();
+
+                entity.HasIndex(e => e.InventoryChoiceGroupId);
+                entity.HasIndex(e => e.SelectedInventoryItemId);
+                entity.HasIndex(e => e.DeletedAt);
+
+                // Soft delete filter.
+                entity.HasQueryFilter(e => e.DeletedAt == null);
+
+                // Relationship:
+                // Preference belongs to a user.
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relationship:
+                // Preference belongs to a choice group.
+                entity.HasOne(e => e.InventoryChoiceGroup)
+                    .WithMany()
+                    .HasForeignKey(e => e.InventoryChoiceGroupId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relationship:
+                // Preference stores the selected inventory item from that group.
+                entity.HasOne(e => e.SelectedInventoryItem)
+                    .WithMany()
+                    .HasForeignKey(e => e.SelectedInventoryItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Audit relationships.
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
             // =============================================================
             // REFERRING ORGANIZATIONS
             // =============================================================

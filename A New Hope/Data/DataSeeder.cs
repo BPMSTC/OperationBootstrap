@@ -1408,6 +1408,52 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
+
+            // ============================================================
+            // USER CHOICE GROUP PREFERENCES
+            // ============================================================
+            // UserChoiceGroupPreferences store a user's selected InventoryItem
+            // for a grouped choice such as "Sugar or Flour".
+            if (!await context.UserChoiceGroupPreferences.AnyAsync())
+            {
+                // Pull choice groups for FK use in UserChoiceGroupPreferences seeding.
+                var sugarOrFlourGroup = await context.InventoryChoiceGroups
+                    .FirstAsync(g => g.Name == "SugarOrFlour");
+
+                var ketchupOrMustardGroup = await context.InventoryChoiceGroups
+                    .FirstAsync(g => g.Name == "KetchupOrMustard");
+
+                // Pull inventory items for FK use in UserChoiceGroupPreferences seeding.
+                var flour = await context.InventoryItems.FirstAsync(i => i.Name == "Flour");
+                var mustard = await context.InventoryItems.FirstAsync(i => i.Name == "Mustard");
+
+                context.UserChoiceGroupPreferences.AddRange(
+                    new UserChoiceGroupPreference
+                    {
+                        UserId = clientUser1.Id,
+                        InventoryChoiceGroupId = sugarOrFlourGroup.Id,
+                        SelectedInventoryItemId = flour.Id,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new UserChoiceGroupPreference
+                    {
+                        UserId = clientUser2.Id,
+                        InventoryChoiceGroupId = ketchupOrMustardGroup.Id,
+                        SelectedInventoryItemId = mustard.Id,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
+
             // ============================================================
             // REFERRALS
             // ============================================================
