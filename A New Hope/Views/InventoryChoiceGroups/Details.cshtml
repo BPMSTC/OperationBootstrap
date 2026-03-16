@@ -1,0 +1,77 @@
+@model A_New_Hope.Models.InventoryChoiceGroup
+
+@{
+    ViewData["Title"] = "Inventory Choice Group Details";
+}
+
+<h1>Inventory Choice Group Details</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DisplayLabel)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.DisplayLabel)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.MaxSelections)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.MaxSelections)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SortOrder)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.SortOrder)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+
+        <dt class="col-sm-3">Items in Group</dt>
+        <dd class="col-sm-9">
+            @if (Model.InventoryChoiceGroupItems != null && Model.InventoryChoiceGroupItems.Any())
+            {
+                <ul class="mb-3">
+                    @foreach (var item in Model.InventoryChoiceGroupItems
+                        .OrderBy(i => i.SortOrder)
+                        .ThenBy(i => i.InventoryItem.Name))
+                    {
+                        <li>
+                            @item.InventoryItem.Name
+                            @if (item.InventoryItem.Category != null)
+                            {
+                                <span class="text-muted">
+                                    - @(item.InventoryItem.Category.CategoryGroup != null
+                                    ? $"{item.InventoryItem.Category.CategoryGroup.Name} - {item.InventoryItem.Category.Name}"
+                                    : item.InventoryItem.Category.Name)
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <div class="text-muted mb-3">No items assigned to this group.</div>
+            }
+
+            <div>
+                <a asp-controller="InventoryChoiceGroupItems"
+                   asp-action="Create"
+                   asp-route-inventoryChoiceGroupId="@Model.Id"
+                   class="btn btn-sm btn-outline-primary">
+                    Add Item to Group
+                </a>
+
+                <a asp-controller="InventoryChoiceGroupItems"
+                   asp-action="Index"
+                   asp-route-inventoryChoiceGroupId="@Model.Id"
+                   class="btn btn-sm btn-outline-secondary ms-1">
+                    Manage Group Items
+                </a>
+            </div>
+        </dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+</div>

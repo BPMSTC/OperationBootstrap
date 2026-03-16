@@ -1,0 +1,83 @@
+@model IEnumerable<A_New_Hope.Models.InventoryChoiceGroupItem>
+
+@{
+    ViewData["Title"] = "Inventory Choice Group Items";
+    var selectedChoiceGroupId = ViewData["SelectedChoiceGroupId"] != null
+        ? (ulong?)ViewData["SelectedChoiceGroupId"]
+        : null;
+    var selectedChoiceGroupName = ViewData["SelectedChoiceGroupName"] as string;
+}
+
+<div class="page-header">
+    <h1>Inventory Choice Group Items</h1>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(selectedChoiceGroupName))
+{
+    <div class="alert alert-info">
+        Showing items for group: <strong>@selectedChoiceGroupName</strong>
+    </div>
+
+    <div class="mb-3">
+        <a asp-action="Create"
+           asp-route-inventoryChoiceGroupId="@selectedChoiceGroupId"
+           class="btn btn-primary">
+            Add Item to This Group
+        </a>
+        <a asp-action="Index" class="btn btn-outline-secondary ms-1">View All Group Items</a>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <a asp-action="Create" class="btn btn-primary">Create New</a>
+    </div>
+}
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Choice Group</th>
+                <th>Inventory Item</th>
+                <th>Category</th>
+                <th>@Html.DisplayNameFor(model => model.SortOrder)</th>
+                <th>@Html.DisplayNameFor(model => model.IsActive)</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @(
+                            item.InventoryChoiceGroup != null
+                            ? (!string.IsNullOrWhiteSpace(item.InventoryChoiceGroup.DisplayLabel)
+                            ? item.InventoryChoiceGroup.DisplayLabel
+                            : item.InventoryChoiceGroup.Name)
+                            : ""
+                        )
+                    </td>
+                    <td>@(item.InventoryItem?.Name ?? "")</td>
+                    <td>
+                        @(
+                            item.InventoryItem?.Category != null
+                            ? (item.InventoryItem.Category.CategoryGroup != null
+                            ? $"{item.InventoryItem.Category.CategoryGroup.Name} - {item.InventoryItem.Category.Name}"
+                            : item.InventoryItem.Category.Name)
+                            : ""
+                        )
+                    </td>
+                    <td>@Html.DisplayFor(modelItem => item.SortOrder)</td>
+                    <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,54 @@
+@model A_New_Hope.Models.UserChoiceGroupPreference
+
+@{
+    ViewData["Title"] = "Create User Choice Group Preference";
+}
+
+<div class="page-header">
+    <h1>Create User Choice Group Preference</h1>
+</div>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="UserId" class="form-label"></label>
+                <select asp-for="UserId" class="form-select" asp-items="ViewBag.UserId">
+                    <option value="">-- Select Client User --</option>
+                </select>
+                <span asp-validation-for="UserId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="InventoryChoiceGroupId" class="form-label"></label>
+                <select asp-for="InventoryChoiceGroupId" class="form-select" asp-items="ViewBag.InventoryChoiceGroupId">
+                    <option value="">-- Select Choice Group --</option>
+                </select>
+                <span asp-validation-for="InventoryChoiceGroupId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SelectedInventoryItemId" class="form-label"></label>
+                <select asp-for="SelectedInventoryItemId" class="form-select" asp-items="ViewBag.SelectedInventoryItemId">
+                    <option value="">-- Select Inventory Item --</option>
+                </select>
+                <span asp-validation-for="SelectedInventoryItemId" class="text-danger"></span>
+            </div>
+
+            <div>
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

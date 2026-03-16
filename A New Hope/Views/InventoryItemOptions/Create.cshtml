@@ -1,0 +1,55 @@
+@model A_New_Hope.Models.InventoryItemOption
+
+@{
+    ViewData["Title"] = "Create Inventory Item Option";
+}
+
+<div class="page-header">
+    <h1>Create Inventory Item Option</h1>
+</div>
+
+<hr />
+
+<div class="row">
+    <div class="col-md-6 col-lg-5">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="InventoryItemId" class="form-label"></label>
+                <select asp-for="InventoryItemId" class="form-select" asp-items="ViewBag.InventoryItemId">
+                    <option value="">-- Select Inventory Item --</option>
+                </select>
+                <span asp-validation-for="InventoryItemId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label"></label>
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="SortOrder" class="form-label"></label>
+                <input asp-for="SortOrder" class="form-control" />
+                <span asp-validation-for="SortOrder" class="text-danger"></span>
+            </div>
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" asp-for="IsActive" />
+                <label class="form-check-label" asp-for="IsActive"></label>
+            </div>
+
+            <div>
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

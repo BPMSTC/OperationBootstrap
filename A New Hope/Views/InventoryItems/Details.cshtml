@@ -15,12 +15,12 @@
         <dt class="col-sm-3">Category</dt>
         <dd class="col-sm-9">
             @(
-                Model.Category != null
-                    ? (Model.Category.CategoryGroup != null
+                        Model.Category != null
+                        ? (Model.Category.CategoryGroup != null
                         ? $"{Model.Category.CategoryGroup.Name} - {Model.Category.Name}"
                         : Model.Category.Name)
-                    : ""
-            )
+                        : ""
+                        )
         </dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsBaseline)</dt>
@@ -31,6 +31,23 @@
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+
+        <dt class="col-sm-3">Options</dt>
+        <dd class="col-sm-9">
+            @if (Model.InventoryItemOptions != null && Model.InventoryItemOptions.Any())
+            {
+                <ul class="mb-0">
+                    @foreach (var option in Model.InventoryItemOptions.OrderBy(o => o.SortOrder).ThenBy(o => o.Name))
+                    {
+                        <li>@option.Name</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <span class="text-muted">No options for this item.</span>
+            }
+        </dd>
     </dl>
 </div>
 

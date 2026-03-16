@@ -21,26 +21,45 @@
                 <th>@Html.DisplayNameFor(model => model.IsBaseline)</th>
                 <th>@Html.DisplayNameFor(model => model.IsAvailable)</th>
                 <th>@Html.DisplayNameFor(model => model.IsActive)</th>
+                <th>Options</th>
                 <th class="text-end">Actions</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var item in Model)
             {
+                var options = item.InventoryItemOptions?
+                .OrderBy(o => o.SortOrder)
+                .ThenBy(o => o.Name)
+                .ToList() ?? new List<A_New_Hope.Models.InventoryItemOption>();
+
                 <tr>
                     <td>@Html.DisplayFor(modelItem => item.Name)</td>
                     <td>
                         @(
-                            item.Category != null
-                                ? (item.Category.CategoryGroup != null
-                                    ? $"{item.Category.CategoryGroup.Name} - {item.Category.Name}"
-                                    : item.Category.Name)
-                                : ""
-                        )
+                                            item.Category != null
+                                            ? (item.Category.CategoryGroup != null
+                                            ? $"{item.Category.CategoryGroup.Name} - {item.Category.Name}"
+                                            : item.Category.Name)
+                                            : ""
+                                            )
                     </td>
                     <td>@Html.DisplayFor(modelItem => item.IsBaseline)</td>
                     <td>@Html.DisplayFor(modelItem => item.IsAvailable)</td>
                     <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
+                    <td>
+                        @if (options.Any())
+                        {
+                            <div><strong>@options.Count</strong> option(s)</div>
+                            <div class="text-muted small">
+                                @string.Join(", ", options.Select(o => o.Name))
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">None</span>
+                        }
+                    </td>
                     <td class="text-end text-nowrap">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                         <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>

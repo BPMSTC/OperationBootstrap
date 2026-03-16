@@ -1,37 +1,38 @@
-﻿namespace A_New_Hope.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace A_New_Hope.Models
 {
     /// <summary>
-    /// UserItemPreference
-    /// ------------------
-    /// Represents a user's preference for a specific InventoryItem.
+    /// UserChoiceGroupPreference
+    /// -------------------------
+    /// Represents a user's selected item for an InventoryChoiceGroup.
     ///
     /// Core idea:
-    /// - DomainUser has a DefaultPreference (a fallback).
-    /// - UserItemPreference overrides that default for a specific InventoryItem.
+    /// - Some stakeholder choices are grouped choices between different real inventory items.
+    /// - Example: "Sugar or Flour" where the user selects one item from the group.
     ///
     /// Relationship:
-    /// - Each record links one user (UserId) to one inventory item (InventoryItemId).
-    /// - Optionally, the preference may also link to an InventoryItemOption
-    ///   when the item has a variant/sub-selection.
+    /// - Each record links one user (UserId) to one InventoryChoiceGroup (InventoryChoiceGroupId)
+    ///   and stores the selected InventoryItem (SelectedInventoryItemId).
     ///
-    /// Examples:
-    /// - Milk + Always + 2%
-    /// - Bread + Ask + Wheat
-    /// - Rice + Never + Brown
+    /// Example:
+    /// - User: Jamie Client
+    /// - Choice Group: Sugar or Flour
+    /// - Selected Item: Flour
     ///
     /// Uniqueness/business rule:
-    /// - A user should have at most one preference per inventory item.
-    /// - This is enforced in ApplicationDbContext via a unique index on (UserId, InventoryItemId).
+    /// - A user should have at most one preference per choice group.
+    /// - This should be enforced in ApplicationDbContext via a unique index on (UserId, InventoryChoiceGroupId).
     ///
     /// Soft delete:
     /// - DeletedAt marks the record as deleted without physically removing it.
-    /// - ApplicationDbContext applies a query filter to exclude deleted rows by default.
+    /// - ApplicationDbContext should apply a query filter to exclude deleted rows by default.
     ///
     /// Audit fields:
     /// - CreatedByUserId / UpdatedByUserId store which DomainUser set/changed the preference.
     /// - CreatedAt / UpdatedAt store timestamps (UTC recommended).
     /// </summary>
-    public class UserItemPreference
+    public class UserChoiceGroupPreference
     {
         /// <summary>
         /// Primary key for the preference record.
@@ -44,21 +45,15 @@
         public ulong UserId { get; set; }
 
         /// <summary>
-        /// Foreign key to the InventoryItem this preference applies to.
+        /// Foreign key to the InventoryChoiceGroup this preference applies to.
         /// </summary>
-        public ulong InventoryItemId { get; set; }
+        public ulong InventoryChoiceGroupId { get; set; }
 
         /// <summary>
-        /// Optional foreign key to the InventoryItemOption chosen for this preference.
-        /// Null when the InventoryItem has no options or no option has been selected.
+        /// Foreign key to the selected InventoryItem within the choice group.
         /// </summary>
-        public ulong? InventoryItemOptionId { get; set; }
-
-        /// <summary>
-        /// Preference value (Always / Ask / Never).
-        /// Using an enum prevents invalid values and keeps preference logic consistent.
-        /// </summary>
-        public PreferenceOption Preference { get; set; } = PreferenceOption.Ask;
+        [Display(Name = "Selected Inventory Item")]
+        public ulong SelectedInventoryItemId { get; set; }
 
         /// <summary>
         /// Audit: DomainUser who initially created/set this preference (nullable until auth is wired).
@@ -97,14 +92,14 @@
         public DomainUser User { get; set; } = null!;
 
         /// <summary>
-        /// Required navigation to the InventoryItem this preference applies to.
+        /// Required navigation to the InventoryChoiceGroup this preference applies to.
         /// </summary>
-        public InventoryItem InventoryItem { get; set; } = null!;
+        public InventoryChoiceGroup InventoryChoiceGroup { get; set; } = null!;
 
         /// <summary>
-        /// Optional navigation to the selected InventoryItemOption for this preference.
+        /// Required navigation to the selected InventoryItem within the choice group.
         /// </summary>
-        public InventoryItemOption? InventoryItemOption { get; set; }
+        public InventoryItem SelectedInventoryItem { get; set; } = null!;
 
         /// <summary>
         /// Navigation to the DomainUser who created the preference.

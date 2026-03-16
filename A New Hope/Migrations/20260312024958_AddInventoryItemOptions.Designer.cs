@@ -3,6 +3,7 @@ using System;
 using A_New_Hope.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,13 +11,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace A_New_Hope.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260312024958_AddInventoryItemOptions")]
+    partial class AddInventoryItemOptions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("A_New_Hope.Models.ApplicationUser", b =>
@@ -383,114 +386,6 @@ namespace A_New_Hope.Migrations
                     b.ToTable("HouseholdMembers");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.InventoryChoiceGroup", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("CreatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("DisplayLabel")
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<int>("MaxSelections")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("UpdatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("DeletedAt");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("InventoryChoiceGroups");
-                });
-
-            modelBuilder.Entity("A_New_Hope.Models.InventoryChoiceGroupItem", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("CreatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong>("InventoryChoiceGroupId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong>("InventoryItemId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("UpdatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("DeletedAt");
-
-                    b.HasIndex("InventoryChoiceGroupId");
-
-                    b.HasIndex("InventoryItemId");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.HasIndex("InventoryChoiceGroupId", "InventoryItemId")
-                        .IsUnique();
-
-                    b.ToTable("InventoryChoiceGroupItems");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.InventoryItem", b =>
                 {
                     b.Property<ulong>("Id")
@@ -756,54 +651,6 @@ namespace A_New_Hope.Migrations
                     b.ToTable("ReferringOrganizations");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.UserChoiceGroupPreference", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("CreatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong>("InventoryChoiceGroupId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong>("SelectedInventoryItemId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("UpdatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong>("UserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("DeletedAt");
-
-                    b.HasIndex("InventoryChoiceGroupId");
-
-                    b.HasIndex("SelectedInventoryItemId");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.HasIndex("UserId", "InventoryChoiceGroupId")
-                        .IsUnique();
-
-                    b.ToTable("UserChoiceGroupPreferences");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.UserItemPreference", b =>
                 {
                     b.Property<ulong>("Id")
@@ -820,9 +667,6 @@ namespace A_New_Hope.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<ulong>("InventoryItemId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong?>("InventoryItemOptionId")
                         .HasColumnType("bigint unsigned");
 
                     b.Property<string>("Preference")
@@ -846,8 +690,6 @@ namespace A_New_Hope.Migrations
                     b.HasIndex("DeletedAt");
 
                     b.HasIndex("InventoryItemId");
-
-                    b.HasIndex("InventoryItemOptionId");
 
                     b.HasIndex("UpdatedByUserId");
 
@@ -1111,56 +953,6 @@ namespace A_New_Hope.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.InventoryChoiceGroup", b =>
-                {
-                    b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("A_New_Hope.Models.InventoryChoiceGroupItem", b =>
-                {
-                    b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A_New_Hope.Models.InventoryChoiceGroup", "InventoryChoiceGroup")
-                        .WithMany("InventoryChoiceGroupItems")
-                        .HasForeignKey("InventoryChoiceGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.InventoryItem", "InventoryItem")
-                        .WithMany("InventoryChoiceGroupItems")
-                        .HasForeignKey("InventoryItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("InventoryChoiceGroup");
-
-                    b.Navigation("InventoryItem");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.InventoryItem", b =>
                 {
                     b.HasOne("A_New_Hope.Models.Category", "Category")
@@ -1261,47 +1053,6 @@ namespace A_New_Hope.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.UserChoiceGroupPreference", b =>
-                {
-                    b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A_New_Hope.Models.InventoryChoiceGroup", "InventoryChoiceGroup")
-                        .WithMany()
-                        .HasForeignKey("InventoryChoiceGroupId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.InventoryItem", "SelectedInventoryItem")
-                        .WithMany()
-                        .HasForeignKey("SelectedInventoryItemId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("InventoryChoiceGroup");
-
-                    b.Navigation("SelectedInventoryItem");
-
-                    b.Navigation("UpdatedByUser");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.UserItemPreference", b =>
                 {
                     b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
@@ -1314,11 +1065,6 @@ namespace A_New_Hope.Migrations
                         .HasForeignKey("InventoryItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.InventoryItemOption", "InventoryItemOption")
-                        .WithMany()
-                        .HasForeignKey("InventoryItemOptionId")
-                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("A_New_Hope.Models.DomainUser", "UpdatedByUser")
                         .WithMany()
@@ -1334,8 +1080,6 @@ namespace A_New_Hope.Migrations
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("InventoryItem");
-
-                    b.Navigation("InventoryItemOption");
 
                     b.Navigation("UpdatedByUser");
 
@@ -1408,15 +1152,8 @@ namespace A_New_Hope.Migrations
                     b.Navigation("ClientProfile");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.InventoryChoiceGroup", b =>
-                {
-                    b.Navigation("InventoryChoiceGroupItems");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.InventoryItem", b =>
                 {
-                    b.Navigation("InventoryChoiceGroupItems");
-
                     b.Navigation("InventoryItemOptions");
                 });
 
