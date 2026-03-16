@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength], [EmailAddress], [Phone], [RegularExpression]
 
 namespace A_New_Hope.Models
 {
@@ -18,10 +18,13 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Contact email address for the user.
         /// Front-end validation ensures proper email format and length.
+        /// Added Regex for stricter validation of allowed email characters.
         /// </summary>
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Enter a valid email address.")]
         [MaxLength(254)]
+        [RegularExpression(@"^[A-Za-z0-9._+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$",
+            ErrorMessage = "Email format is invalid.")]
         public string Email { get; set; } = null!;
 
         // -----------------------------------------------------------------
@@ -30,9 +33,11 @@ namespace A_New_Hope.Models
 
         /// <summary>
         /// Optional phone number for the user.
+        /// Added Regex for common characters: digits, spaces, parentheses, hyphens, plus sign.
         /// </summary>
         [Phone(ErrorMessage = "Enter a valid phone number.")]
         [MaxLength(25)]
+        [RegularExpression(@"^\+?[0-9()\-\s]+$", ErrorMessage = "Phone number contains invalid characters.")]
         public string? PhoneNumber { get; set; }
 
         /// <summary>
@@ -48,33 +53,39 @@ namespace A_New_Hope.Models
         public string? LastName { get; set; }
 
         /// <summary>
-        /// Optional address line 1 (street address).
+        /// Optional address line 1.
         /// </summary>
         [MaxLength(200)]
-        public string? AddressLine1 { get; set; }
+        [RegularExpression(@"^[A-Za-z0-9\s#.,'\-]*$", ErrorMessage = "Address contains invalid characters.")]
+        public string? AddressLine1 { get; set; } // Avoid LONGTEXT
 
         /// <summary>
-        /// Optional address line 2 (unit/apartment/suite).
+        /// Optional address line 2.
         /// </summary>
         [MaxLength(200)]
-        public string? AddressLine2 { get; set; }
+        [RegularExpression(@"^[A-Za-z0-9\s#.,'\-]*$", ErrorMessage = "Address contains invalid characters.")]
+        public string? AddressLine2 { get; set; } // Avoid LONGTEXT
 
         /// <summary>
-        /// Optional city portion of address.
+        /// Optional city.
         /// </summary>
         [MaxLength(100)]
-        public string? City { get; set; }
+        [RegularExpression(@"^[A-Za-z\s.\-']*$", ErrorMessage = "City contains invalid characters.")]
+        public string? City { get; set; } // Avoid LONGTEXT
 
         /// <summary>
         /// Optional state/region portion of address.
         /// </summary>
         [MaxLength(50)]
+        [RegularExpression(@"^[A-Za-z\s.\-']*$", ErrorMessage = "State contains invalid characters.")]
         public string? State { get; set; }
 
         /// <summary>
         /// Optional postal/zip code.
+        /// Accepts 5-digit ZIP or ZIP+4 (US) format.
         /// </summary>
         [MaxLength(20)]
+        [RegularExpression(@"^\d{5}(-\d{4})?$", ErrorMessage = "Enter a valid US ZIP code.")]
         public string? PostalCode { get; set; }
 
         /// <summary>
