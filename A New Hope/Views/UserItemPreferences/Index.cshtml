@@ -32,9 +32,9 @@
                         <td>
                             @(item.User != null
                                 ? (!string.IsNullOrWhiteSpace(item.User.Email)
-                                    ? item.User.Email
-                                    : $"{item.User.FirstName} {item.User.LastName}".Trim())
-                                : "")
+                                ? item.User.Email
+                                : $"{item.User.FirstName} {item.User.LastName}".Trim())
+                            : "")
                         </td>
                         <td>
                             @(item.InventoryItem != null ? item.InventoryItem.Name : "")

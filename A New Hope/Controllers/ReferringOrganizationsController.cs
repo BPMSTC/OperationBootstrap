@@ -2,48 +2,30 @@ using A_New_Hope.Data;
 using A_New_Hope.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace A_New_Hope.Controllers
 {
     /// <summary>
-    /// ReferringOrganizationsController
-    /// --------------------------------
-    /// This controller manages DIO operations for ReferringOrganization records.
-    ///
-    /// In your domain, a ReferringOrganization likely represents an outside entity that can refer clients,
-    /// such as:
-    /// - shelters
-    /// - community agencies
-    /// - hospitals
-    /// - social workers / programs
-    /// - other nonprofit organizations
-    ///
-    /// A ReferringOrganization can have many Referrals (navigation property: Referrals).
-    ///
-    /// Key behaviors implemented here:
-    /// - Uses Entity Framework Core (ApplicationDbContext) to query and persist organization data.
-    /// - Uses dependency-injected ILogger for request tracing and error diagnostics.
-    /// - Uses SOFT DELETE semantics: DeleteConfirmed sets DeletedAt rather than physically removing rows.
-    /// - Filters out soft-deleted organizations (DeletedAt == null) for Index/Details/Edit/Delete flows.
-    ///
-    /// Notes on audit fields:
-    /// - CreatedAt/UpdatedAt are set to DateTime.UtcNow for consistent server-side timestamps.
-    /// - CreatedByUserId/UpdatedByUserId are currently set to null until auth/user tracking is implemented.
+    /// Manages create, read, update, and soft delete operations for referring organizations.
     /// </summary>
     public class ReferringOrganizationsController : Controller
     {
-        /// <summary>
-        /// EF Core DbContext used to read/write ReferringOrganizations.
-        /// </summary>
         private readonly ApplicationDbContext _context;
-
-        /// <summary>
-        /// Logger for this controller. Output depends on logging providers configured in Program.cs.
-        /// </summary>
         private readonly ILogger<ReferringOrganizationsController> _logger;
 
+        // Store the allowed 2-letter US state codes for validation.
+        private static readonly HashSet<string> ValidUsStateCodes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
+            "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
+            "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+            "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
+            "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC"
+        };
+
         /// <summary>
-        /// Constructor with dependency injection.
+        /// Creates the controller with the required database context and logger.
         /// </summary>
         public ReferringOrganizationsController(ApplicationDbContext context, ILogger<ReferringOrganizationsController> logger)
         {
@@ -53,17 +35,13 @@ namespace A_New_Hope.Controllers
 
         // GET: ReferringOrganizations
         /// <summary>
-        /// Displays a list of referring organizations (non-deleted only).
-        ///
-        /// Query behavior:
-        /// - Filters out soft-deleted organizations (DeletedAt == null).
-        /// - Orders by Name for a simple, user-friendly listing.
+        /// Displays all non-deleted referring organizations.
         /// </summary>
         public async Task<IActionResult> Index()
         {
             _logger.LogInformation("Loading Referring Organizations Index page");
 
-            // Load active organizations and materialize them into a list for the view.
+            // Retrieve active referring organizations for display.
             var referringOrganizations = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
                 .OrderBy(r => r.Name)
@@ -71,20 +49,16 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loaded {Count} referring organizations", referringOrganizations.Count);
 
-            // Render Views/ReferringOrganizations/Index.cshtml with the list model.
             return View(referringOrganizations);
         }
 
         // GET: ReferringOrganizations/Details/5
         /// <summary>
-        /// Displays details for a single referring organization by primary key Id.
-        ///
-        /// Behavior:
-        /// - Returns 404 if id is null or record not found (or soft deleted).
+        /// Displays details for a single non-deleted referring organization.
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            // Missing route id => cannot locate a record.
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Details requested with null Id");
@@ -93,11 +67,12 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for Referring Organization Id {Id}", id);
 
-            // Load the organization if it exists and is not soft deleted.
+            // Retrieve the requested active referring organization.
             var referringOrganization = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found", id);
@@ -109,33 +84,24 @@ namespace A_New_Hope.Controllers
 
         // GET: ReferringOrganizations/Create
         /// <summary>
-        /// Shows the Create form for a new ReferringOrganization.
-        ///
-        /// This page does not require dropdown population, so it simply returns the view.
+        /// Shows the create form.
         /// </summary>
         public IActionResult Create()
         {
             _logger.LogInformation("Loading Create Referring Organization page");
-            return View();
+
+            // Initialize the form with the default state value.
+            var model = new ReferringOrganization
+            {
+                State = "WI"
+            };
+
+            return View(model);
         }
 
         // POST: ReferringOrganizations/Create
         /// <summary>
-        /// Processes form submission to create a new ReferringOrganization.
-        ///
-        /// Security:
-        /// - [ValidateAntiForgeryToken] provides CSRF protection.
-        ///
-        /// Binding:
-        /// - [Bind(...)] limits which fields are accepted from the form (prevents over-posting).
-        ///
-        /// Validation:
-        /// - Removes navigation properties (Referrals and audit navigation props) from ModelState
-        ///   because HTML forms do not post those complex objects.
-        /// - If invalid, re-renders the Create view with validation messages.
-        ///
-        /// Audit:
-        /// - Sets CreatedAt/UpdatedAt and placeholder CreatedBy/UpdatedBy user IDs.
+        /// Creates a new referring organization after server-side validation.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -143,58 +109,55 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to create Referring Organization '{Name}'", referringOrganization.Name);
 
-            // Navigation properties are not posted by forms.
-            // Removing these avoids false ModelState validation errors.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(ReferringOrganization.Referrals));
             ModelState.Remove(nameof(ReferringOrganization.CreatedByUser));
             ModelState.Remove(nameof(ReferringOrganization.UpdatedByUser));
 
-            // If validation fails, return the view with the user's input and validation messages.
+            // Normalize text input before applying business-rule validation.
+            NormalizeReferringOrganization(referringOrganization);
+            await ApplyReferringOrganizationValidationAsync(referringOrganization);
+
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Create Referring Organization failed validation for '{Name}'", referringOrganization.Name);
                 return View(referringOrganization);
             }
 
-            // Set audit fields using UTC timestamps.
+            // Set audit fields for the new referring organization record.
             var now = DateTime.UtcNow;
             referringOrganization.CreatedAt = now;
             referringOrganization.UpdatedAt = now;
-            referringOrganization.CreatedByUserId = null; // Placeholder until auth integration.
-            referringOrganization.UpdatedByUserId = null; // Placeholder until auth integration.
+            referringOrganization.CreatedByUserId = null; // Replace when auth/user tracking is added.
+            referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
-            // Stage insert.
+            // Queue the new referring organization for insert.
             _context.Add(referringOrganization);
 
             try
             {
-                // Persist to DB.
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Referring Organization Id {Id} created successfully", referringOrganization.Id);
-
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateException ex)
             {
-                // Likely causes: unique constraint violations (if configured), DB connectivity, etc.
                 _logger.LogError(ex, "Error creating Referring Organization '{Name}'", referringOrganization.Name);
 
                 ModelState.AddModelError("", "Unable to save referring organization.");
-
                 return View(referringOrganization);
             }
         }
 
         // GET: ReferringOrganizations/Edit/5
         /// <summary>
-        /// Shows the Edit form for an existing ReferringOrganization.
-        ///
-        /// Behavior:
-        /// - Returns 404 if id is null or record not found (or soft deleted).
+        /// Shows the edit form for a single non-deleted referring organization.
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit requested with null Id");
@@ -203,10 +166,11 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for Referring Organization Id {Id}", id);
 
-            // Load the organization for editing (excluding deleted).
+            // Retrieve the requested active referring organization for editing.
             var referringOrganization = await _context.ReferringOrganizations
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found for edit", id);
@@ -218,24 +182,7 @@ namespace A_New_Hope.Controllers
 
         // POST: ReferringOrganizations/Edit/5
         /// <summary>
-        /// Processes form submission to update an existing ReferringOrganization.
-        ///
-        /// Parameters:
-        /// - id: route Id
-        /// - formModel: posted model (limited by [Bind] to editable properties)
-        ///
-        /// Safety checks:
-        /// - Confirms route Id matches posted model Id.
-        /// - Removes navigation properties from ModelState (not posted by forms).
-        ///
-        /// Update strategy:
-        /// - Loads existing record (ensures not soft deleted)
-        /// - Copies editable fields from formModel to existing
-        /// - Updates audit fields (UpdatedAt/UpdatedByUserId)
-        ///
-        /// Error handling:
-        /// - DbUpdateConcurrencyException: record changed/deleted since load.
-        /// - DbUpdateException: general DB update failures.
+        /// Updates an existing referring organization after server-side validation.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -243,38 +190,41 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to edit Referring Organization Id {Id}", id);
 
-            // Ensure route id matches the model id to prevent mismatched/tampered posts.
+            // Ensure the route id matches the posted model id.
             if (id != formModel.Id)
             {
                 _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                 return NotFound();
             }
 
-            // Navigation properties are not posted back by the form.
-            // If they remain in ModelState, the model may appear invalid incorrectly.
+            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(ReferringOrganization.Referrals));
             ModelState.Remove(nameof(ReferringOrganization.CreatedByUser));
             ModelState.Remove(nameof(ReferringOrganization.UpdatedByUser));
 
-            // If invalid, return view with validation messages.
+            // Normalize text input before applying business-rule validation.
+            NormalizeReferringOrganization(formModel);
+            await ApplyReferringOrganizationValidationAsync(formModel, formModel.Id);
+
+            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit Referring Organization failed validation for Id {Id}", id);
                 return View(formModel);
             }
 
-            // Load existing record to safely apply updates.
+            // Load the tracked entity so only approved fields are updated.
             var existing = await _context.ReferringOrganizations
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
+            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
-            // Update editable fields
-            // Note: This "copy onto tracked entity" pattern avoids unintended overwrites.
+            // Copy validated form values into the tracked entity.
             existing.Name = formModel.Name;
             existing.Type = formModel.Type;
             existing.PhoneNumber = formModel.PhoneNumber;
@@ -288,53 +238,43 @@ namespace A_New_Hope.Controllers
             existing.Notes = formModel.Notes;
             existing.IsActive = formModel.IsActive;
 
-            // Update audit fields.
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // Placeholder until auth integration.
+            existing.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
             try
             {
-                // Persist updates.
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Referring Organization Id {Id} updated successfully", id);
-
                 return RedirectToAction(nameof(Index));
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Concurrency exceptions indicate the record was updated or deleted since it was loaded.
+                // Check whether the record was deleted during the edit attempt.
                 if (!await ReferringOrganizationExists(formModel.Id))
                 {
                     _logger.LogWarning("Referring Organization Id {Id} no longer exists during concurrency check", id);
                     return NotFound();
                 }
 
-                // If it still exists, rethrow and let global handlers deal with it.
                 throw;
             }
             catch (DbUpdateException ex)
             {
-                // General DB update failure (constraints, connectivity, etc.).
                 _logger.LogError(ex, "Error updating Referring Organization Id {Id}", id);
 
                 ModelState.AddModelError("", "Unable to save changes.");
-
                 return View(formModel);
             }
         }
 
         // GET: ReferringOrganizations/Delete/5
         /// <summary>
-        /// Shows the Delete confirmation page for a ReferringOrganization.
-        ///
-        /// Notes:
-        /// - This GET action does not delete anything.
-        /// - It loads the entity so the user can confirm the correct organization.
-        /// - Actual soft delete occurs in DeleteConfirmed.
+        /// Shows the delete confirmation page for a single non-deleted referring organization.
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
+            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Delete requested with null Id");
@@ -343,11 +283,12 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Delete confirmation for Referring Organization Id {Id}", id);
 
-            // Load record for confirmation display (excluding soft-deleted).
+            // Retrieve the requested active referring organization for delete confirmation.
             var referringOrganization = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found for delete", id);
@@ -359,15 +300,7 @@ namespace A_New_Hope.Controllers
 
         // POST: ReferringOrganizations/Delete/5
         /// <summary>
-        /// Executes the delete operation (soft delete) for a ReferringOrganization.
-        ///
-        /// Soft delete strategy:
-        /// - Sets DeletedAt (marks record as deleted)
-        /// - Updates UpdatedAt and UpdatedByUserId
-        /// - Keeps the row for history/audit/referential integrity
-        ///
-        /// Error handling:
-        /// - If SaveChanges fails, sets TempData["ErrorMessage"] and redirects back to Delete confirmation.
+        /// Soft deletes a referring organization.
         /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
@@ -375,20 +308,21 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogWarning("Soft deleting Referring Organization Id {Id}", id);
 
-            // Load the record to delete (must not already be soft deleted).
+            // Retrieve the active referring organization targeted for soft delete.
             var referringOrganization = await _context.ReferringOrganizations
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
+            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found during delete", id);
                 return NotFound();
             }
 
-            // Apply soft delete + audit fields.
+            // Apply soft-delete and audit values.
             referringOrganization.DeletedAt = DateTime.UtcNow;
             referringOrganization.UpdatedAt = DateTime.UtcNow;
-            referringOrganization.UpdatedByUserId = null; // Placeholder until auth integration.
+            referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
 
             try
             {
@@ -400,9 +334,7 @@ namespace A_New_Hope.Controllers
             {
                 _logger.LogError(ex, "Error soft deleting Referring Organization Id {Id}", id);
 
-                // TempData persists for one redirect so the Delete view can show the message.
                 TempData["ErrorMessage"] = "Unable to delete referring organization.";
-
                 return RedirectToAction(nameof(Delete), new { id });
             }
 
@@ -410,13 +342,278 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// Helper method used by Edit POST concurrency handling.
-        /// Confirms whether a non-deleted ReferringOrganization exists for the provided Id.
+        /// Returns true if the non-deleted organization exists.
         /// </summary>
         private async Task<bool> ReferringOrganizationExists(ulong id)
         {
+            // Check whether the requested active organization still exists.
             return await _context.ReferringOrganizations
                 .AnyAsync(e => e.Id == id && e.DeletedAt == null);
+        }
+
+        /// <summary>
+        /// Trims strings and converts blank optional values to null.
+        /// </summary>
+        private static void NormalizeReferringOrganization(ReferringOrganization model)
+        {
+            // Keep the required organization name as an empty string instead of null for validation.
+            model.Name = model.Name?.Trim() ?? string.Empty;
+
+            // Normalize optional text values before validation and save.
+            model.Type = NullIfWhiteSpace(model.Type);
+            model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
+            model.Email = NullIfWhiteSpace(model.Email);
+            model.AddressLine1 = NullIfWhiteSpace(model.AddressLine1);
+            model.AddressLine2 = NullIfWhiteSpace(model.AddressLine2);
+            model.City = NullIfWhiteSpace(model.City);
+            model.State = NullIfWhiteSpace(model.State)?.ToUpperInvariant();
+            model.PostalCode = NullIfWhiteSpace(model.PostalCode);
+            model.PrimaryContactName = NullIfWhiteSpace(model.PrimaryContactName);
+            model.Notes = NullIfWhiteSpace(model.Notes);
+        }
+
+        /// <summary>
+        /// Applies business-rule validation beyond data annotations.
+        /// </summary>
+        private async Task ApplyReferringOrganizationValidationAsync(ReferringOrganization model, ulong? currentId = null)
+        {
+            // Require an organization name.
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.Name), "Organization name is required.");
+            }
+
+            // Require at least one letter or number in the organization name.
+            if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.Name), "Organization name must contain letters or numbers.");
+            }
+
+            // Prevent duplicate active organization names.
+            if (!string.IsNullOrWhiteSpace(model.Name))
+            {
+                // Only check against non-deleted rows and ignore the current record during edit.
+                var normalizedName = model.Name.ToLower();
+
+                var duplicateExists = await _context.ReferringOrganizations
+                    .AnyAsync(r =>
+                        r.DeletedAt == null &&
+                        r.Id != currentId &&
+                        r.Name.ToLower() == normalizedName);
+
+                if (duplicateExists)
+                {
+                    ModelState.AddModelError(nameof(ReferringOrganization.Name), "An organization with this name already exists.");
+                }
+            }
+
+            // Validate organization type content when provided.
+            if (!string.IsNullOrWhiteSpace(model.Type) && !ContainsLetterOrDigit(model.Type))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.Type), "Type must contain letters or numbers.");
+            }
+
+            // Validate address line 1 content when provided.
+            if (!string.IsNullOrWhiteSpace(model.AddressLine1) && !ContainsLetterOrDigit(model.AddressLine1))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.AddressLine1), "Address Line 1 must contain letters or numbers.");
+            }
+
+            // Validate address line 2 content when provided.
+            if (!string.IsNullOrWhiteSpace(model.AddressLine2) && !ContainsLetterOrDigit(model.AddressLine2))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.AddressLine2), "Address Line 2 must contain letters or numbers.");
+            }
+
+            // Validate phone number format when provided.
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+            }
+
+            // Validate email format when provided.
+            if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.Email), "Email format is invalid.");
+            }
+
+            // Validate city characters when provided.
+            if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.City), "City contains invalid characters.");
+            }
+
+            // Validate state code when provided.
+            if (!string.IsNullOrWhiteSpace(model.State) && !IsValidUsStateCode(model.State))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.State), "Enter a valid 2-letter US state code.");
+            }
+
+            // Validate ZIP code format when provided.
+            if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
+            }
+
+            // Validate primary contact name characters when provided.
+            if (!string.IsNullOrWhiteSpace(model.PrimaryContactName) && !IsValidPersonName(model.PrimaryContactName))
+            {
+                ModelState.AddModelError(nameof(ReferringOrganization.PrimaryContactName), "Primary contact name contains invalid characters.");
+            }
+        }
+
+        /// <summary>
+        /// Returns null when the value is blank; otherwise returns the trimmed value.
+        /// </summary>
+        private static string? NullIfWhiteSpace(string? value)
+        {
+            // Convert blank strings to null after trimming.
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Returns true when the value contains at least one letter or digit.
+        /// </summary>
+        private static bool ContainsLetterOrDigit(string value)
+        {
+            // Require at least one alphanumeric character in the value.
+            return value.Any(char.IsLetterOrDigit);
+        }
+
+        /// <summary>
+        /// Validates a US-style phone number.
+        /// Allows 10 digits, or 11 digits when the first digit is 1.
+        /// Formatting characters such as spaces, hyphens, parentheses, and leading + are allowed.
+        /// </summary>
+        private static bool IsValidPhoneNumber(string phoneNumber)
+        {
+            // Reject characters outside the allowed phone number pattern.
+            if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
+            {
+                return false;
+            }
+
+            // Strip formatting characters to validate digit count.
+            var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
+
+            // Accept standard 10-digit US phone numbers.
+            if (digitsOnly.Length == 10)
+            {
+                return true;
+            }
+
+            // Accept 11-digit US phone numbers only when starting with 1.
+            if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Validates a practical email format for this project.
+        /// </summary>
+        private static bool IsValidEmail(string email)
+        {
+            // Reject spaces in email addresses.
+            if (email.Contains(' '))
+            {
+                return false;
+            }
+
+            // Require exactly one @ symbol.
+            if (email.Count(c => c == '@') != 1)
+            {
+                return false;
+            }
+
+            // Reject consecutive periods.
+            if (email.Contains(".."))
+            {
+                return false;
+            }
+
+            // Split the email into local and domain parts.
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            var localPart = parts[0];
+            var domainPart = parts[1];
+
+            // Require non-empty local and domain parts.
+            if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
+            {
+                return false;
+            }
+
+            // Reject local parts starting or ending with a period.
+            if (localPart.StartsWith('.') || localPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            // Reject domain parts starting or ending with a period.
+            if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            // Require a dot in the domain portion.
+            if (!domainPart.Contains('.'))
+            {
+                return false;
+            }
+
+            // Reject empty domain labels.
+            var domainLabels = domainPart.Split('.');
+            if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
+            {
+                return false;
+            }
+
+            // Validate local and domain characters using project regex rules.
+            return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
+                && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
+        }
+
+        /// <summary>
+        /// Validates a city name using a practical US-style character set.
+        /// </summary>
+        private static bool IsValidCity(string city)
+        {
+            // Allow letters plus common punctuation for city names.
+            return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
+        }
+
+        /// <summary>
+        /// Validates a person name using a practical character set.
+        /// </summary>
+        private static bool IsValidPersonName(string name)
+        {
+            // Allow letters plus common punctuation for personal names.
+            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
+        }
+
+        /// <summary>
+        /// Validates a 2-letter US state code.
+        /// </summary>
+        private static bool IsValidUsStateCode(string state)
+        {
+            // Require a 2-letter state code from the approved US state set.
+            return state.Length == 2 && ValidUsStateCodes.Contains(state);
+        }
+
+        /// <summary>
+        /// Validates a US ZIP code or ZIP+4.
+        /// </summary>
+        private static bool IsValidUsPostalCode(string postalCode)
+        {
+            // Accept 5-digit ZIP codes and ZIP+4 values.
+            return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
     }
 }

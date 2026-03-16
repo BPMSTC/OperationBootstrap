@@ -1,0 +1,46 @@
+@model A_New_Hope.Models.InventoryItemOption
+
+@{
+    ViewData["Title"] = "Inventory Item Option Details";
+}
+
+<h1>Inventory Item Option Details</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">Inventory Item</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.InventoryItem != null
+                ? Model.InventoryItem.Name
+                : ""
+            )
+        </dd>
+
+        <dt class="col-sm-3">Category</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.InventoryItem?.Category != null
+                ? (Model.InventoryItem.Category.CategoryGroup != null
+                ? $"{Model.InventoryItem.Category.CategoryGroup.Name} - {Model.InventoryItem.Category.Name}"
+                : Model.InventoryItem.Category.Name)
+                : ""
+            )
+        </dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SortOrder)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.SortOrder)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+</div>

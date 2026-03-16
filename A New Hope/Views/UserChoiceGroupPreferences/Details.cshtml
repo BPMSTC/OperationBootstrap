@@ -1,0 +1,51 @@
+@model A_New_Hope.Models.UserChoiceGroupPreference
+
+@{
+    ViewData["Title"] = "User Choice Group Preference Details";
+}
+
+<h1>User Choice Group Preference Details</h1>
+
+<div>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">User</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.User != null
+                ? $"{Model.User.LastName}, {Model.User.FirstName}"
+                : ""
+            )
+        </dd>
+
+        <dt class="col-sm-3">Choice Group</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.InventoryChoiceGroup != null
+                ? (!string.IsNullOrWhiteSpace(Model.InventoryChoiceGroup.DisplayLabel)
+                ? Model.InventoryChoiceGroup.DisplayLabel
+                : Model.InventoryChoiceGroup.Name)
+                : ""
+            )
+        </dd>
+
+        <dt class="col-sm-3">Selected Item</dt>
+        <dd class="col-sm-9">@(Model.SelectedInventoryItem?.Name ?? "")</dd>
+
+        <dt class="col-sm-3">Category</dt>
+        <dd class="col-sm-9">
+            @(
+                Model.SelectedInventoryItem?.Category != null
+                ? (Model.SelectedInventoryItem.Category.CategoryGroup != null
+                ? $"{Model.SelectedInventoryItem.Category.CategoryGroup.Name} - {Model.SelectedInventoryItem.Category.Name}"
+                : Model.SelectedInventoryItem.Category.Name)
+                : ""
+            )
+        </dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+</div>

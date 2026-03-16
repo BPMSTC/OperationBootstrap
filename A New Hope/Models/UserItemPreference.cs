@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations; // Added for [Required], etc.
-
-namespace A_New_Hope.Models
+﻿namespace A_New_Hope.Models
 {
     /// <summary>
     /// UserItemPreference
@@ -13,6 +11,13 @@ namespace A_New_Hope.Models
     ///
     /// Relationship:
     /// - Each record links one user (UserId) to one inventory item (InventoryItemId).
+    /// - Optionally, the preference may also link to an InventoryItemOption
+    ///   when the item has a variant/sub-selection.
+    ///
+    /// Examples:
+    /// - Milk + Always + 2%
+    /// - Bread + Ask + Wheat
+    /// - Rice + Never + Brown
     ///
     /// Uniqueness/business rule:
     /// - A user should have at most one preference per inventory item.
@@ -35,24 +40,24 @@ namespace A_New_Hope.Models
 
         /// <summary>
         /// Foreign key to the DomainUser this preference belongs to.
-        /// Required for validation and form submission.
         /// </summary>
-        [Required(ErrorMessage = "User is required.")]
         public ulong UserId { get; set; }
 
         /// <summary>
         /// Foreign key to the InventoryItem this preference applies to.
-        /// Required for validation and form submission.
         /// </summary>
-        [Required(ErrorMessage = "Inventory Item is required.")]
         public ulong InventoryItemId { get; set; }
+
+        /// <summary>
+        /// Optional foreign key to the InventoryItemOption chosen for this preference.
+        /// Null when the InventoryItem has no options or no option has been selected.
+        /// </summary>
+        public ulong? InventoryItemOptionId { get; set; }
 
         /// <summary>
         /// Preference value (Always / Ask / Never).
         /// Using an enum prevents invalid values and keeps preference logic consistent.
-        /// Required for front-end forms.
         /// </summary>
-        [Required(ErrorMessage = "Preference selection is required.")]
         public PreferenceOption Preference { get; set; } = PreferenceOption.Ask;
 
         /// <summary>
@@ -97,7 +102,12 @@ namespace A_New_Hope.Models
         public InventoryItem InventoryItem { get; set; } = null!;
 
         /// <summary>
-        /// Navigation to the DomainUser who created the preference (useful for Include() and admin auditing).
+        /// Optional navigation to the selected InventoryItemOption for this preference.
+        /// </summary>
+        public InventoryItemOption? InventoryItemOption { get; set; }
+
+        /// <summary>
+        /// Navigation to the DomainUser who created the preference.
         /// </summary>
         public DomainUser? CreatedByUser { get; set; }
 
