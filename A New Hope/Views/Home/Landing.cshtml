@@ -1,0 +1,126 @@
+﻿@{
+    ViewData["Title"] = "Welcome";
+}
+
+<style>
+    body {
+        background-color: #f0f2f5 !important;
+        font-family: Arial, sans-serif;
+        color: #212529;
+    }
+
+    .landing-wrapper {
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+
+    .landing-shell {
+        background-color: #ffffff;
+        border: 2px solid #ced4da;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        max-width: 760px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+    }
+
+    .landing-panel {
+        width: 100%;
+        max-width: 560px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .brand-logo {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding: 0 1.75rem;
+    }
+
+        .brand-logo img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+
+    .landing-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: #212529;
+    }
+
+    .landing-description {
+        color: #495057;
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.7;
+    }
+
+    .landing-card {
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 2rem;
+        background-color: #f8f9fa;
+    }
+
+    .btn-signin {
+        background-color: #343a40 !important;
+        border: 2px solid #212529 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        min-width: 220px;
+    }
+
+        .btn-signin:hover {
+            background-color: #495057 !important;
+        }
+
+    @@media (max-width: 576px) {
+        .landing-shell {
+            padding: 2rem 1.25rem;
+        }
+
+        .brand-logo img {
+            max-width: 100%;
+        }
+
+        .landing-title {
+            font-size: 1.65rem;
+        }
+
+        .landing-card {
+            padding: 1.5rem;
+        }
+    }
+</style>
+
+<div class="container landing-wrapper">
+    <div class="landing-shell">
+        <div class="landing-panel">
+
+            <div class="brand-logo">
+                <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
+                     alt="Operation Bootstrap Logo" />
+            </div>
+
+            <div class="landing-card">
+                <h1 class="landing-title">Welcome</h1>
+
+                <p class="landing-description">
+                    Operation Bootstrap provides a centralized system for managing client records,
+                    referrals, preferences, and inventory-related workflows.
+                    Please sign in with your authorized staff or administrator account to continue.
+                </p>
+
+                <a class="btn btn-signin btn-lg" href="/Account/Login">
+                    Sign In
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>

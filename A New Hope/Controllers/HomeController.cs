@@ -1,7 +1,8 @@
+using System.Diagnostics;
 using A_New_Hope.Models;
+using A_New_Hope.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
 
 namespace A_New_Hope.Controllers
 {
@@ -19,13 +20,26 @@ namespace A_New_Hope.Controllers
         }
 
         [AllowAnonymous]
-        public IActionResult Landing()
+        [HttpGet("/")]
+        public IActionResult Landing(string? returnUrl = null)
         {
-            // Pass login error to view if present
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return LocalRedirect(returnUrl);
+
+                return LocalRedirect("/Home/Index");
+            }
+
+            var vm = new LoginViewModel
+            {
+                ReturnUrl = returnUrl ?? "/Home/Index"
+            };
+
             if (TempData["LoginError"] is string err)
                 ViewBag.LoginError = err;
 
-            return View();
+            return View(vm);
         }
 
         [AllowAnonymous]

@@ -27,10 +27,21 @@ namespace A_New_Hope.Controllers
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
         {
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return LocalRedirect(returnUrl);
+
+                return LocalRedirect("/Home/Index");
+            }
+
             var vm = new LoginViewModel
             {
-                ReturnUrl = returnUrl ?? Url.Action("Index", "Home")
+                ReturnUrl = returnUrl ?? "/Home/Index"
             };
+
+            if (TempData["LoginError"] is string err)
+                ViewBag.LoginError = err;
 
             return View(vm);
         }
@@ -45,20 +56,20 @@ namespace A_New_Hope.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["LoginError"] = "Please fill in all fields.";
-                return RedirectToAction("Landing", "Home");
+                return RedirectToAction(nameof(Login), new { returnUrl = model.ReturnUrl });
             }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 TempData["LoginError"] = "Invalid email or password.";
-                return RedirectToAction("Landing", "Home");
+                return RedirectToAction(nameof(Login), new { returnUrl = model.ReturnUrl });
             }
 
             if (await _userManager.IsLockedOutAsync(user))
             {
                 TempData["LoginError"] = "This account is locked. Please contact an administrator.";
-                return RedirectToAction("Landing", "Home");
+                return RedirectToAction(nameof(Login), new { returnUrl = model.ReturnUrl });
             }
 
             var result = await _signInManager.PasswordSignInAsync(
@@ -67,19 +78,19 @@ namespace A_New_Hope.Controllers
             if (result.Succeeded)
             {
                 if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-                    return Redirect(model.ReturnUrl);
+                    return LocalRedirect(model.ReturnUrl);
 
-                return RedirectToAction("Index", "Home");
+                return LocalRedirect("/Home/Index");
             }
 
             if (result.IsLockedOut)
             {
                 TempData["LoginError"] = "Account locked due to multiple failed attempts.";
-                return RedirectToAction("Landing", "Home");
+                return RedirectToAction(nameof(Login), new { returnUrl = model.ReturnUrl });
             }
 
             TempData["LoginError"] = "Invalid email or password.";
-            return RedirectToAction("Landing", "Home");
+            return RedirectToAction(nameof(Login), new { returnUrl = model.ReturnUrl });
         }
 
         // --------------------
