@@ -16,7 +16,15 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-controller="Home" asp-action="Index">A_New_Hope</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a class="navbar-brand" href="/Home/Index">A_New_Hope</a>
+                }
+                else
+                {
+                    <a class="navbar-brand" href="/">A_New_Hope</a>
+                }
+
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#mainNavbar" aria-controls="mainNavbar"
                         aria-expanded="false" aria-label="Toggle navigation">
@@ -25,12 +33,11 @@
 
                 <div class="collapse navbar-collapse" id="mainNavbar">
 
-                    <!-- Left nav links (only show when authenticated) -->
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <ul class="navbar-nav me-auto mb-2 mb-sm-0">
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Home" asp-action="Index">Home</a>
+                                <a class="nav-link text-dark" href="/Home/Index">Home</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" asp-controller="ClientProfiles" asp-action="Index">Clients</a>
@@ -75,11 +82,9 @@
                     }
                     else
                     {
-                        <!-- Push right-side items to the end when nav links are hidden -->
                         <ul class="navbar-nav me-auto"></ul>
                     }
 
-                    <!-- Right side -->
                     <ul class="navbar-nav ms-auto align-items-center">
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy">Privacy</a>
@@ -100,6 +105,14 @@
                                         Sign Out
                                     </button>
                                 </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="btn btn-sm btn-outline-primary fw-semibold" href="/Account/Login">
+                                    Sign In
+                                </a>
                             </li>
                         }
                     </ul>
@@ -126,4 +139,4 @@
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
-</html> 
+</html>

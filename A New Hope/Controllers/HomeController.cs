@@ -1,32 +1,48 @@
+using System.Diagnostics;
 using A_New_Hope.Models;
+using A_New_Hope.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
 
 namespace A_New_Hope.Controllers
 {
     public class HomeController : Controller
     {
-        [AllowAnonymous]
         public IActionResult Index()
         {
-            // Pass login error to view if present
-            if (TempData["LoginError"] is string err)
-                ViewBag.LoginError = err;
-
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult Privacy()
         {
             return View();
         }
 
-        public IActionResult Landing()
+        [AllowAnonymous]
+        [HttpGet("/")]
+        public IActionResult Landing(string? returnUrl = null)
         {
-            return View();
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                if (!string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    return LocalRedirect(returnUrl);
+
+                return LocalRedirect("/Home/Index");
+            }
+
+            var vm = new LoginViewModel
+            {
+                ReturnUrl = returnUrl ?? "/Home/Index"
+            };
+
+            if (TempData["LoginError"] is string err)
+                ViewBag.LoginError = err;
+
+            return View(vm);
         }
 
+        [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
