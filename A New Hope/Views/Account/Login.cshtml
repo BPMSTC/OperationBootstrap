@@ -1,0 +1,142 @@
+﻿@model A_New_Hope.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+<style>
+    body {
+        background-color: #f0f2f5 !important;
+        font-family: Arial, sans-serif;
+        color: #212529;
+    }
+
+    .login-wrapper {
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+
+    .login-shell {
+        background-color: #ffffff;
+        border: 2px solid #ced4da;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        max-width: 720px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+    }
+
+    .login-panel {
+        width: 100%;
+        max-width: 560px;
+        margin: 0 auto;
+    }
+
+    .brand-logo {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding: 0 1.75rem;
+    }
+
+        .brand-logo img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+
+    .description {
+        color: #495057;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .login-card {
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 1.75rem;
+        background-color: #f8f9fa;
+    }
+
+        .login-card .form-label {
+            font-weight: 600;
+        }
+
+    .btn-login {
+        background-color: #343a40 !important;
+        border: 2px solid #212529 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+        .btn-login:hover {
+            background-color: #495057 !important;
+        }
+
+    @@media (max-width: 576px) {
+        .login-shell {
+            padding: 2rem 1.25rem;
+        }
+
+        .brand-logo img {
+            max-width: 100%;
+        }
+    }
+</style>
+
+<div class="container login-wrapper">
+    <div class="login-shell">
+        <div class="login-panel">
+
+            <div class="brand-logo">
+                <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
+                     alt="Operation Bootstrap Logo" />
+            </div>
+
+            <p class="description">
+                Please sign in to continue.
+            </p>
+
+            <div class="login-card">
+                <form asp-controller="Account" asp-action="Login" method="post" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label"></label>
+                        <input asp-for="Email" class="form-control" placeholder="you@example.com" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" class="form-control" placeholder="••••••••" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label"></label>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-login btn-lg">Log In</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -78,6 +78,13 @@ try
         .AddDefaultTokenProviders()
         .AddDefaultUI();
 
+    // Route unauthenticated users to the custom login page instead of default Identity UI login.
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+    });
+
     var app = builder.Build();
 
     // Logs HTTP requests (status code + timing). Uses Serilog.
@@ -104,10 +111,10 @@ try
     // Enables static asset mapping for endpoints configured with WithStaticAssets().
     app.MapStaticAssets();
 
-    // Default MVC route: /{controller=Home}/{action=Index}/{id?}
+    // Default MVC route: /{controller}/{action=Index}/{id?}
     app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}")
+        pattern: "{controller}/{action=Index}/{id?}")
         .WithStaticAssets();
 
     // Razor Pages routes (Identity UI endpoints live here)
