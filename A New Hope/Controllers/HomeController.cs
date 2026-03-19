@@ -7,8 +7,19 @@ namespace A_New_Hope.Controllers
 {
     public class HomeController : Controller
     {
-        [AllowAnonymous]
         public IActionResult Index()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        public IActionResult Landing()
         {
             // Pass login error to view if present
             if (TempData["LoginError"] is string err)
@@ -17,16 +28,7 @@ namespace A_New_Hope.Controllers
             return View();
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        public IActionResult Landing()
-        {
-            return View();
-        }
-
+        [AllowAnonymous]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

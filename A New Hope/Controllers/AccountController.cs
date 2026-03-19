@@ -29,7 +29,7 @@ namespace A_New_Hope.Controllers
         {
             var vm = new LoginViewModel
             {
-                ReturnUrl = returnUrl ?? Url.Content("~/")
+                ReturnUrl = returnUrl ?? Url.Action("Index", "Home")
             };
 
             return View(vm);
@@ -45,36 +45,41 @@ namespace A_New_Hope.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["LoginError"] = "Please fill in all fields.";
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Landing", "Home");
             }
 
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
                 TempData["LoginError"] = "Invalid email or password.";
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Landing", "Home");
             }
 
             if (await _userManager.IsLockedOutAsync(user))
             {
                 TempData["LoginError"] = "This account is locked. Please contact an administrator.";
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Landing", "Home");
             }
 
             var result = await _signInManager.PasswordSignInAsync(
                 user, model.Password, model.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded)
-                return RedirectToAction("Index", "Home");  // modal disappears, content unlocks
+            {
+                if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                    return Redirect(model.ReturnUrl);
+
+                return RedirectToAction("Index", "Home");
+            }
 
             if (result.IsLockedOut)
             {
                 TempData["LoginError"] = "Account locked due to multiple failed attempts.";
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction("Landing", "Home");
             }
 
             TempData["LoginError"] = "Invalid email or password.";
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Landing", "Home");
         }
 
         // --------------------
@@ -86,7 +91,7 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction("Landing", "Home");
         }
 
         // --------------------

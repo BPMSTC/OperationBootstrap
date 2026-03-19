@@ -3,7 +3,7 @@ using A_New_Hope.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Serilog; // ADDED
+using Serilog;
 
 try
 {
@@ -78,6 +78,14 @@ try
         .AddDefaultTokenProviders()
         .AddDefaultUI();
 
+    // ADDED:
+    // Route unauthenticated users to the custom landing page instead of default Identity UI login.
+    builder.Services.ConfigureApplicationCookie(options =>
+    {
+        options.LoginPath = "/Home/Landing";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+    });
+
     var app = builder.Build();
 
     // Logs HTTP requests (status code + timing). Uses Serilog.
@@ -104,10 +112,10 @@ try
     // Enables static asset mapping for endpoints configured with WithStaticAssets().
     app.MapStaticAssets();
 
-    // Default MVC route: /{controller=Home}/{action=Index}/{id?}
+    // Default MVC route: /{controller=Home}/{action=Landing}/{id?}
     app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}")
+        pattern: "{controller=Home}/{action=Landing}/{id?}")
         .WithStaticAssets();
 
     // Razor Pages routes (Identity UI endpoints live here)
