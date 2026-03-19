@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength]
+﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength], [Required]
 
 namespace A_New_Hope.Models
 {
@@ -35,12 +35,14 @@ namespace A_New_Hope.Models
         /// Item name (required).
         /// MaxLength prevents EF/MySQL from defaulting to LONGTEXT and keeps the column as VARCHAR for indexing/search.
         /// </summary>
-        [MaxLength(200)] // Prevents EF/MySQL from defaulting to LONGTEXT; keeps the column as VARCHAR and supports future indexing/searching
+        [Required(ErrorMessage = "Item name is required")] // Front-end validation to prevent empty submissions
+        [MaxLength(200, ErrorMessage = "Item name cannot exceed 200 characters")] // Prevents EF/MySQL from defaulting to LONGTEXT; keeps the column as VARCHAR and supports future indexing/searching
         public string Name { get; set; } = null!;
 
         /// <summary>
         /// Foreign key to the Category this item belongs to.
         /// </summary>
+        [Required(ErrorMessage = "A category must be selected")] // Prevents submitting items without a category
         public ulong CategoryId { get; set; }
 
         /// <summary>

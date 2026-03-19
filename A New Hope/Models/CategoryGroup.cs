@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations; // Needed for [MaxLength] (and optional MVC validation attributes)
+﻿using System.ComponentModel.DataAnnotations; // Needed for [MaxLength], [Required], [StringLength], [Range]
 
 namespace A_New_Hope.Models
 {
@@ -22,6 +22,11 @@ namespace A_New_Hope.Models
     /// Audit fields:
     /// - CreatedByUserId / UpdatedByUserId store the DomainUser responsible (once auth is wired).
     /// - CreatedAt / UpdatedAt store timestamps (UTC recommended).
+    /// 
+    /// Front-end validation:
+    /// - Required fields are marked with [Required] for MVC validation.
+    /// - Max lengths are enforced via [StringLength] to prevent overly long input.
+    /// - Range validation applied where numeric constraints make sense.
     /// </summary>
     public class CategoryGroup
     {
@@ -33,15 +38,19 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Group name (required).
         /// MaxLength prevents EF/MySQL from defaulting to LONGTEXT and keeps indexes/uniqueness constraints reliable.
+        /// Added [Required] and [StringLength] for front-end validation.
         /// </summary>
-        [MaxLength(150)] // Prevents EF/MySQL from defaulting to LONGTEXT; supports unique index on Name cleanly (VARCHAR(150))
+        [Required(ErrorMessage = "Group name is required.")]
+        [StringLength(150, ErrorMessage = "Group name cannot exceed 150 characters.")]
         public string Name { get; set; } = null!;
 
         /// <summary>
         /// Sorting value used for consistent ordering of groups in the UI.
         /// Default 0 keeps ordering predictable even when not explicitly set.
+        /// Added [Range] for front-end validation (cannot be negative).
         /// </summary>
-        public int SortOrder { get; set; } = 0; // Non-null + default makes ordering consistent and avoids null checks
+        [Range(0, int.MaxValue, ErrorMessage = "Sort order must be 0 or greater.")]
+        public int SortOrder { get; set; } = 0;
 
         /// <summary>
         /// Business toggle that determines whether this group is available for selection/use.
@@ -90,11 +99,11 @@ namespace A_New_Hope.Models
         /// Navigation to the DomainUser who created the record (for audit display and Include()).
         /// Having explicit navs helps avoid EF “shadow FK” issues and simplifies admin UI display.
         /// </summary>
-        public DomainUser? CreatedByUser { get; set; } // Enables easy Include() + avoids EF “shadow FK” issues
+        public DomainUser? CreatedByUser { get; set; }
 
         /// <summary>
         /// Navigation to the DomainUser who last updated the record.
         /// </summary>
-        public DomainUser? UpdatedByUser { get; set; } // Useful for admin UI (“Last updated by”)
+        public DomainUser? UpdatedByUser { get; set; }
     }
 }

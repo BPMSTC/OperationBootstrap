@@ -1,4 +1,6 @@
-﻿namespace A_New_Hope.Models
+﻿using System.ComponentModel.DataAnnotations; // Added for [Required], etc.
+
+namespace A_New_Hope.Models
 {
     /// <summary>
     /// UserItemPreference
@@ -40,12 +42,16 @@
 
         /// <summary>
         /// Foreign key to the DomainUser this preference belongs to.
+        /// Required for validation and form submission.
         /// </summary>
+        [Required(ErrorMessage = "User is required.")]
         public ulong UserId { get; set; }
 
         /// <summary>
         /// Foreign key to the InventoryItem this preference applies to.
+        /// Required for validation and form submission.
         /// </summary>
+        [Required(ErrorMessage = "Inventory Item is required.")]
         public ulong InventoryItemId { get; set; }
 
         /// <summary>
@@ -57,7 +63,9 @@
         /// <summary>
         /// Preference value (Always / Ask / Never).
         /// Using an enum prevents invalid values and keeps preference logic consistent.
+        /// Required for front-end forms.
         /// </summary>
+        [Required(ErrorMessage = "Preference selection is required.")]
         public PreferenceOption Preference { get; set; } = PreferenceOption.Ask;
 
         /// <summary>

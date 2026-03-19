@@ -20,12 +20,12 @@
                 <th>Name</th>
                 <th>@Html.DisplayNameFor(model => model.PhoneNumber)</th>
                 <th>@Html.DisplayNameFor(model => model.City)</th>
-                <th>@Html.DisplayNameFor(model => model.State)</th>
-                <th>@Html.DisplayNameFor(model => model.PostalCode)</th>
-                <th>@Html.DisplayNameFor(model => model.DateOfBirth)</th>
+                @* <th>@Html.DisplayNameFor(model => model.State)</th>
+                <th>@Html.DisplayNameFor(model => model.PostalCode)</th> *@
+                @* <th>@Html.DisplayNameFor(model => model.DateOfBirth)</th> *@
                 <th>@Html.DisplayNameFor(model => model.DefaultPreference)</th>
-                <th>@Html.DisplayNameFor(model => model.UserType)</th>
-                <th>Has Login</th>
+                @* <th>@Html.DisplayNameFor(model => model.UserType)</th> *@
+                @* <th>Has Login</th> *@
                 <th>@Html.DisplayNameFor(model => model.IsActive)</th>
                 <th class="text-end">Actions</th>
             </tr>
@@ -38,12 +38,12 @@
                     <td>@($"{item.LastName}, {item.FirstName}")</td>
                     <td>@Html.DisplayFor(modelItem => item.PhoneNumber)</td>
                     <td>@Html.DisplayFor(modelItem => item.City)</td>
-                    <td>@Html.DisplayFor(modelItem => item.State)</td>
-                    <td>@Html.DisplayFor(modelItem => item.PostalCode)</td>
-                    <td>@Html.DisplayFor(modelItem => item.DateOfBirth)</td>
+                    @* <td>@Html.DisplayFor(modelItem => item.State)</td>
+                    <td>@Html.DisplayFor(modelItem => item.PostalCode)</td> *@
+                    @* <td>@Html.DisplayFor(modelItem => item.DateOfBirth)</td> *@
                     <td>@Html.DisplayFor(modelItem => item.DefaultPreference)</td>
-                    <td>@Html.DisplayFor(modelItem => item.UserType)</td>
-                    <td>
+                    @* <td>@Html.DisplayFor(modelItem => item.UserType)</td> *@
+                    @* <td>
                         @if (item.UserType == A_New_Hope.Models.UserType.Staff || item.UserType == A_New_Hope.Models.UserType.Admin)
                         {
                             @(item.HasLoginAccount ? "Yes" : "No")
@@ -52,7 +52,7 @@
                         {
                             <span class="text-muted">N/A</span>
                         }
-                    </td>
+                    </td> *@
                     <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
                     <td class="text-end text-nowrap">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
