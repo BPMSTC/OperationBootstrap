@@ -122,7 +122,6 @@ namespace A_New_Hope.Models
         /// Optional free-form notes about the organization.
         /// Left uncapped to allow longer descriptions if needed.
         /// </summary>
-        [StringLength(2000, ErrorMessage = "Notes cannot exceed 2000 characters.")]
         public string? Notes { get; set; } // Leave uncapped if you want free-form notes (TEXT/LONGTEXT is okay here)
 
         /// <summary>
