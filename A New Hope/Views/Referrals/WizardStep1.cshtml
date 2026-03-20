@@ -1,0 +1,304 @@
+﻿@model A_New_Hope.Models.ViewModels.ReferralWizardStep1ViewModel
+
+@{
+    ViewData["Title"] = "New Referral - Step 1";
+
+    var expandNewOrganization =
+        Model.HasStartedNewOrganization ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewOrganizationName)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewOrganizationType)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewPrimaryContactName)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewEmail)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewPhoneNumber)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewAddressLine1)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewAddressLine2)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewCity)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewState)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewPostalCode)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewNotes));
+
+    var collapseCssClass = expandNewOrganization ? "collapse show" : "collapse";
+}
+
+<div class="container py-4">
+    <h1 class="mb-2">New Referral</h1>
+    <p class="text-muted mb-4">Step 1 of 3: Select an existing organization or add a new one.</p>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    <form asp-action="WizardStep1" method="post" novalidate>
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm wizard-card mb-3" id="existingOrganizationCard">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Select Existing Organization</h4>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="SelectedReferringOrganizationId" class="form-label"></label>
+                            <select asp-for="SelectedReferringOrganizationId"
+                                    asp-items="Model.ExistingOrganizations"
+                                    class="form-select"
+                                    id="selectedOrganization">
+                                <option value="">-- Select an organization --</option>
+                            </select>
+                            <span asp-validation-for="SelectedReferringOrganizationId" class="text-danger"></span>
+                        </div>
+
+                        <p class="text-muted mb-0">
+                            Use this option when the referring organization already exists in the system.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="wizard-divider">
+                    <span>OR</span>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card shadow-sm wizard-card" id="newOrganizationCard">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Add New Organization</h4>
+                    </div>
+
+                    <div class="card-body">
+                        <p class="text-muted">
+                            Use this option when the referring organization is not already in the system.
+                        </p>
+
+                        <button class="btn btn-outline-secondary mb-3"
+                                type="button"
+                                id="toggleNewOrganizationBtn"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#newOrganizationCollapse"
+                                aria-expanded="@(expandNewOrganization.ToString().ToLower())"
+                                aria-controls="newOrganizationCollapse">
+                            + Enter New Organization
+                        </button>
+
+                        <div id="newOrganizationCollapse" class="@collapseCssClass">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewOrganizationName" class="form-label"></label>
+                                    <input asp-for="NewOrganizationName" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewOrganizationName" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewOrganizationType" class="form-label"></label>
+                                    <input asp-for="NewOrganizationType" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewOrganizationType" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewPrimaryContactName" class="form-label"></label>
+                                    <input asp-for="NewPrimaryContactName" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewPrimaryContactName" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewEmail" class="form-label"></label>
+                                    <input asp-for="NewEmail" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewEmail" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewPhoneNumber" class="form-label"></label>
+                                    <input asp-for="NewPhoneNumber" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewPhoneNumber" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewAddressLine1" class="form-label"></label>
+                                    <input asp-for="NewAddressLine1" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewAddressLine1" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label asp-for="NewAddressLine2" class="form-label"></label>
+                                    <input asp-for="NewAddressLine2" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewAddressLine2" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="NewCity" class="form-label"></label>
+                                    <input asp-for="NewCity" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewCity" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-2 mb-3">
+                                    <label asp-for="NewState" class="form-label"></label>
+                                    <input asp-for="NewState" class="form-control text-uppercase new-org-input" maxlength="2" />
+                                    <span asp-validation-for="NewState" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label asp-for="NewPostalCode" class="form-label"></label>
+                                    <input asp-for="NewPostalCode" class="form-control new-org-input" />
+                                    <span asp-validation-for="NewPostalCode" class="text-danger"></span>
+                                </div>
+
+                                <div class="col-md-8 mb-3">
+                                    <label asp-for="NewNotes" class="form-label"></label>
+                                    <textarea asp-for="NewNotes" class="form-control new-org-input" rows="3"></textarea>
+                                    <span asp-validation-for="NewNotes" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Back</a>
+            <button type="submit" class="btn btn-primary">Next</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const selectedOrganization = document.getElementById("selectedOrganization");
+            const existingOrganizationCard = document.getElementById("existingOrganizationCard");
+            const newOrganizationCard = document.getElementById("newOrganizationCard");
+            const toggleButton = document.getElementById("toggleNewOrganizationBtn");
+            const newOrgInputs = document.querySelectorAll(".new-org-input");
+            const collapseElement = document.getElementById("newOrganizationCollapse");
+            const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseElement, { toggle: false });
+
+            function hasNewOrganizationInput() {
+                for (const input of newOrgInputs) {
+                    if (input.value && input.value.trim() !== "") {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function setExistingOrganizationDisabled(isDisabled) {
+                selectedOrganization.disabled = isDisabled;
+
+                if (isDisabled) {
+                    existingOrganizationCard.classList.add("disabled-card");
+                } else {
+                    existingOrganizationCard.classList.remove("disabled-card");
+                }
+            }
+
+            function setNewOrganizationDisabled(isDisabled) {
+                if (isDisabled) {
+                    newOrganizationCard.classList.add("disabled-card");
+                    toggleButton.disabled = true;
+
+                    newOrgInputs.forEach(input => {
+                        input.disabled = true;
+                    });
+
+                    collapseInstance.hide();
+                } else {
+                    newOrganizationCard.classList.remove("disabled-card");
+                    toggleButton.disabled = false;
+
+                    newOrgInputs.forEach(input => {
+                        input.disabled = false;
+                    });
+                }
+            }
+
+            function updateWizardState() {
+                const hasExistingSelection = selectedOrganization.value !== "";
+                const hasNewInput = hasNewOrganizationInput();
+
+                if (hasExistingSelection) {
+                    setNewOrganizationDisabled(true);
+                    setExistingOrganizationDisabled(false);
+                    return;
+                }
+
+                if (hasNewInput) {
+                    setExistingOrganizationDisabled(true);
+                    setNewOrganizationDisabled(false);
+                    return;
+                }
+
+                setExistingOrganizationDisabled(false);
+                setNewOrganizationDisabled(false);
+            }
+
+            selectedOrganization.addEventListener("change", updateWizardState);
+
+            newOrgInputs.forEach(input => {
+                input.addEventListener("input", updateWizardState);
+                input.addEventListener("change", updateWizardState);
+            });
+
+            updateWizardState();
+        });
+    </script>
+}
+
+<style>
+    .wizard-card {
+        border-radius: 12px;
+        border: 1px solid #d9dee3;
+    }
+
+        .wizard-card .card-header {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+    .wizard-divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 0.5rem 0 1.25rem 0;
+    }
+
+        .wizard-divider::before,
+        .wizard-divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #ced4da;
+        }
+
+        .wizard-divider span {
+            padding: 0 1rem;
+            font-weight: 600;
+            color: #6c757d;
+            letter-spacing: 0.05em;
+        }
+
+    .disabled-card {
+        opacity: 0.6;
+    }
+
+        .disabled-card .card-header,
+        .disabled-card .card-body {
+            background-color: #f8f9fa;
+        }
+</style>
