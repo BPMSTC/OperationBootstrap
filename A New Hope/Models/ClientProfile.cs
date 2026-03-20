@@ -56,15 +56,6 @@ namespace A_New_Hope.Models
         public decimal? EarnedIncomeMonthly { get; set; }
 
         /// <summary>
-        /// Optional postal/zip code for client.
-        /// Accepts 5-digit ZIP, ZIP+4 (US), or alphanumeric for non-US postal codes.
-        /// </summary>
-        [MaxLength(20)]
-        [RegularExpression(@"^\d{5}(-\d{4})?$",
-            ErrorMessage = "Enter a valid US ZIP code.")]
-        public string? PostalCode { get; set; }
-
-        /// <summary>
         /// Indicates whether the client is currently unhoused.
         /// Defaults to false; make nullable only if you need an "unknown" state.
         /// </summary>
