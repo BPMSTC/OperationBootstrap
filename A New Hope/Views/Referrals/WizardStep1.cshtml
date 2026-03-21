@@ -538,6 +538,7 @@
                 input.addEventListener("change", updateOrganizationState);
             });
 
+
             // Client section
             const selectedClient = document.getElementById("selectedClient");
             const existingClientCard = document.getElementById("existingClientCard");
@@ -545,13 +546,15 @@
             const toggleClientButton = document.getElementById("toggleNewClientBtn");
             const clientCollapseElement = document.getElementById("newClientCollapse");
             const clientCollapseInstance = bootstrap.Collapse.getOrCreateInstance(clientCollapseElement, { toggle: false });
+
             const householdCollapseElement = document.getElementById("householdMembersCollapse");
-            const householdCollapseInstance = bootstrap.Collapse.getOrCreateInstance(householdCollapseElement, { toggle: false });
+            const householdCollapseInstance = householdCollapseElement
+                ? bootstrap.Collapse.getOrCreateInstance(householdCollapseElement, { toggle: false })
+                : null;
+
             const householdMembersContainer = document.getElementById("householdMembersContainer");
             const householdTemplate = document.getElementById("householdMemberTemplate");
             const addHouseholdMemberBtn = document.getElementById("addHouseholdMemberBtn");
-            const householdCollapseElement = document.getElementById("householdMembersCollapse");
-            const householdCollapseInstance = bootstrap.Collapse.getOrCreateInstance(householdCollapseElement, { toggle: false });
 
             function getNewClientInputs() {
                 return document.querySelectorAll(".new-client-input");
@@ -562,11 +565,14 @@
 
                 for (const input of inputs) {
                     if (input.type === "checkbox") {
-                        if (input.checked) return true;
+                        if (input.checked) {
+                            return true;
+                        }
                     } else if (input.value && input.value.trim() !== "") {
                         return true;
                     }
                 }
+
                 return false;
             }
 
@@ -577,8 +583,14 @@
 
             function setNewClientDisabled(isDisabled) {
                 newClientCard.classList.toggle("disabled-card", isDisabled);
-                toggleClientButton.disabled = isDisabled;
-                addHouseholdMemberBtn.disabled = isDisabled;
+
+                if (toggleClientButton) {
+                    toggleClientButton.disabled = isDisabled;
+                }
+
+                if (addHouseholdMemberBtn) {
+                    addHouseholdMemberBtn.disabled = isDisabled;
+                }
 
                 getNewClientInputs().forEach(input => {
                     input.disabled = isDisabled;
@@ -589,7 +601,10 @@
                 });
 
                 if (isDisabled) {
-                    householdCollapseInstance.hide();
+                    if (householdCollapseInstance) {
+                        householdCollapseInstance.hide();
+                    }
+
                     clientCollapseInstance.hide();
                 }
             }
@@ -613,31 +628,50 @@
                 setNewClientDisabled(false);
             }
 
-            function rebindRemoveButtons() {
-                document.querySelectorAll(".removeHouseholdMemberBtn").forEach(button => {
-                    button.onclick = function () {
-                        const items = householdMembersContainer.querySelectorAll(".household-member-item");
+            if (addHouseholdMemberBtn && householdMembersContainer && householdTemplate) {
+                addHouseholdMemberBtn.addEventListener("click", function () {
+                    const index = householdMembersContainer.querySelectorAll(".household-member-item").length;
+                    const html = householdTemplate.innerHTML.replaceAll("__index__", index);
 
-                        if (items.length > 1) {
-                            button.closest(".household-member-item").remove();
-                            updateClientState();
-                        } else {
-                            const parent = button.closest(".household-member-item");
-                            parent.querySelectorAll("input").forEach(input => input.value = "");
-                            updateClientState();
-                        }
-                    };
+                    householdMembersContainer.insertAdjacentHTML("beforeend", html);
+
+                    if (householdCollapseInstance) {
+                        householdCollapseInstance.show();
+                    }
+
+                    updateClientState();
                 });
             }
 
-            addHouseholdMemberBtn.addEventListener("click", function () {
-                const index = householdMembersContainer.querySelectorAll(".household-member-item").length;
-                const html = householdTemplate.innerHTML.replaceAll("__index__", index);
-                householdMembersContainer.insertAdjacentHTML("beforeend", html);
-                householdCollapseInstance.show();
-                rebindRemoveButtons();
-                updateClientState();
-            });
+            if (householdMembersContainer) {
+                householdMembersContainer.addEventListener("click", function (e) {
+                    const removeButton = e.target.closest(".removeHouseholdMemberBtn");
+                    if (!removeButton) {
+                        return;
+                    }
+
+                    const card = removeButton.closest(".household-member-item");
+                    if (!card) {
+                        return;
+                    }
+
+                    const items = householdMembersContainer.querySelectorAll(".household-member-item");
+
+                    if (items.length > 1) {
+                        card.remove();
+                    } else {
+                        card.querySelectorAll("input").forEach(input => {
+                            if (input.type === "checkbox" || input.type === "radio") {
+                                input.checked = false;
+                            } else {
+                                input.value = "";
+                            }
+                        });
+                    }
+
+                    updateClientState();
+                });
+            }
 
             selectedClient.addEventListener("change", updateClientState);
 
@@ -653,7 +687,6 @@
                 }
             });
 
-            rebindRemoveButtons();
             updateOrganizationState();
             updateClientState();
         });
