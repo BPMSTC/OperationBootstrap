@@ -43,7 +43,7 @@
 
 <div class="container py-4">
     <h1 class="mb-2">New Referral</h1>
-    <p class="text-muted mb-4">Step 1 of 3: Select or add the referring organization and client.</p>
+    <p class="text-muted mb-4">Step 1 of 3: Select or add the referring organization, client, and referral details.</p>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -196,7 +196,7 @@
         </div>
 
         <!-- Client Section -->
-        <div class="mb-4">
+        <div class="mb-5">
             <h3 class="mb-3">Client</h3>
 
             <div class="row">
@@ -351,7 +351,6 @@
                                 </div>
 
                                 <hr />
-                                <hr />
                                 <button class="btn btn-outline-secondary mb-3"
                                         type="button"
                                         id="toggleHouseholdMembersBtn"
@@ -460,6 +459,82 @@
             </div>
         </div>
 
+        <!-- Referral Details Section -->
+        <div class="mb-4">
+            <h3 class="mb-3">Referral Details</h3>
+
+            <div class="card shadow-sm wizard-card">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Referral Information</h4>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="ReferredOn" class="form-label"></label>
+                            <input asp-for="ReferredOn" class="form-control" type="date" />
+                            <span asp-validation-for="ReferredOn" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Status" class="form-label"></label>
+                            <select asp-for="Status"
+                                    asp-items="Model.ReferralStatusOptions"
+                                    class="form-select">
+                                <option value="">-- Select status --</option>
+                            </select>
+                            <span asp-validation-for="Status" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3"></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ValidFrom" class="form-label"></label>
+                            <input asp-for="ValidFrom" class="form-control" type="date" />
+                            <span asp-validation-for="ValidFrom" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ValidTo" class="form-label"></label>
+                            <input asp-for="ValidTo" class="form-control" type="date" />
+                            <span asp-validation-for="ValidTo" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <hr />
+                    <h5 class="mb-3">Referrer Contact</h5>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="ReferredByName" class="form-label"></label>
+                            <input asp-for="ReferredByName" class="form-control" />
+                            <span asp-validation-for="ReferredByName" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="ReferredByPhoneNumber" class="form-label"></label>
+                            <input asp-for="ReferredByPhoneNumber" class="form-control" />
+                            <span asp-validation-for="ReferredByPhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="ReferredByEmail" class="form-label"></label>
+                            <input asp-for="ReferredByEmail" class="form-control" />
+                            <span asp-validation-for="ReferredByEmail" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="ReferralNotes" class="form-label"></label>
+                        <textarea asp-for="ReferralNotes" class="form-control" rows="4"></textarea>
+                        <span asp-validation-for="ReferralNotes" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="d-flex justify-content-end gap-2 mt-4">
             <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">Back</a>
             <button type="submit" class="btn btn-primary">Next</button>
@@ -537,7 +612,6 @@
                 input.addEventListener("input", updateOrganizationState);
                 input.addEventListener("change", updateOrganizationState);
             });
-
 
             // Client section
             const selectedClient = document.getElementById("selectedClient");

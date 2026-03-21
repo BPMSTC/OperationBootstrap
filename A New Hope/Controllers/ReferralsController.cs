@@ -152,7 +152,8 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Shows Step 1 of the referral wizard:
         /// select an existing referring organization or add a new one,
-        /// then select an existing client or add a new one.
+        /// then select an existing client or add a new one,
+        /// then enter the referral details.
         /// </summary>
         public async Task<IActionResult> WizardStep1()
         {
@@ -331,6 +332,15 @@ namespace A_New_Hope.Controllers
 
                 TempData["ReferralWizard.ReferringOrganizationId"] = referringOrganizationId.ToString();
                 TempData["ReferralWizard.ClientUserId"] = clientUserId.ToString();
+
+                TempData["ReferralWizard.ReferredOn"] = vm.ReferredOn?.ToString("yyyy-MM-dd");
+                TempData["ReferralWizard.Status"] = vm.Status?.ToString();
+                TempData["ReferralWizard.ValidFrom"] = vm.ValidFrom?.ToString("yyyy-MM-dd");
+                TempData["ReferralWizard.ValidTo"] = vm.ValidTo?.ToString("yyyy-MM-dd");
+                TempData["ReferralWizard.ReferredByName"] = vm.ReferredByName;
+                TempData["ReferralWizard.ReferredByPhoneNumber"] = vm.ReferredByPhoneNumber;
+                TempData["ReferralWizard.ReferredByEmail"] = vm.ReferredByEmail;
+                TempData["ReferralWizard.Notes"] = vm.ReferralNotes;
 
                 TempData["SuccessMessage"] =
                     $"Step 1 complete. Selected Referring Organization Id: {referringOrganizationId}, Client Id: {clientUserId}";
@@ -604,15 +614,26 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
+            vm.ReferralStatusOptions = Enum.GetValues(typeof(ReferralStatus))
+                .Cast<ReferralStatus>()
+                .Select(status => new SelectListItem
+                {
+                    Value = status.ToString(),
+                    Text = status.ToString(),
+                    Selected = vm.Status.HasValue && vm.Status.Value == status
+                })
+                .ToList();
+
             if (vm.HouseholdMembers.Count == 0)
             {
                 vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
             }
 
             _logger.LogDebug(
-                "Referral Wizard Step 1 dropdowns populated with {OrganizationCount} organizations and {ClientCount} clients",
+                "Referral Wizard Step 1 dropdowns populated with {OrganizationCount} organizations, {ClientCount} clients, and {StatusCount} statuses",
                 vm.ExistingOrganizations.Count,
-                vm.ExistingClients.Count);
+                vm.ExistingClients.Count,
+                vm.ReferralStatusOptions.Count);
         }
 
         /// <summary>
@@ -663,8 +684,12 @@ namespace A_New_Hope.Controllers
             model.NewClientCity = NullIfWhiteSpace(model.NewClientCity);
             model.NewClientState = NullIfWhiteSpace(model.NewClientState)?.ToUpperInvariant();
             model.NewClientPostalCode = NullIfWhiteSpace(model.NewClientPostalCode);
-
             model.NewClientEmploymentStatus = NullIfWhiteSpace(model.NewClientEmploymentStatus);
+
+            model.ReferredByName = NullIfWhiteSpace(model.ReferredByName);
+            model.ReferredByPhoneNumber = NullIfWhiteSpace(model.ReferredByPhoneNumber);
+            model.ReferredByEmail = NullIfWhiteSpace(model.ReferredByEmail);
+            model.ReferralNotes = NullIfWhiteSpace(model.ReferralNotes);
 
             if (model.HouseholdMembers != null)
             {
@@ -1026,6 +1051,63 @@ namespace A_New_Hope.Controllers
                             ModelState.AddModelError($"HouseholdMembers[{i}].AgeAsOfDate", "Age As Of Date cannot be earlier than Date of Birth.");
                         }
                     }
+                }
+
+                // =========================================================
+                // REFERRAL DETAILS VALIDATION
+                // =========================================================
+                if (!model.ReferredOn.HasValue)
+                {
+                    ModelState.AddModelError(nameof(model.ReferredOn), "Referral date is required.");
+                }
+                else
+                {
+                    if (model.ReferredOn.Value.Date > DateTime.UtcNow.Date)
+                    {
+                        ModelState.AddModelError(nameof(model.ReferredOn), "Referral date cannot be in the future.");
+                    }
+
+                    if (model.ValidFrom.HasValue && model.ValidFrom.Value.Date < model.ReferredOn.Value.Date)
+                    {
+                        ModelState.AddModelError(nameof(model.ValidFrom), "Valid From cannot be earlier than Referral Date.");
+                    }
+
+                    if (model.ValidTo.HasValue && model.ValidTo.Value.Date < model.ReferredOn.Value.Date)
+                    {
+                        ModelState.AddModelError(nameof(model.ValidTo), "Valid To cannot be earlier than Referral Date.");
+                    }
+                }
+
+                if (!model.Status.HasValue || !Enum.IsDefined(typeof(ReferralStatus), model.Status.Value))
+                {
+                    ModelState.AddModelError(nameof(model.Status), "Select a valid referral status.");
+                }
+
+                if (model.ValidFrom.HasValue &&
+                    model.ValidTo.HasValue &&
+                    model.ValidFrom.Value.Date > model.ValidTo.Value.Date)
+                {
+                    ModelState.AddModelError(nameof(model.ValidTo), "Valid To must be on or after Valid From.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.ReferredByName) && !IsValidPersonName(model.ReferredByName))
+                {
+                    ModelState.AddModelError(nameof(model.ReferredByName), "Referrer name contains invalid characters.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.ReferredByPhoneNumber) && !IsValidPhoneNumber(model.ReferredByPhoneNumber))
+                {
+                    ModelState.AddModelError(nameof(model.ReferredByPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.ReferredByEmail) && !IsValidEmail(model.ReferredByEmail))
+                {
+                    ModelState.AddModelError(nameof(model.ReferredByEmail), "Email format is invalid.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.ReferralNotes) && model.ReferralNotes.Length > 2000)
+                {
+                    ModelState.AddModelError(nameof(model.ReferralNotes), "Notes cannot exceed 2000 characters.");
                 }
             }
         }

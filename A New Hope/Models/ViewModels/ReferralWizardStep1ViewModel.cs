@@ -6,7 +6,8 @@ namespace A_New_Hope.Models.ViewModels
     /// <summary>
     /// View model for Referral Wizard Step 1:
     /// select an existing referring organization or add a new one,
-    /// then select an existing client or add a new one.
+    /// then select an existing client or add a new one,
+    /// then enter the referral details themselves.
     /// 
     /// When adding a new client:
     /// - core DomainUser fields are collected
@@ -187,5 +188,45 @@ namespace A_New_Hope.Models.ViewModels
             NewClientEarnedIncomeMonthly.HasValue ||
             NewClientIsUnhoused ||
             (HouseholdMembers?.Any(h => h.HasStarted) ?? false);
+
+        // =========================================================
+        // REFERRAL DETAILS
+        // =========================================================
+
+        [Required(ErrorMessage = "Referral date is required.")]
+        [Display(Name = "Referral Date")]
+        [DataType(DataType.Date)]
+        public DateTime? ReferredOn { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Referral status is required.")]
+        [Display(Name = "Status")]
+        public ReferralStatus? Status { get; set; } = ReferralStatus.Pending;
+
+        [Display(Name = "Valid From")]
+        [DataType(DataType.Date)]
+        public DateTime? ValidFrom { get; set; }
+
+        [Display(Name = "Valid To")]
+        [DataType(DataType.Date)]
+        public DateTime? ValidTo { get; set; }
+
+        [Display(Name = "Referrer Name")]
+        [MaxLength(200)]
+        public string? ReferredByName { get; set; }
+
+        [Display(Name = "Referrer Phone Number")]
+        [MaxLength(25)]
+        public string? ReferredByPhoneNumber { get; set; }
+
+        [Display(Name = "Referrer Email Address")]
+        [MaxLength(254)]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        public string? ReferredByEmail { get; set; }
+
+        [Display(Name = "Referral Notes")]
+        [MaxLength(2000)]
+        public string? ReferralNotes { get; set; }
+
+        public List<SelectListItem> ReferralStatusOptions { get; set; } = new();
     }
 }
