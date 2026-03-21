@@ -528,15 +528,15 @@ namespace A_New_Hope.Controllers
             // Validate date of birth range when provided.
             if (model.DateOfBirth.HasValue)
             {
-                var minDate = new DateOnly(1900, 1, 1);
-                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var minDate = new DateTime(1900, 1, 1);       // Min allowed DOB
+                var today = DateTime.UtcNow.Date;             // Only the date part
 
-                if (model.DateOfBirth.Value > today)
+                if (model.DateOfBirth.Value.Date > today)
                 {
                     ModelState.AddModelError(nameof(DomainUser.DateOfBirth), "Date of Birth cannot be in the future.");
                 }
 
-                if (model.DateOfBirth.Value < minDate)
+                if (model.DateOfBirth.Value.Date < minDate)
                 {
                     ModelState.AddModelError(nameof(DomainUser.DateOfBirth), "Date of Birth is earlier than the allowed minimum.");
                 }

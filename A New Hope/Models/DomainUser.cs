@@ -91,7 +91,7 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Optional date of birth.
         /// </summary>
-        public DateOnly? DateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
 
         // -----------------------------------------------------------------
         // Business rules / classification
