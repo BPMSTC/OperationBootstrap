@@ -1,6 +1,5 @@
 ﻿@{
     ViewData["Title"] = "Home";
-    var users = ViewBag.Users as IEnumerable<dynamic>;
 }
 
 <style>
@@ -29,6 +28,31 @@
         border: 1px solid #343a40;
     }
 
+    .workflow-card {
+        background-color: #f8f9fa !important;
+        border: 2px solid #ced4da;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        height: 100%;
+    }
+
+        .workflow-card .card-body {
+            display: flex;
+            flex-direction: column;
+        }
+
+    .workflow-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #343a40;
+        margin-bottom: 10px;
+    }
+
+    .workflow-text {
+        color: #495057;
+        flex-grow: 1;
+    }
+
     .neutral-btn-primary {
         background-color: #343a40 !important;
         border: 2px solid #212529 !important;
@@ -38,6 +62,7 @@
 
         .neutral-btn-primary:hover {
             background-color: #495057 !important;
+            color: white !important;
         }
 
     .neutral-btn-secondary {
@@ -51,132 +76,61 @@
             background-color: #868e96 !important;
             color: white !important;
         }
-
-    .scroll-box {
-        max-height: 450px;
-        overflow-y: auto;
-        background-color: #f8f9fa !important;
-        border-radius: 6px;
-        padding: 10px;
-        border: 2px solid #ced4da;
-    }
-
-    table thead {
-        background-color: #6c757d !important;
-        color: white !important;
-    }
-
-    table {
-        background-color: #ffffff !important;
-        border: 2px solid #ced4da !important;
-    }
-
-        table th, table td {
-            border: 1px solid #adb5bd !important;
-            padding: 8px;
-        }
-
-    .clickable-row:hover {
-        background-color: #dee2e6 !important;
-        cursor: pointer;
-    }
-
-    #searchInput {
-        background-color: #ffffff !important;
-        border: 2px solid #ced4da !important;
-        padding: 10px;
-    }
 </style>
 
 <div class="container mt-5">
     <div class="main-card">
+        <div class="section-header">Workflow Menu</div>
 
-        <div class="d-flex justify-content-between mb-4">
-            <a asp-controller="Referrals" asp-action="Create"
-               class="btn neutral-btn-primary btn-lg w-50 me-2">
-                + New Referral
-            </a>
-            <button class="btn neutral-btn-secondary btn-lg w-50 ms-2" disabled>
-                Reporting (W.I.P.)
-            </button>
+        <p class="mb-4">
+            Select a workflow below. Additional workflows and actions can be added here as the project grows.
+        </p>
+
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card workflow-card">
+                    <div class="card-body">
+                        <div class="workflow-title">Referral Wizard</div>
+                        <p class="workflow-text">
+                            Start a new referral workflow by selecting an existing referring organization
+                            or entering a new one.
+                        </p>
+                        <a asp-controller="Referrals"
+                           asp-action="WizardStep1"
+                           class="btn neutral-btn-primary mt-auto">
+                            Start Referral Wizard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card workflow-card">
+                    <div class="card-body">
+                        <div class="workflow-title">Client Wizard</div>
+                        <p class="workflow-text">
+                            Create or locate a client record and guide the user through client-specific entry steps.
+                        </p>
+                        <button class="btn neutral-btn-secondary mt-auto" disabled>
+                            Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card workflow-card">
+                    <div class="card-body">
+                        <div class="workflow-title">Referral Details Wizard</div>
+                        <p class="workflow-text">
+                            Complete referral-specific details such as dates, status, notes, and related follow-up information.
+                        </p>
+                        <button class="btn neutral-btn-secondary mt-auto" disabled>
+                            Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div class="section-header mb-3">Client List</div>
-
-        <input type="text" id="searchInput"
-               class="form-control form-control-lg mb-3"
-               placeholder="Search by name, email, or address..." />
-
-        <div class="scroll-box">
-            <table class="table table-hover table-bordered mb-0">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Address</th>
-                    </tr>
-                </thead>
-                <tbody id="resultsBody">
-                    @if (users != null)
-                    {
-                        foreach (var user in users)
-                        {
-                            <tr class="clickable-row" data-id="@user.Id">
-                                <td>@user.FullName</td>
-                                <td>@user.Email</td>
-                                <td>@user.Address</td>
-                            </tr>
-                        }
-                    }
-                </tbody>
-            </table>
-        </div>
-
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        const input = document.getElementById("searchInput");
-        const resultsBody = document.getElementById("resultsBody");
-
-        input.addEventListener("input", function () {
-            const query = input.value;
-
-            if (query.length === 0) {
-                fetch(`/Home/Index`).then(() => location.reload());
-                return;
-            }
-
-            fetch(`/Home/Search?query=${encodeURIComponent(query)}`)
-                .then(r => r.json())
-                .then(data => {
-                    resultsBody.innerHTML = "";
-
-                    if (data.length === 0) {
-                        resultsBody.innerHTML =
-                            `<tr><td colspan="3" class="text-center">No results found</td></tr>`;
-                        return;
-                    }
-
-                    data.forEach(user => {
-                        resultsBody.innerHTML += `
-                            <tr class="clickable-row" data-id="${user.id}">
-                                <td>${user.fullName}</td>
-                                <td>${user.email}</td>
-                                <td>${user.address}</td>
-                            </tr>`;
-                    });
-                });
-        });
-
-        document.addEventListener("click", function (e) {
-            const row = e.target.closest(".clickable-row");
-
-            if (row) {
-                const id = row.getAttribute("data-id");
-                window.location.href = `/ClientProfiles/Details/${id}`;
-            }
-        });
-    </script>
-}

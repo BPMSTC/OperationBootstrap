@@ -34,6 +34,18 @@ try
     builder.Services.AddRazorPages();
 
     // ------------------------------
+    // Session
+    // ------------------------------
+    builder.Services.AddDistributedMemoryCache();
+
+    builder.Services.AddSession(options =>
+    {
+        options.IdleTimeout = TimeSpan.FromMinutes(30);
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true;
+    });
+
+    // ------------------------------
     // Authorization
     // ------------------------------
     // Fallback policy: if an endpoint doesn't explicitly allow anonymous access,
@@ -103,6 +115,8 @@ try
     app.UseHttpsRedirection();
     app.UseStaticFiles(); // Serves wwwroot assets (CSS/JS/images)
     app.UseRouting();
+
+    app.UseSession();
 
     // AuthN first, then AuthZ.
     app.UseAuthentication();

@@ -1,0 +1,325 @@
+﻿@model A_New_Hope.Models.ViewModels.ReferralWizardStep1ViewModel
+
+@{
+    ViewData["Title"] = "New Referral - Step 2";
+}
+
+<div class="container py-4">
+    <h1 class="mb-2">New Referral</h1>
+    <p class="text-muted mb-4">Step 2 of 3: Review and confirm the referral details before saving.</p>
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <!-- Referring Organization -->
+    <div class="card shadow-sm wizard-card mb-4">
+        <div class="card-header bg-white">
+            <h4 class="mb-0">Referring Organization</h4>
+        </div>
+        <div class="card-body">
+            @if (Model.HasSelectedExistingOrganization)
+            {
+                <p class="mb-0">
+                    <strong>Existing Organization ID:</strong> @Model.SelectedReferringOrganizationId
+                </p>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Organization Name:</strong><br />
+                        @Model.NewOrganizationName
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Primary Type of Service:</strong><br />
+                        @Model.NewOrganizationType
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Contact Person Name:</strong><br />
+                        @Model.NewPrimaryContactName
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Email Address:</strong><br />
+                        @Model.NewEmail
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Phone Number:</strong><br />
+                        @Model.NewPhoneNumber
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Address Line 1:</strong><br />
+                        @Model.NewAddressLine1
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Address Line 2:</strong><br />
+                        @Model.NewAddressLine2
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>City:</strong><br />
+                        @Model.NewCity
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <strong>State:</strong><br />
+                        @Model.NewState
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <strong>ZIP Code:</strong><br />
+                        @Model.NewPostalCode
+                    </div>
+                    <div class="col-md-8 mb-2">
+                        <strong>Notes:</strong><br />
+                        @(string.IsNullOrWhiteSpace(Model.NewNotes) ? "None" : Model.NewNotes)
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Client -->
+    <div class="card shadow-sm wizard-card mb-4">
+        <div class="card-header bg-white">
+            <h4 class="mb-0">Client</h4>
+        </div>
+        <div class="card-body">
+            @if (Model.HasSelectedExistingClient)
+            {
+                <p class="mb-0">
+                    <strong>Existing Client ID:</strong> @Model.SelectedClientUserId
+                </p>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>First Name:</strong><br />
+                        @Model.NewClientFirstName
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Last Name:</strong><br />
+                        @Model.NewClientLastName
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Email Address:</strong><br />
+                        @Model.NewClientEmail
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Phone Number:</strong><br />
+                        @Model.NewClientPhoneNumber
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Date of Birth:</strong><br />
+                        @(Model.NewClientDateOfBirth?.ToString("yyyy-MM-dd") ?? "None")
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Address Line 1:</strong><br />
+                        @Model.NewClientAddressLine1
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Address Line 2:</strong><br />
+                        @Model.NewClientAddressLine2
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>City:</strong><br />
+                        @Model.NewClientCity
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <strong>State:</strong><br />
+                        @Model.NewClientState
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>ZIP Code:</strong><br />
+                        @Model.NewClientPostalCode
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Client Profile -->
+    @if (!Model.HasSelectedExistingClient)
+    {
+        <div class="card shadow-sm wizard-card mb-4">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Client Profile</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Employment Status:</strong><br />
+                        @(string.IsNullOrWhiteSpace(Model.NewClientEmploymentStatus) ? "None" : Model.NewClientEmploymentStatus)
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <strong>Monthly Earned Income:</strong><br />
+                        @(Model.NewClientEarnedIncomeMonthly.HasValue? Model.NewClientEarnedIncomeMonthly.Value.ToString("C") : "None")
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <strong>Currently Unhoused:</strong><br />
+                        @(Model.NewClientIsUnhoused ? "Yes" : "No")
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Household Members -->
+    @if (!Model.HasSelectedExistingClient)
+    {
+        <div class="card shadow-sm wizard-card mb-4">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Household Members</h4>
+            </div>
+            <div class="card-body">
+                @{
+                    var startedMembers = Model.HouseholdMembers?
+                    .Where(h => h.HasStarted)
+                    .ToList() ?? new List<A_New_Hope.Models.ViewModels.ReferralWizardHouseholdMemberViewModel>();
+                }
+
+                @if (startedMembers.Count == 0)
+                {
+                    <p class="mb-0 text-muted">No household members added.</p>
+                }
+                else
+                {
+                    @for (int i = 0; i < startedMembers.Count; i++)
+                    {
+                        var member = startedMembers[i];
+
+                        <div class="border rounded p-3 mb-3 bg-light">
+                            <h6 class="mb-3">Household Member @(i + 1)</h6>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <strong>First Name:</strong><br />
+                                    @member.FirstName
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong>Last Name:</strong><br />
+                                    @member.LastName
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <strong>Date of Birth:</strong><br />
+                                    @(member.DateOfBirth?.ToString("yyyy-MM-dd") ?? "None")
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <strong>Age As Of Date:</strong><br />
+                                    @(member.AgeAsOfDate?.ToString("yyyy-MM-dd") ?? "None")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Referral Details -->
+    <div class="card shadow-sm wizard-card mb-4">
+        <div class="card-header bg-white">
+            <h4 class="mb-0">Referral Details</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <strong>Referral Date:</strong><br />
+                    @(Model.ReferredOn?.ToString("yyyy-MM-dd") ?? "None")
+                </div>
+                <div class="col-md-4 mb-2">
+                    <strong>Status:</strong><br />
+                    @(Model.Status?.ToString() ?? "None")
+                </div>
+                <div class="col-md-4 mb-2"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <strong>Valid From:</strong><br />
+                    @(Model.ValidFrom?.ToString("yyyy-MM-dd") ?? "None")
+                </div>
+                <div class="col-md-6 mb-2">
+                    <strong>Valid To:</strong><br />
+                    @(Model.ValidTo?.ToString("yyyy-MM-dd") ?? "None")
+                </div>
+            </div>
+
+            <hr />
+            <h5 class="mb-3">Referrer Contact</h5>
+
+            <div class="row">
+                <div class="col-md-4 mb-2">
+                    <strong>Referrer Name:</strong><br />
+                    @(string.IsNullOrWhiteSpace(Model.ReferredByName) ? "None" : Model.ReferredByName)
+                </div>
+                <div class="col-md-4 mb-2">
+                    <strong>Referrer Phone Number:</strong><br />
+                    @(string.IsNullOrWhiteSpace(Model.ReferredByPhoneNumber) ? "None" : Model.ReferredByPhoneNumber)
+                </div>
+                <div class="col-md-4 mb-2">
+                    <strong>Referrer Email:</strong><br />
+                    @(string.IsNullOrWhiteSpace(Model.ReferredByEmail) ? "None" : Model.ReferredByEmail)
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <strong>Notes:</strong><br />
+                @(string.IsNullOrWhiteSpace(Model.ReferralNotes) ? "None" : Model.ReferralNotes)
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+        <a asp-action="WizardStep1" class="btn btn-outline-secondary">Back</a>
+
+        <form asp-action="WizardStep2Confirm" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary">Confirm Referral</button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .wizard-card {
+        border-radius: 12px;
+        border: 1px solid #d9dee3;
+    }
+
+        .wizard-card .card-header {
+            border-bottom: 1px solid #e9ecef;
+        }
+</style>
