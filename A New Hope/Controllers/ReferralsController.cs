@@ -10,12 +10,14 @@ namespace A_New_Hope.Controllers
 {
     /// <summary>
     /// Manages create, read, update, and soft delete operations for referrals,
-    /// plus Step 1 of the referral wizard workflow.
+    /// plus the multi-step referral wizard workflow.
     /// </summary>
     public class ReferralsController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ReferralsController> _logger;
+
+        private const string ReferralWizardSessionKey = "ReferralWizard.Step1";
 
         // Store the allowed 2-letter US state codes for validation.
         private static readonly HashSet<string> ValidUsStateCodes = new(StringComparer.OrdinalIgnoreCase)
@@ -151,15 +153,15 @@ namespace A_New_Hope.Controllers
         // GET: Referrals/WizardStep1
         /// <summary>
         /// Shows Step 1 of the referral wizard:
-        /// select an existing referring organization or add a new one,
-        /// then select an existing client or add a new one,
-        /// then enter the referral details.
+        /// collect organization, client, profile, household, and referral draft details.
+        /// This step saves nothing to the database.
         /// </summary>
         public async Task<IActionResult> WizardStep1()
         {
             _logger.LogInformation("Loading Referral Wizard Step 1 page");
 
-            var vm = new ReferralWizardStep1ViewModel();
+            var vm = LoadWizardStep1FromSession() ?? new ReferralWizardStep1ViewModel();
+
             vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
 
             if (vm.HouseholdMembers.Count == 0)
@@ -168,15 +170,13 @@ namespace A_New_Hope.Controllers
             }
 
             await PopulateWizardStep1Dropdowns(vm);
-
             return View(vm);
         }
 
         // POST: Referrals/WizardStep1
         /// <summary>
-        /// Handles Step 1 of the referral wizard:
-        /// validates either existing or new organization,
-        /// and either existing or new client.
+        /// Validates Step 1 and saves the wizard draft to session only.
+        /// No database records are created in Step 1.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -202,25 +202,90 @@ namespace A_New_Hope.Controllers
                 return View(vm);
             }
 
+            SaveWizardStep1ToSession(vm);
+
+            _logger.LogInformation("Referral Wizard Step 1 draft saved to session");
+
+            return RedirectToAction(nameof(WizardStep2));
+        }
+
+        // GET: Referrals/WizardStep2
+        /// <summary>
+        /// Shows Step 2 of the referral wizard:
+        /// review and confirm all draft data from Step 1.
+        /// </summary>
+        public async Task<IActionResult> WizardStep2()
+        {
+            _logger.LogInformation("Loading Referral Wizard Step 2 page");
+
+            var vm = LoadWizardStep1FromSession();
+
+            if (vm == null)
+            {
+                _logger.LogWarning("Referral Wizard Step 2 requested without Step 1 session data");
+                TempData["ErrorMessage"] = "Your referral draft was not found. Please complete Step 1 again.";
+                return RedirectToAction(nameof(WizardStep1));
+            }
+
+            vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
+
+            if (vm.HouseholdMembers.Count == 0)
+            {
+                vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
+            }
+
+            await PopulateWizardStep1Dropdowns(vm);
+            return View(vm);
+        }
+
+        // POST: Referrals/WizardStep2Confirm
+        /// <summary>
+        /// Final confirmation for the wizard.
+        /// Creates organization, client, profile, household members, and referral in one transaction.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> WizardStep2Confirm()
+        {
+            _logger.LogInformation("Attempting to confirm Referral Wizard Step 2");
+
+            var vm = LoadWizardStep1FromSession();
+
+            if (vm == null)
+            {
+                _logger.LogWarning("Referral Wizard Step 2 confirm requested without Step 1 session data");
+                TempData["ErrorMessage"] = "Your referral draft was not found. Please complete Step 1 again.";
+                return RedirectToAction(nameof(WizardStep1));
+            }
+
+            vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
+
+            NormalizeReferralWizardStep1(vm);
+            await ApplyReferralWizardStep1ValidationAsync(vm);
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning("Referral Wizard Step 2 confirm failed validation re-check");
+                await PopulateWizardStep1Dropdowns(vm);
+                return View("WizardStep2", vm);
+            }
+
             await using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                var now = DateTime.UtcNow;
+
                 ulong referringOrganizationId;
                 ulong clientUserId;
 
+                // Organization
                 if (vm.HasSelectedExistingOrganization)
                 {
                     referringOrganizationId = vm.SelectedReferringOrganizationId!.Value;
-
-                    _logger.LogInformation(
-                        "Referral Wizard Step 1 completed using existing ReferringOrganization Id {ReferringOrganizationId}",
-                        referringOrganizationId);
                 }
                 else
                 {
-                    var now = DateTime.UtcNow;
-
                     var newOrganization = new ReferringOrganization
                     {
                         Name = vm.NewOrganizationName!,
@@ -245,24 +310,15 @@ namespace A_New_Hope.Controllers
                     await _context.SaveChangesAsync();
 
                     referringOrganizationId = newOrganization.Id;
-
-                    _logger.LogInformation(
-                        "Referral Wizard Step 1 created new ReferringOrganization Id {ReferringOrganizationId}",
-                        referringOrganizationId);
                 }
 
+                // Client / Profile / Household
                 if (vm.HasSelectedExistingClient)
                 {
                     clientUserId = vm.SelectedClientUserId!.Value;
-
-                    _logger.LogInformation(
-                        "Referral Wizard Step 1 completed using existing ClientUser Id {ClientUserId}",
-                        clientUserId);
                 }
                 else
                 {
-                    var now = DateTime.UtcNow;
-
                     var newClient = new DomainUser
                     {
                         Email = vm.NewClientEmail!,
@@ -321,50 +377,50 @@ namespace A_New_Hope.Controllers
                     }
 
                     await _context.SaveChangesAsync();
-
-                    _logger.LogInformation(
-                        "Referral Wizard Step 1 created new ClientUser Id {ClientUserId} with ClientProfile and {HouseholdCount} household members",
-                        clientUserId,
-                        vm.HouseholdMembers.Count(h => h.HasStarted));
                 }
+
+                // Referral
+                var referral = new Referral
+                {
+                    ClientUserId = clientUserId,
+                    ReferringOrganizationId = referringOrganizationId,
+                    ReferredOn = vm.ReferredOn!.Value,
+                    Status = vm.Status!.Value,
+                    ValidFrom = vm.ValidFrom,
+                    ValidTo = vm.ValidTo,
+                    ReferredByName = vm.ReferredByName,
+                    ReferredByPhoneNumber = vm.ReferredByPhoneNumber,
+                    ReferredByEmail = vm.ReferredByEmail,
+                    Notes = vm.ReferralNotes,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    CreatedByUserId = null,
+                    UpdatedByUserId = null
+                };
+
+                _context.Referrals.Add(referral);
+                await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
-                TempData["ReferralWizard.ReferringOrganizationId"] = referringOrganizationId.ToString();
-                TempData["ReferralWizard.ClientUserId"] = clientUserId.ToString();
+                ClearWizardStep1Session();
 
-                TempData["ReferralWizard.ReferredOn"] = vm.ReferredOn?.ToString("yyyy-MM-dd");
-                TempData["ReferralWizard.Status"] = vm.Status?.ToString();
-                TempData["ReferralWizard.ValidFrom"] = vm.ValidFrom?.ToString("yyyy-MM-dd");
-                TempData["ReferralWizard.ValidTo"] = vm.ValidTo?.ToString("yyyy-MM-dd");
-                TempData["ReferralWizard.ReferredByName"] = vm.ReferredByName;
-                TempData["ReferralWizard.ReferredByPhoneNumber"] = vm.ReferredByPhoneNumber;
-                TempData["ReferralWizard.ReferredByEmail"] = vm.ReferredByEmail;
-                TempData["ReferralWizard.Notes"] = vm.ReferralNotes;
+                _logger.LogInformation("Referral Wizard completed successfully with Referral Id {ReferralId}", referral.Id);
 
-                TempData["SuccessMessage"] =
-                    $"Step 1 complete. Selected Referring Organization Id: {referringOrganizationId}, Client Id: {clientUserId}";
-
-                return RedirectToAction(nameof(WizardStep1));
+                return RedirectToAction(nameof(Details), new { id = referral.Id });
             }
             catch (DbUpdateException ex)
             {
                 await transaction.RollbackAsync();
 
-                _logger.LogError(ex, "Error saving Referral Wizard Step 1");
+                _logger.LogError(ex, "Error confirming Referral Wizard Step 2");
 
-                ModelState.AddModelError(string.Empty, "Unable to save Step 1 data.");
-
-                if (vm.HouseholdMembers.Count == 0)
-                {
-                    vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
-                }
-
+                ModelState.AddModelError(string.Empty, "Unable to save the referral.");
                 await PopulateWizardStep1Dropdowns(vm);
-                return View(vm);
+                return View("WizardStep2", vm);
             }
         }
-        
+
         // GET: Referrals/Edit/5
         /// <summary>
         /// Shows the edit form for a single non-deleted referral.
@@ -543,6 +599,36 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
+        /// Saves the Step 1 wizard draft to session as JSON.
+        /// </summary>
+        private void SaveWizardStep1ToSession(ReferralWizardStep1ViewModel vm)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(vm);
+            HttpContext.Session.SetString(ReferralWizardSessionKey, json);
+        }
+
+        /// <summary>
+        /// Loads the Step 1 wizard draft from session.
+        /// Returns null when no draft exists.
+        /// </summary>
+        private ReferralWizardStep1ViewModel? LoadWizardStep1FromSession()
+        {
+            var json = HttpContext.Session.GetString(ReferralWizardSessionKey);
+
+            return string.IsNullOrWhiteSpace(json)
+                ? null
+                : System.Text.Json.JsonSerializer.Deserialize<ReferralWizardStep1ViewModel>(json);
+        }
+
+        /// <summary>
+        /// Clears the current referral wizard draft from session.
+        /// </summary>
+        private void ClearWizardStep1Session()
+        {
+            HttpContext.Session.Remove(ReferralWizardSessionKey);
+        }
+
+        /// <summary>
         /// Populates dropdown lists for the create and edit forms.
         /// </summary>
         private async Task PopulateDropdowns(ulong? selectedClientUserId = null, ulong? selectedReferringOrganizationId = null)
@@ -576,11 +662,11 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// Populates dropdown values for Referral Wizard Step 1.
+        /// Populates dropdown values for Referral Wizard views.
         /// </summary>
         private async Task PopulateWizardStep1Dropdowns(ReferralWizardStep1ViewModel vm)
         {
-            _logger.LogDebug("Populating dropdowns for Referral Wizard Step 1");
+            _logger.LogDebug("Populating dropdowns for Referral Wizard");
 
             vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
 
@@ -630,7 +716,7 @@ namespace A_New_Hope.Controllers
             }
 
             _logger.LogDebug(
-                "Referral Wizard Step 1 dropdowns populated with {OrganizationCount} organizations, {ClientCount} clients, and {StatusCount} statuses",
+                "Referral Wizard dropdowns populated with {OrganizationCount} organizations, {ClientCount} clients, and {StatusCount} statuses",
                 vm.ExistingOrganizations.Count,
                 vm.ExistingClients.Count,
                 vm.ReferralStatusOptions.Count);
@@ -776,6 +862,7 @@ namespace A_New_Hope.Controllers
 
         /// <summary>
         /// Applies business-rule validation for Referral Wizard Step 1.
+        /// This validates the full draft but does not save anything.
         /// </summary>
         private async Task ApplyReferralWizardStep1ValidationAsync(ReferralWizardStep1ViewModel model)
         {
@@ -1052,63 +1139,63 @@ namespace A_New_Hope.Controllers
                         }
                     }
                 }
+            }
 
-                // =========================================================
-                // REFERRAL DETAILS VALIDATION
-                // =========================================================
-                if (!model.ReferredOn.HasValue)
+            // =========================================================
+            // REFERRAL DETAILS VALIDATION
+            // =========================================================
+            if (!model.ReferredOn.HasValue)
+            {
+                ModelState.AddModelError(nameof(model.ReferredOn), "Referral date is required.");
+            }
+            else
+            {
+                if (model.ReferredOn.Value.Date > DateTime.UtcNow.Date)
                 {
-                    ModelState.AddModelError(nameof(model.ReferredOn), "Referral date is required.");
-                }
-                else
-                {
-                    if (model.ReferredOn.Value.Date > DateTime.UtcNow.Date)
-                    {
-                        ModelState.AddModelError(nameof(model.ReferredOn), "Referral date cannot be in the future.");
-                    }
-
-                    if (model.ValidFrom.HasValue && model.ValidFrom.Value.Date < model.ReferredOn.Value.Date)
-                    {
-                        ModelState.AddModelError(nameof(model.ValidFrom), "Valid From cannot be earlier than Referral Date.");
-                    }
-
-                    if (model.ValidTo.HasValue && model.ValidTo.Value.Date < model.ReferredOn.Value.Date)
-                    {
-                        ModelState.AddModelError(nameof(model.ValidTo), "Valid To cannot be earlier than Referral Date.");
-                    }
+                    ModelState.AddModelError(nameof(model.ReferredOn), "Referral date cannot be in the future.");
                 }
 
-                if (!model.Status.HasValue || !Enum.IsDefined(typeof(ReferralStatus), model.Status.Value))
+                if (model.ValidFrom.HasValue && model.ValidFrom.Value.Date < model.ReferredOn.Value.Date)
                 {
-                    ModelState.AddModelError(nameof(model.Status), "Select a valid referral status.");
+                    ModelState.AddModelError(nameof(model.ValidFrom), "Valid From cannot be earlier than Referral Date.");
                 }
 
-                if (model.ValidFrom.HasValue &&
-                    model.ValidTo.HasValue &&
-                    model.ValidFrom.Value.Date > model.ValidTo.Value.Date)
+                if (model.ValidTo.HasValue && model.ValidTo.Value.Date < model.ReferredOn.Value.Date)
                 {
-                    ModelState.AddModelError(nameof(model.ValidTo), "Valid To must be on or after Valid From.");
+                    ModelState.AddModelError(nameof(model.ValidTo), "Valid To cannot be earlier than Referral Date.");
                 }
+            }
 
-                if (!string.IsNullOrWhiteSpace(model.ReferredByName) && !IsValidPersonName(model.ReferredByName))
-                {
-                    ModelState.AddModelError(nameof(model.ReferredByName), "Referrer name contains invalid characters.");
-                }
+            if (!model.Status.HasValue || !Enum.IsDefined(typeof(ReferralStatus), model.Status.Value))
+            {
+                ModelState.AddModelError(nameof(model.Status), "Select a valid referral status.");
+            }
 
-                if (!string.IsNullOrWhiteSpace(model.ReferredByPhoneNumber) && !IsValidPhoneNumber(model.ReferredByPhoneNumber))
-                {
-                    ModelState.AddModelError(nameof(model.ReferredByPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
-                }
+            if (model.ValidFrom.HasValue &&
+                model.ValidTo.HasValue &&
+                model.ValidFrom.Value.Date > model.ValidTo.Value.Date)
+            {
+                ModelState.AddModelError(nameof(model.ValidTo), "Valid To must be on or after Valid From.");
+            }
 
-                if (!string.IsNullOrWhiteSpace(model.ReferredByEmail) && !IsValidEmail(model.ReferredByEmail))
-                {
-                    ModelState.AddModelError(nameof(model.ReferredByEmail), "Email format is invalid.");
-                }
+            if (!string.IsNullOrWhiteSpace(model.ReferredByName) && !IsValidPersonName(model.ReferredByName))
+            {
+                ModelState.AddModelError(nameof(model.ReferredByName), "Referrer name contains invalid characters.");
+            }
 
-                if (!string.IsNullOrWhiteSpace(model.ReferralNotes) && model.ReferralNotes.Length > 2000)
-                {
-                    ModelState.AddModelError(nameof(model.ReferralNotes), "Notes cannot exceed 2000 characters.");
-                }
+            if (!string.IsNullOrWhiteSpace(model.ReferredByPhoneNumber) && !IsValidPhoneNumber(model.ReferredByPhoneNumber))
+            {
+                ModelState.AddModelError(nameof(model.ReferredByPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.ReferredByEmail) && !IsValidEmail(model.ReferredByEmail))
+            {
+                ModelState.AddModelError(nameof(model.ReferredByEmail), "Email format is invalid.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(model.ReferralNotes) && model.ReferralNotes.Length > 2000)
+            {
+                ModelState.AddModelError(nameof(model.ReferralNotes), "Notes cannot exceed 2000 characters.");
             }
         }
 
