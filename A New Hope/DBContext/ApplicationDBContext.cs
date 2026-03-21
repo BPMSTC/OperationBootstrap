@@ -137,6 +137,12 @@ namespace A_New_Hope.Data
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.DeletedAt);
 
+                entity.Property(e => e.DateOfBirth)
+                    .HasConversion(
+                        v => v.HasValue ? v.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null,
+                        v => v.HasValue ? DateOnly.FromDateTime(v.Value) : (DateOnly?)null)
+                    .HasColumnType("date");
+
                 // Enum-to-string conversions
                 // Store the enum as a short string rather than an int for readability and stability.
                 entity.Property(e => e.DefaultPreference)
