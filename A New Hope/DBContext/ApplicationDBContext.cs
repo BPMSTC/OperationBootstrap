@@ -120,19 +120,15 @@ namespace A_New_Hope.Data
             {
                 // Primary Key
                 entity.HasKey(e => e.Id);
-
                 // Map DomainUser to a table named "Users".
                 // (Identity users remain in AspNetUsers.)
                 entity.ToTable("Users");
-
                 // MySQL-friendly explicit lengths for indexed strings
                 // Email is indexed + unique, so we set max length to avoid long text issues.
                 entity.Property(e => e.Email)
                     .HasMaxLength(255);
-
                 // Unique email constraint.
                 entity.HasIndex(e => e.Email).IsUnique();
-
                 // Useful indexes for common filters and “soft delete” queries.
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.DeletedAt);
@@ -148,15 +144,12 @@ namespace A_New_Hope.Data
                 entity.Property(e => e.DefaultPreference)
                     .HasConversion<string>()
                     .HasMaxLength(20);
-
                 entity.Property(e => e.UserType)
                     .HasConversion<string>()
                     .HasMaxLength(20);
-
                 // Global soft-delete filter:
                 // Any query against DomainUsers automatically excludes rows where DeletedAt is not null.
                 entity.HasQueryFilter(e => e.DeletedAt == null);
-
                 // Audit relationships:
                 // CreatedByUserId / UpdatedByUserId both point to DomainUsers.
                 // DeleteBehavior.SetNull prevents cascading deletes and keeps historical audit data.
@@ -164,7 +157,6 @@ namespace A_New_Hope.Data
                     .WithMany()
                     .HasForeignKey(e => e.CreatedByUserId)
                     .OnDelete(DeleteBehavior.SetNull);
-
                 entity.HasOne(e => e.UpdatedByUser)
                     .WithMany()
                     .HasForeignKey(e => e.UpdatedByUserId)
