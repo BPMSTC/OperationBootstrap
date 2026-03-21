@@ -63,7 +63,7 @@
         /// <summary>
         /// Optional date of birth. DateOnly indicates the app is storing date without time-of-day.
         /// </summary>
-        public DateTime? DateOfBirth { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
 
         /// <summary>
         /// The user's default preference behavior (Always / Ask / Never) for inventory items
