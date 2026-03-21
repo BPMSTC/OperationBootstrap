@@ -16,14 +16,13 @@
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom mb-3">
             <div class="container-fluid">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <a class="navbar-brand" href="/Home/Index">A_New_Hope</a>
-                }
-                else
-                {
-                    <a class="navbar-brand" href="/">A_New_Hope</a>
-                }
+
+                <!-- LEFT: Logo Only -->
+                <a class="navbar-brand d-flex align-items-center" href="/Home/Index">
+                    <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
+                         alt="Operation Bootstrap Logo"
+                         style="height:50px;" />
+                </a>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#mainNavbar" aria-controls="mainNavbar"
@@ -35,68 +34,37 @@
 
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+                        <!-- RIGHT SIDE NAV -->
+                        <ul class="navbar-nav ms-auto align-items-center">
+
+                            <!-- Home -->
                             <li class="nav-item">
                                 <a class="nav-link text-dark" href="/Home/Index">Home</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="ClientProfiles" asp-action="Index">Clients</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Referrals" asp-action="Index">Referrals</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="ReferringOrganizations" asp-action="Index">Organizations</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="HouseholdMembers" asp-action="Index">Households</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="InventoryItems" asp-action="Index">Inventory</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="InventoryItemOptions" asp-action="Index">Inventory Item Options</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="InventoryChoiceGroups" asp-action="Index">Inventory Choice Groups</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="InventoryChoiceGroupItems" asp-action="Index">Inventory Choice Group Items</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Categories" asp-action="Index">Categories</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="CategoryGroups" asp-action="Index">Category Groups</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="UserItemPreferences" asp-action="Index">User Item Preferences</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="UserChoiceGroupPreferences" asp-action="Index">User Choice Group Preferences</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Users" asp-action="Index">Users</a>
-                            </li>
-                        </ul>
-                    }
-                    else
-                    {
-                        <ul class="navbar-nav me-auto"></ul>
-                    }
 
-                    <ul class="navbar-nav ms-auto align-items-center">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item me-2">
-                                <span class="navbar-text text-muted" style="font-size:0.875rem;">
-                                    @User.Identity.Name
-                                </span>
+                            <!-- Staff Panel -->
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-controller="StaffPanel" asp-action="Index">Staff Panel</a>
                             </li>
+
+                            <!-- Admin Panel -->
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="AdminPanel" asp-action="Index">Admin Panel</a>
+                                </li>
+                            }
+
+                            <!-- (OPTIONAL) Username - COMMENTED OUT -->
+                            @*
+                    <li class="nav-item me-2">
+                        <span class="navbar-text text-muted" style="font-size:0.875rem;">
+                            @User.Identity.Name
+                        </span>
+                    </li>
+                    *@
+
+                            <!-- Logout -->
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
@@ -106,16 +74,20 @@
                                     </button>
                                 </form>
                             </li>
-                        }
-                        else
-                        {
+
+                        </ul>
+                    }
+                    else
+                    {
+                        <!-- NOT LOGGED IN -->
+                        <ul class="navbar-nav ms-auto">
                             <li class="nav-item">
                                 <a class="btn btn-sm btn-outline-primary fw-semibold" href="/Account/Login">
                                     Sign In
                                 </a>
                             </li>
-                        }
-                    </ul>
+                        </ul>
+                    }
 
                 </div>
             </div>
