@@ -151,13 +151,21 @@ namespace A_New_Hope.Controllers
         // GET: Referrals/WizardStep1
         /// <summary>
         /// Shows Step 1 of the referral wizard:
-        /// select an existing referring organization or add a new one.
+        /// select an existing referring organization or add a new one,
+        /// then select an existing client or add a new one.
         /// </summary>
         public async Task<IActionResult> WizardStep1()
         {
             _logger.LogInformation("Loading Referral Wizard Step 1 page");
 
             var vm = new ReferralWizardStep1ViewModel();
+            vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
+
+            if (vm.HouseholdMembers.Count == 0)
+            {
+                vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
+            }
+
             await PopulateWizardStep1Dropdowns(vm);
 
             return View(vm);
@@ -166,7 +174,8 @@ namespace A_New_Hope.Controllers
         // POST: Referrals/WizardStep1
         /// <summary>
         /// Handles Step 1 of the referral wizard:
-        /// validates either existing organization selection or new organization creation.
+        /// validates either existing or new organization,
+        /// and either existing or new client.
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -174,80 +183,178 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Attempting to submit Referral Wizard Step 1");
 
+            vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
+
             NormalizeReferralWizardStep1(vm);
             await ApplyReferralWizardStep1ValidationAsync(vm);
 
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Referral Wizard Step 1 failed validation");
+
+                if (vm.HouseholdMembers.Count == 0)
+                {
+                    vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
+                }
+
                 await PopulateWizardStep1Dropdowns(vm);
                 return View(vm);
             }
 
-            ulong referringOrganizationId;
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            if (vm.HasSelectedExistingOrganization)
+            try
             {
-                referringOrganizationId = vm.SelectedReferringOrganizationId!.Value;
+                ulong referringOrganizationId;
+                ulong clientUserId;
 
-                _logger.LogInformation(
-                    "Referral Wizard Step 1 completed using existing ReferringOrganization Id {ReferringOrganizationId}",
-                    referringOrganizationId);
-            }
-            else
-            {
-                var now = DateTime.UtcNow;
-
-                var newOrganization = new ReferringOrganization
+                if (vm.HasSelectedExistingOrganization)
                 {
-                    Name = vm.NewOrganizationName!,
-                    Type = vm.NewOrganizationType,
-                    PrimaryContactName = vm.NewPrimaryContactName,
-                    Email = vm.NewEmail,
-                    PhoneNumber = vm.NewPhoneNumber,
-                    AddressLine1 = vm.NewAddressLine1,
-                    AddressLine2 = vm.NewAddressLine2,
-                    City = vm.NewCity,
-                    State = vm.NewState,
-                    PostalCode = vm.NewPostalCode,
-                    Notes = vm.NewNotes,
-                    IsActive = true,
-                    CreatedAt = now,
-                    UpdatedAt = now,
-                    CreatedByUserId = null, // Replace when auth/user tracking is added.
-                    UpdatedByUserId = null  // Replace when auth/user tracking is added.
-                };
+                    referringOrganizationId = vm.SelectedReferringOrganizationId!.Value;
 
-                _context.ReferringOrganizations.Add(newOrganization);
-
-                try
+                    _logger.LogInformation(
+                        "Referral Wizard Step 1 completed using existing ReferringOrganization Id {ReferringOrganizationId}",
+                        referringOrganizationId);
+                }
+                else
                 {
+                    var now = DateTime.UtcNow;
+
+                    var newOrganization = new ReferringOrganization
+                    {
+                        Name = vm.NewOrganizationName!,
+                        Type = vm.NewOrganizationType,
+                        PrimaryContactName = vm.NewPrimaryContactName,
+                        Email = vm.NewEmail,
+                        PhoneNumber = vm.NewPhoneNumber,
+                        AddressLine1 = vm.NewAddressLine1,
+                        AddressLine2 = vm.NewAddressLine2,
+                        City = vm.NewCity,
+                        State = vm.NewState,
+                        PostalCode = vm.NewPostalCode,
+                        Notes = vm.NewNotes,
+                        IsActive = true,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedByUserId = null,
+                        UpdatedByUserId = null
+                    };
+
+                    _context.ReferringOrganizations.Add(newOrganization);
                     await _context.SaveChangesAsync();
+
+                    referringOrganizationId = newOrganization.Id;
+
+                    _logger.LogInformation(
+                        "Referral Wizard Step 1 created new ReferringOrganization Id {ReferringOrganizationId}",
+                        referringOrganizationId);
                 }
-                catch (DbUpdateException ex)
+
+                if (vm.HasSelectedExistingClient)
                 {
-                    _logger.LogError(ex, "Error creating new Referring Organization during Referral Wizard Step 1");
+                    clientUserId = vm.SelectedClientUserId!.Value;
 
-                    ModelState.AddModelError(string.Empty, "Unable to save new referring organization.");
-                    await PopulateWizardStep1Dropdowns(vm);
-                    return View(vm);
+                    _logger.LogInformation(
+                        "Referral Wizard Step 1 completed using existing ClientUser Id {ClientUserId}",
+                        clientUserId);
+                }
+                else
+                {
+                    var now = DateTime.UtcNow;
+
+                    var newClient = new DomainUser
+                    {
+                        Email = vm.NewClientEmail!,
+                        PhoneNumber = vm.NewClientPhoneNumber,
+                        FirstName = vm.NewClientFirstName,
+                        LastName = vm.NewClientLastName,
+                        AddressLine1 = vm.NewClientAddressLine1,
+                        AddressLine2 = vm.NewClientAddressLine2,
+                        City = vm.NewClientCity,
+                        State = vm.NewClientState,
+                        PostalCode = vm.NewClientPostalCode,
+                        DateOfBirth = vm.NewClientDateOfBirth,
+                        UserType = UserType.Client,
+                        IsActive = true,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedByUserId = null,
+                        UpdatedByUserId = null
+                    };
+
+                    _context.DomainUsers.Add(newClient);
+                    await _context.SaveChangesAsync();
+
+                    clientUserId = newClient.Id;
+
+                    var clientProfile = new ClientProfile
+                    {
+                        UserId = clientUserId,
+                        EmploymentStatus = vm.NewClientEmploymentStatus,
+                        EarnedIncomeMonthly = vm.NewClientEarnedIncomeMonthly,
+                        IsUnhoused = vm.NewClientIsUnhoused,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedByUserId = null,
+                        UpdatedByUserId = null
+                    };
+
+                    _context.ClientProfiles.Add(clientProfile);
+
+                    foreach (var member in vm.HouseholdMembers.Where(h => h.HasStarted))
+                    {
+                        var householdMember = new HouseholdMember
+                        {
+                            ClientUserId = clientUserId,
+                            FirstName = member.FirstName!,
+                            LastName = member.LastName!,
+                            DateOfBirth = member.DateOfBirth,
+                            AgeAsOfDate = member.AgeAsOfDate,
+                            CreatedAt = now,
+                            UpdatedAt = now,
+                            CreatedByUserId = null,
+                            UpdatedByUserId = null
+                        };
+
+                        _context.HouseholdMembers.Add(householdMember);
+                    }
+
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "Referral Wizard Step 1 created new ClientUser Id {ClientUserId} with ClientProfile and {HouseholdCount} household members",
+                        clientUserId,
+                        vm.HouseholdMembers.Count(h => h.HasStarted));
                 }
 
-                referringOrganizationId = newOrganization.Id;
+                await transaction.CommitAsync();
 
-                _logger.LogInformation(
-                    "Referral Wizard Step 1 created new ReferringOrganization Id {ReferringOrganizationId}",
-                    referringOrganizationId);
+                TempData["ReferralWizard.ReferringOrganizationId"] = referringOrganizationId.ToString();
+                TempData["ReferralWizard.ClientUserId"] = clientUserId.ToString();
+
+                TempData["SuccessMessage"] =
+                    $"Step 1 complete. Selected Referring Organization Id: {referringOrganizationId}, Client Id: {clientUserId}";
+
+                return RedirectToAction(nameof(WizardStep1));
             }
+            catch (DbUpdateException ex)
+            {
+                await transaction.RollbackAsync();
 
-            TempData["ReferralWizard.ReferringOrganizationId"] = referringOrganizationId.ToString();
+                _logger.LogError(ex, "Error saving Referral Wizard Step 1");
 
-            // Placeholder until Step 2 is built.
-            TempData["SuccessMessage"] = $"Step 1 complete. Selected Referring Organization Id: {referringOrganizationId}";
+                ModelState.AddModelError(string.Empty, "Unable to save Step 1 data.");
 
-            return RedirectToAction(nameof(WizardStep1));
+                if (vm.HouseholdMembers.Count == 0)
+                {
+                    vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
+                }
+
+                await PopulateWizardStep1Dropdowns(vm);
+                return View(vm);
+            }
         }
-
+        
         // GET: Referrals/Edit/5
         /// <summary>
         /// Shows the edit form for a single non-deleted referral.
@@ -465,6 +572,8 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogDebug("Populating dropdowns for Referral Wizard Step 1");
 
+            vm.HouseholdMembers ??= new List<ReferralWizardHouseholdMemberViewModel>();
+
             var organizations = await _context.ReferringOrganizations
                 .Where(o => o.DeletedAt == null && o.IsActive)
                 .OrderBy(o => o.Name)
@@ -478,7 +587,32 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
-            _logger.LogDebug("Referral Wizard Step 1 dropdown populated with {Count} organizations", vm.ExistingOrganizations.Count);
+            var clients = await _context.DomainUsers
+                .Where(u => u.DeletedAt == null && u.UserType == UserType.Client && u.IsActive)
+                .OrderBy(u => u.LastName)
+                .ThenBy(u => u.FirstName)
+                .ThenBy(u => u.Email)
+                .ToListAsync();
+
+            vm.ExistingClients = clients
+                .Select(u => new SelectListItem
+                {
+                    Value = u.Id.ToString(),
+                    Text = string.IsNullOrWhiteSpace($"{u.LastName}{u.FirstName}".Trim())
+                        ? u.Email
+                        : $"{u.LastName ?? ""}, {u.FirstName ?? ""} ({u.Email})"
+                })
+                .ToList();
+
+            if (vm.HouseholdMembers.Count == 0)
+            {
+                vm.HouseholdMembers.Add(new ReferralWizardHouseholdMemberViewModel());
+            }
+
+            _logger.LogDebug(
+                "Referral Wizard Step 1 dropdowns populated with {OrganizationCount} organizations and {ClientCount} clients",
+                vm.ExistingOrganizations.Count,
+                vm.ExistingClients.Count);
         }
 
         /// <summary>
@@ -519,6 +653,27 @@ namespace A_New_Hope.Controllers
             model.NewState = NullIfWhiteSpace(model.NewState)?.ToUpperInvariant();
             model.NewPostalCode = NullIfWhiteSpace(model.NewPostalCode);
             model.NewNotes = NullIfWhiteSpace(model.NewNotes);
+
+            model.NewClientFirstName = NullIfWhiteSpace(model.NewClientFirstName);
+            model.NewClientLastName = NullIfWhiteSpace(model.NewClientLastName);
+            model.NewClientEmail = NullIfWhiteSpace(model.NewClientEmail);
+            model.NewClientPhoneNumber = NullIfWhiteSpace(model.NewClientPhoneNumber);
+            model.NewClientAddressLine1 = NullIfWhiteSpace(model.NewClientAddressLine1);
+            model.NewClientAddressLine2 = NullIfWhiteSpace(model.NewClientAddressLine2);
+            model.NewClientCity = NullIfWhiteSpace(model.NewClientCity);
+            model.NewClientState = NullIfWhiteSpace(model.NewClientState)?.ToUpperInvariant();
+            model.NewClientPostalCode = NullIfWhiteSpace(model.NewClientPostalCode);
+
+            model.NewClientEmploymentStatus = NullIfWhiteSpace(model.NewClientEmploymentStatus);
+
+            if (model.HouseholdMembers != null)
+            {
+                foreach (var member in model.HouseholdMembers)
+                {
+                    member.FirstName = NullIfWhiteSpace(member.FirstName);
+                    member.LastName = NullIfWhiteSpace(member.LastName);
+                }
+            }
         }
 
         /// <summary>
@@ -599,22 +754,21 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyReferralWizardStep1ValidationAsync(ReferralWizardStep1ViewModel model)
         {
-            bool selectedExisting = model.HasSelectedExistingOrganization;
-            bool enteredNew = model.HasStartedNewOrganization;
+            // =========================================================
+            // ORGANIZATION VALIDATION
+            // =========================================================
+            bool selectedExistingOrganization = model.HasSelectedExistingOrganization;
+            bool enteredNewOrganization = model.HasStartedNewOrganization;
 
-            if (!selectedExisting && !enteredNew)
+            if (!selectedExistingOrganization && !enteredNewOrganization)
             {
                 ModelState.AddModelError(string.Empty, "Select an existing organization or enter a new organization.");
-                return;
             }
-
-            if (selectedExisting && enteredNew)
+            else if (selectedExistingOrganization && enteredNewOrganization)
             {
                 ModelState.AddModelError(string.Empty, "Choose either an existing organization or enter a new one, not both.");
-                return;
             }
-
-            if (selectedExisting)
+            else if (selectedExistingOrganization)
             {
                 var organizationExists = await _context.ReferringOrganizations
                     .AnyAsync(o =>
@@ -626,82 +780,253 @@ namespace A_New_Hope.Controllers
                 {
                     ModelState.AddModelError(nameof(model.SelectedReferringOrganizationId), "Select a valid active referring organization.");
                 }
-
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(model.NewOrganizationName))
-            {
-                ModelState.AddModelError(nameof(model.NewOrganizationName), "Organization name is required.");
             }
             else
             {
-                if (!ContainsLetterOrDigit(model.NewOrganizationName))
+                if (string.IsNullOrWhiteSpace(model.NewOrganizationName))
                 {
-                    ModelState.AddModelError(nameof(model.NewOrganizationName), "Organization name must contain letters or numbers.");
+                    ModelState.AddModelError(nameof(model.NewOrganizationName), "Organization name is required.");
+                }
+                else
+                {
+                    if (!ContainsLetterOrDigit(model.NewOrganizationName))
+                    {
+                        ModelState.AddModelError(nameof(model.NewOrganizationName), "Organization name must contain letters or numbers.");
+                    }
+
+                    var normalizedName = model.NewOrganizationName.ToLower();
+
+                    var duplicateExists = await _context.ReferringOrganizations
+                        .AnyAsync(r =>
+                            r.DeletedAt == null &&
+                            r.Name.ToLower() == normalizedName);
+
+                    if (duplicateExists)
+                    {
+                        ModelState.AddModelError(nameof(model.NewOrganizationName), "An organization with this name already exists.");
+                    }
                 }
 
-                var normalizedName = model.NewOrganizationName.ToLower();
-
-                var duplicateExists = await _context.ReferringOrganizations
-                    .AnyAsync(r =>
-                        r.DeletedAt == null &&
-                        r.Name.ToLower() == normalizedName);
-
-                if (duplicateExists)
+                if (!string.IsNullOrWhiteSpace(model.NewOrganizationType) && !ContainsLetterOrDigit(model.NewOrganizationType))
                 {
-                    ModelState.AddModelError(nameof(model.NewOrganizationName), "An organization with this name already exists.");
+                    ModelState.AddModelError(nameof(model.NewOrganizationType), "Primary type of service must contain letters or numbers.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewPrimaryContactName) && !IsValidPersonName(model.NewPrimaryContactName))
+                {
+                    ModelState.AddModelError(nameof(model.NewPrimaryContactName), "Contact person name contains invalid characters.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewPhoneNumber) && !IsValidPhoneNumber(model.NewPhoneNumber))
+                {
+                    ModelState.AddModelError(nameof(model.NewPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewEmail) && !IsValidEmail(model.NewEmail))
+                {
+                    ModelState.AddModelError(nameof(model.NewEmail), "Email format is invalid.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewAddressLine1) && !ContainsLetterOrDigit(model.NewAddressLine1))
+                {
+                    ModelState.AddModelError(nameof(model.NewAddressLine1), "Address Line 1 must contain letters or numbers.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewAddressLine2) && !ContainsLetterOrDigit(model.NewAddressLine2))
+                {
+                    ModelState.AddModelError(nameof(model.NewAddressLine2), "Address Line 2 must contain letters or numbers.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewCity) && !IsValidCity(model.NewCity))
+                {
+                    ModelState.AddModelError(nameof(model.NewCity), "City contains invalid characters.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewState) && !IsValidUsStateCode(model.NewState))
+                {
+                    ModelState.AddModelError(nameof(model.NewState), "Enter a valid 2-letter US state code.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewPostalCode) && !IsValidUsPostalCode(model.NewPostalCode))
+                {
+                    ModelState.AddModelError(nameof(model.NewPostalCode), "Enter a valid US ZIP code or ZIP+4.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewNotes) && model.NewNotes.Length > 2000)
+                {
+                    ModelState.AddModelError(nameof(model.NewNotes), "Notes cannot exceed 2000 characters.");
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(model.NewOrganizationType) && !ContainsLetterOrDigit(model.NewOrganizationType))
-            {
-                ModelState.AddModelError(nameof(model.NewOrganizationType), "Primary type of service must contain letters or numbers.");
-            }
+            // =========================================================
+            // CLIENT VALIDATION
+            // =========================================================
+            bool selectedExistingClient = model.HasSelectedExistingClient;
+            bool enteredNewClient = model.HasStartedNewClient;
 
-            if (!string.IsNullOrWhiteSpace(model.NewPrimaryContactName) && !IsValidPersonName(model.NewPrimaryContactName))
+            if (!selectedExistingClient && !enteredNewClient)
             {
-                ModelState.AddModelError(nameof(model.NewPrimaryContactName), "Contact person name contains invalid characters.");
+                ModelState.AddModelError(string.Empty, "Select an existing client or enter a new client.");
             }
-
-            if (!string.IsNullOrWhiteSpace(model.NewPhoneNumber) && !IsValidPhoneNumber(model.NewPhoneNumber))
+            else if (selectedExistingClient && enteredNewClient)
             {
-                ModelState.AddModelError(nameof(model.NewPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+                ModelState.AddModelError(string.Empty, "Choose either an existing client or enter a new one, not both.");
             }
-
-            if (!string.IsNullOrWhiteSpace(model.NewEmail) && !IsValidEmail(model.NewEmail))
+            else if (selectedExistingClient)
             {
-                ModelState.AddModelError(nameof(model.NewEmail), "Email format is invalid.");
+                var clientExists = await _context.DomainUsers
+                    .AnyAsync(u =>
+                        u.Id == model.SelectedClientUserId &&
+                        u.DeletedAt == null &&
+                        u.UserType == UserType.Client &&
+                        u.IsActive);
+
+                if (!clientExists)
+                {
+                    ModelState.AddModelError(nameof(model.SelectedClientUserId), "Select a valid active client.");
+                }
             }
-
-            if (!string.IsNullOrWhiteSpace(model.NewAddressLine1) && !ContainsLetterOrDigit(model.NewAddressLine1))
+            else
             {
-                ModelState.AddModelError(nameof(model.NewAddressLine1), "Address Line 1 must contain letters or numbers.");
-            }
+                if (string.IsNullOrWhiteSpace(model.NewClientFirstName))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientFirstName), "First name is required.");
+                }
+                else if (!IsValidPersonName(model.NewClientFirstName))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientFirstName), "First name contains invalid characters.");
+                }
 
-            if (!string.IsNullOrWhiteSpace(model.NewAddressLine2) && !ContainsLetterOrDigit(model.NewAddressLine2))
-            {
-                ModelState.AddModelError(nameof(model.NewAddressLine2), "Address Line 2 must contain letters or numbers.");
-            }
+                if (string.IsNullOrWhiteSpace(model.NewClientLastName))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientLastName), "Last name is required.");
+                }
+                else if (!IsValidPersonName(model.NewClientLastName))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientLastName), "Last name contains invalid characters.");
+                }
 
-            if (!string.IsNullOrWhiteSpace(model.NewCity) && !IsValidCity(model.NewCity))
-            {
-                ModelState.AddModelError(nameof(model.NewCity), "City contains invalid characters.");
-            }
+                if (string.IsNullOrWhiteSpace(model.NewClientEmail))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientEmail), "Email is required.");
+                }
+                else if (!IsValidEmail(model.NewClientEmail))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientEmail), "Email format is invalid.");
+                }
+                else
+                {
+                    var duplicateClientExists = await _context.DomainUsers
+                        .AnyAsync(u =>
+                            u.DeletedAt == null &&
+                            u.UserType == UserType.Client &&
+                            u.Email.ToLower() == model.NewClientEmail.ToLower());
 
-            if (!string.IsNullOrWhiteSpace(model.NewState) && !IsValidUsStateCode(model.NewState))
-            {
-                ModelState.AddModelError(nameof(model.NewState), "Enter a valid 2-letter US state code.");
-            }
+                    if (duplicateClientExists)
+                    {
+                        ModelState.AddModelError(nameof(model.NewClientEmail), "A client with this email address already exists.");
+                    }
+                }
 
-            if (!string.IsNullOrWhiteSpace(model.NewPostalCode) && !IsValidUsPostalCode(model.NewPostalCode))
-            {
-                ModelState.AddModelError(nameof(model.NewPostalCode), "Enter a valid US ZIP code or ZIP+4.");
-            }
+                if (!string.IsNullOrWhiteSpace(model.NewClientPhoneNumber) && !IsValidPhoneNumber(model.NewClientPhoneNumber))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+                }
 
-            if (!string.IsNullOrWhiteSpace(model.NewNotes) && model.NewNotes.Length > 2000)
-            {
-                ModelState.AddModelError(nameof(model.NewNotes), "Notes cannot exceed 2000 characters.");
+                if (!string.IsNullOrWhiteSpace(model.NewClientAddressLine1) && !ContainsLetterOrDigit(model.NewClientAddressLine1))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientAddressLine1), "Address Line 1 must contain letters or numbers.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewClientAddressLine2) && !ContainsLetterOrDigit(model.NewClientAddressLine2))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientAddressLine2), "Address Line 2 must contain letters or numbers.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewClientCity) && !IsValidCity(model.NewClientCity))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientCity), "City contains invalid characters.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewClientState) && !IsValidUsStateCode(model.NewClientState))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientState), "Enter a valid 2-letter US state code.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.NewClientPostalCode) && !IsValidUsPostalCode(model.NewClientPostalCode))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientPostalCode), "Enter a valid US ZIP code or ZIP+4.");
+                }
+
+                if (model.NewClientDateOfBirth.HasValue && model.NewClientDateOfBirth.Value > DateOnly.FromDateTime(DateTime.UtcNow))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientDateOfBirth), "Date of Birth cannot be in the future.");
+                }
+
+                // =========================================================
+                // CLIENT PROFILE VALIDATION
+                // =========================================================
+                if (!string.IsNullOrWhiteSpace(model.NewClientEmploymentStatus) &&
+                    !Regex.IsMatch(model.NewClientEmploymentStatus, @"^[A-Za-z0-9\s'.-]*$"))
+                {
+                    ModelState.AddModelError(nameof(model.NewClientEmploymentStatus), "Employment status contains invalid characters.");
+                }
+
+                if (model.NewClientEarnedIncomeMonthly.HasValue && model.NewClientEarnedIncomeMonthly.Value < 0)
+                {
+                    ModelState.AddModelError(nameof(model.NewClientEarnedIncomeMonthly), "Monthly earned income must be 0 or greater.");
+                }
+
+                // =========================================================
+                // HOUSEHOLD MEMBER VALIDATION
+                // =========================================================
+                if (model.HouseholdMembers != null)
+                {
+                    for (int i = 0; i < model.HouseholdMembers.Count; i++)
+                    {
+                        var member = model.HouseholdMembers[i];
+
+                        if (!member.HasStarted)
+                        {
+                            continue;
+                        }
+
+                        if (string.IsNullOrWhiteSpace(member.FirstName))
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].FirstName", "First name is required.");
+                        }
+                        else if (!IsValidPersonName(member.FirstName))
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].FirstName", "First name contains invalid characters.");
+                        }
+
+                        if (string.IsNullOrWhiteSpace(member.LastName))
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].LastName", "Last name is required.");
+                        }
+                        else if (!IsValidPersonName(member.LastName))
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].LastName", "Last name contains invalid characters.");
+                        }
+
+                        if (member.DateOfBirth.HasValue && member.DateOfBirth.Value.Date > DateTime.UtcNow.Date)
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].DateOfBirth", "Date of Birth cannot be in the future.");
+                        }
+
+                        if (member.AgeAsOfDate.HasValue && member.AgeAsOfDate.Value.Date > DateTime.UtcNow.Date)
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].AgeAsOfDate", "Age As Of Date cannot be in the future.");
+                        }
+
+                        if (member.DateOfBirth.HasValue &&
+                            member.AgeAsOfDate.HasValue &&
+                            member.AgeAsOfDate.Value.Date < member.DateOfBirth.Value.Date)
+                        {
+                            ModelState.AddModelError($"HouseholdMembers[{i}].AgeAsOfDate", "Age As Of Date cannot be earlier than Date of Birth.");
+                        }
+                    }
+                }
             }
         }
 

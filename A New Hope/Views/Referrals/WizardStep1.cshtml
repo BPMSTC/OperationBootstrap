@@ -17,12 +17,29 @@
         ViewData.ModelState.ContainsKey(nameof(Model.NewPostalCode)) ||
         ViewData.ModelState.ContainsKey(nameof(Model.NewNotes));
 
-    var collapseCssClass = expandNewOrganization ? "collapse show" : "collapse";
+    var expandNewClient =
+        Model.HasStartedNewClient ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientFirstName)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientLastName)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientEmail)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientPhoneNumber)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientAddressLine1)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientAddressLine2)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientCity)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientState)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientPostalCode)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientDateOfBirth)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientEmploymentStatus)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientEarnedIncomeMonthly)) ||
+        ViewData.ModelState.ContainsKey(nameof(Model.NewClientIsUnhoused));
+
+    var organizationCollapseCssClass = expandNewOrganization ? "collapse show" : "collapse";
+    var clientCollapseCssClass = expandNewClient ? "collapse show" : "collapse";
 }
 
 <div class="container py-4">
     <h1 class="mb-2">New Referral</h1>
-    <p class="text-muted mb-4">Step 1 of 3: Select an existing organization or add a new one.</p>
+    <p class="text-muted mb-4">Step 1 of 3: Select or add the referring organization and client.</p>
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -34,134 +51,391 @@
     <form asp-action="WizardStep1" method="post" novalidate>
         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm wizard-card mb-3" id="existingOrganizationCard">
-                    <div class="card-header bg-white">
-                        <h4 class="mb-0">Select Existing Organization</h4>
-                    </div>
+        <!-- Referring Organization Section -->
+        <div class="mb-5">
+            <h3 class="mb-3">Referring Organization</h3>
 
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label asp-for="SelectedReferringOrganizationId" class="form-label"></label>
-                            <select asp-for="SelectedReferringOrganizationId"
-                                    asp-items="Model.ExistingOrganizations"
-                                    class="form-select"
-                                    id="selectedOrganization">
-                                <option value="">-- Select an organization --</option>
-                            </select>
-                            <span asp-validation-for="SelectedReferringOrganizationId" class="text-danger"></span>
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow-sm wizard-card mb-3" id="existingOrganizationCard">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Select Existing Organization</h4>
                         </div>
 
-                        <p class="text-muted mb-0">
-                            Use this option when the referring organization already exists in the system.
-                        </p>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="SelectedReferringOrganizationId" class="form-label"></label>
+                                <select asp-for="SelectedReferringOrganizationId"
+                                        asp-items="Model.ExistingOrganizations"
+                                        class="form-select"
+                                        id="selectedOrganization">
+                                    <option value="">-- Select an organization --</option>
+                                </select>
+                                <span asp-validation-for="SelectedReferringOrganizationId" class="text-danger"></span>
+                            </div>
+
+                            <p class="text-muted mb-0">
+                                Use this option when the referring organization already exists in the system.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="wizard-divider">
+                        <span>OR</span>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="card shadow-sm wizard-card" id="newOrganizationCard">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Add New Organization</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Use this option when the referring organization is not already in the system.
+                            </p>
+
+                            <button class="btn btn-outline-secondary mb-3"
+                                    type="button"
+                                    id="toggleNewOrganizationBtn"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#newOrganizationCollapse"
+                                    aria-expanded="@(expandNewOrganization.ToString().ToLower())"
+                                    aria-controls="newOrganizationCollapse">
+                                + Enter New Organization
+                            </button>
+
+                            <div id="newOrganizationCollapse" class="@organizationCollapseCssClass">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewOrganizationName" class="form-label"></label>
+                                        <input asp-for="NewOrganizationName" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewOrganizationName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewOrganizationType" class="form-label"></label>
+                                        <input asp-for="NewOrganizationType" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewOrganizationType" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewPrimaryContactName" class="form-label"></label>
+                                        <input asp-for="NewPrimaryContactName" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewPrimaryContactName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewEmail" class="form-label"></label>
+                                        <input asp-for="NewEmail" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewEmail" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewPhoneNumber" class="form-label"></label>
+                                        <input asp-for="NewPhoneNumber" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewPhoneNumber" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewAddressLine1" class="form-label"></label>
+                                        <input asp-for="NewAddressLine1" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewAddressLine1" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewAddressLine2" class="form-label"></label>
+                                        <input asp-for="NewAddressLine2" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewAddressLine2" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-4 mb-3">
+                                        <label asp-for="NewCity" class="form-label"></label>
+                                        <input asp-for="NewCity" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewCity" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-2 mb-3">
+                                        <label asp-for="NewState" class="form-label"></label>
+                                        <input asp-for="NewState" class="form-control text-uppercase new-org-input" maxlength="2" />
+                                        <span asp-validation-for="NewState" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label asp-for="NewPostalCode" class="form-label"></label>
+                                        <input asp-for="NewPostalCode" class="form-control new-org-input" />
+                                        <span asp-validation-for="NewPostalCode" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-8 mb-3">
+                                        <label asp-for="NewNotes" class="form-label"></label>
+                                        <textarea asp-for="NewNotes" class="form-control new-org-input" rows="3"></textarea>
+                                        <span asp-validation-for="NewNotes" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-12">
-                <div class="wizard-divider">
-                    <span>OR</span>
-                </div>
-            </div>
+        <!-- Client Section -->
+        <div class="mb-4">
+            <h3 class="mb-3">Client</h3>
 
-            <div class="col-12">
-                <div class="card shadow-sm wizard-card" id="newOrganizationCard">
-                    <div class="card-header bg-white">
-                        <h4 class="mb-0">Add New Organization</h4>
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow-sm wizard-card mb-3" id="existingClientCard">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Select Existing Client</h4>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label asp-for="SelectedClientUserId" class="form-label"></label>
+                                <select asp-for="SelectedClientUserId"
+                                        asp-items="Model.ExistingClients"
+                                        class="form-select"
+                                        id="selectedClient">
+                                    <option value="">-- Select a client --</option>
+                                </select>
+                                <span asp-validation-for="SelectedClientUserId" class="text-danger"></span>
+                            </div>
+
+                            <p class="text-muted mb-0">
+                                Use this option when the client already exists in the system.
+                            </p>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="card-body">
-                        <p class="text-muted">
-                            Use this option when the referring organization is not already in the system.
-                        </p>
+                <div class="col-12">
+                    <div class="wizard-divider">
+                        <span>OR</span>
+                    </div>
+                </div>
 
-                        <button class="btn btn-outline-secondary mb-3"
-                                type="button"
-                                id="toggleNewOrganizationBtn"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#newOrganizationCollapse"
-                                aria-expanded="@(expandNewOrganization.ToString().ToLower())"
-                                aria-controls="newOrganizationCollapse">
-                            + Enter New Organization
-                        </button>
+                <div class="col-12">
+                    <div class="card shadow-sm wizard-card" id="newClientCard">
+                        <div class="card-header bg-white">
+                            <h4 class="mb-0">Add New Client</h4>
+                        </div>
 
-                        <div id="newOrganizationCollapse" class="@collapseCssClass">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewOrganizationName" class="form-label"></label>
-                                    <input asp-for="NewOrganizationName" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewOrganizationName" class="text-danger"></span>
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Use this option when the client is not already in the system.
+                            </p>
+
+                            <button class="btn btn-outline-secondary mb-3"
+                                    type="button"
+                                    id="toggleNewClientBtn"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#newClientCollapse"
+                                    aria-expanded="@(expandNewClient.ToString().ToLower())"
+                                    aria-controls="newClientCollapse">
+                                + Enter New Client
+                            </button>
+
+                            <div id="newClientCollapse" class="@clientCollapseCssClass">
+                                <!-- Core Client Fields -->
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientFirstName" class="form-label"></label>
+                                        <input asp-for="NewClientFirstName" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientFirstName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientLastName" class="form-label"></label>
+                                        <input asp-for="NewClientLastName" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientLastName" class="text-danger"></span>
+                                    </div>
                                 </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewOrganizationType" class="form-label"></label>
-                                    <input asp-for="NewOrganizationType" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewOrganizationType" class="text-danger"></span>
-                                </div>
-                            </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientEmail" class="form-label"></label>
+                                        <input asp-for="NewClientEmail" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientEmail" class="text-danger"></span>
+                                    </div>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewPrimaryContactName" class="form-label"></label>
-                                    <input asp-for="NewPrimaryContactName" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewPrimaryContactName" class="text-danger"></span>
-                                </div>
-
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewEmail" class="form-label"></label>
-                                    <input asp-for="NewEmail" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewEmail" class="text-danger"></span>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewPhoneNumber" class="form-label"></label>
-                                    <input asp-for="NewPhoneNumber" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewPhoneNumber" class="text-danger"></span>
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientPhoneNumber" class="form-label"></label>
+                                        <input asp-for="NewClientPhoneNumber" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientPhoneNumber" class="text-danger"></span>
+                                    </div>
                                 </div>
 
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewAddressLine1" class="form-label"></label>
-                                    <input asp-for="NewAddressLine1" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewAddressLine1" class="text-danger"></span>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label asp-for="NewAddressLine2" class="form-label"></label>
-                                    <input asp-for="NewAddressLine2" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewAddressLine2" class="text-danger"></span>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientDateOfBirth" class="form-label"></label>
+                                        <input asp-for="NewClientDateOfBirth" class="form-control new-client-input" type="date" />
+                                        <span asp-validation-for="NewClientDateOfBirth" class="text-danger"></span>
+                                    </div>
                                 </div>
 
-                                <div class="col-md-4 mb-3">
-                                    <label asp-for="NewCity" class="form-label"></label>
-                                    <input asp-for="NewCity" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewCity" class="text-danger"></span>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientAddressLine1" class="form-label"></label>
+                                        <input asp-for="NewClientAddressLine1" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientAddressLine1" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientAddressLine2" class="form-label"></label>
+                                        <input asp-for="NewClientAddressLine2" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientAddressLine2" class="text-danger"></span>
+                                    </div>
                                 </div>
 
-                                <div class="col-md-2 mb-3">
-                                    <label asp-for="NewState" class="form-label"></label>
-                                    <input asp-for="NewState" class="form-control text-uppercase new-org-input" maxlength="2" />
-                                    <span asp-validation-for="NewState" class="text-danger"></span>
-                                </div>
-                            </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label asp-for="NewClientCity" class="form-label"></label>
+                                        <input asp-for="NewClientCity" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientCity" class="text-danger"></span>
+                                    </div>
 
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label asp-for="NewPostalCode" class="form-label"></label>
-                                    <input asp-for="NewPostalCode" class="form-control new-org-input" />
-                                    <span asp-validation-for="NewPostalCode" class="text-danger"></span>
+                                    <div class="col-md-2 mb-3">
+                                        <label asp-for="NewClientState" class="form-label"></label>
+                                        <input asp-for="NewClientState" class="form-control text-uppercase new-client-input" maxlength="2" />
+                                        <span asp-validation-for="NewClientState" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientPostalCode" class="form-label"></label>
+                                        <input asp-for="NewClientPostalCode" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientPostalCode" class="text-danger"></span>
+                                    </div>
                                 </div>
 
-                                <div class="col-md-8 mb-3">
-                                    <label asp-for="NewNotes" class="form-label"></label>
-                                    <textarea asp-for="NewNotes" class="form-control new-org-input" rows="3"></textarea>
-                                    <span asp-validation-for="NewNotes" class="text-danger"></span>
+                                <hr />
+                                <h5 class="mb-3">Client Profile</h5>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientEmploymentStatus" class="form-label"></label>
+                                        <input asp-for="NewClientEmploymentStatus" class="form-control new-client-input" />
+                                        <span asp-validation-for="NewClientEmploymentStatus" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label asp-for="NewClientEarnedIncomeMonthly" class="form-label"></label>
+                                        <input asp-for="NewClientEarnedIncomeMonthly"
+                                               class="form-control new-client-input"
+                                               type="number"
+                                               step="0.01"
+                                               min="0" />
+                                        <span asp-validation-for="NewClientEarnedIncomeMonthly" class="text-danger"></span>
+                                    </div>
                                 </div>
+
+                                <div class="form-check mb-4">
+                                    <input asp-for="NewClientIsUnhoused" class="form-check-input new-client-input" />
+                                    <label asp-for="NewClientIsUnhoused" class="form-check-label"></label>
+                                </div>
+
+                                <hr />
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">Household Members</h5>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="addHouseholdMemberBtn">
+                                        + Add Household Member
+                                    </button>
+                                </div>
+
+                                <div id="householdMembersContainer">
+                                    @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+                                    {
+                                        <div class="card border-0 bg-light mb-3 household-member-item">
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6 mb-3">
+                                                        <label asp-for="HouseholdMembers[i].FirstName" class="form-label"></label>
+                                                        <input asp-for="HouseholdMembers[i].FirstName" class="form-control household-input new-client-input" />
+                                                        <span asp-validation-for="HouseholdMembers[i].FirstName" class="text-danger"></span>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-3">
+                                                        <label asp-for="HouseholdMembers[i].LastName" class="form-label"></label>
+                                                        <input asp-for="HouseholdMembers[i].LastName" class="form-control household-input new-client-input" />
+                                                        <span asp-validation-for="HouseholdMembers[i].LastName" class="text-danger"></span>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-3">
+                                                        <label asp-for="HouseholdMembers[i].DateOfBirth" class="form-label"></label>
+                                                        <input asp-for="HouseholdMembers[i].DateOfBirth" class="form-control household-input new-client-input" type="date" />
+                                                        <span asp-validation-for="HouseholdMembers[i].DateOfBirth" class="text-danger"></span>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-3">
+                                                        <label asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-label"></label>
+                                                        <input asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-control household-input new-client-input" type="date" />
+                                                        <span asp-validation-for="HouseholdMembers[i].AgeAsOfDate" class="text-danger"></span>
+                                                    </div>
+                                                </div>
+
+                                                <button type="button" class="btn btn-outline-danger btn-sm removeHouseholdMemberBtn">
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <template id="householdMemberTemplate">
+                                    <div class="card border-0 bg-light mb-3 household-member-item">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="HouseholdMembers___index___FirstName">First Name</label>
+                                                    <input class="form-control household-input new-client-input"
+                                                           type="text"
+                                                           id="HouseholdMembers___index___FirstName"
+                                                           name="HouseholdMembers[__index__].FirstName" />
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="HouseholdMembers___index___LastName">Last Name</label>
+                                                    <input class="form-control household-input new-client-input"
+                                                           type="text"
+                                                           id="HouseholdMembers___index___LastName"
+                                                           name="HouseholdMembers[__index__].LastName" />
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="HouseholdMembers___index___DateOfBirth">Date of Birth</label>
+                                                    <input class="form-control household-input new-client-input"
+                                                           type="date"
+                                                           id="HouseholdMembers___index___DateOfBirth"
+                                                           name="HouseholdMembers[__index__].DateOfBirth" />
+                                                </div>
+
+                                                <div class="col-md-6 mb-3">
+                                                    <label class="form-label" for="HouseholdMembers___index___AgeAsOfDate">Age As Of Date</label>
+                                                    <input class="form-control household-input new-client-input"
+                                                           type="date"
+                                                           id="HouseholdMembers___index___AgeAsOfDate"
+                                                           name="HouseholdMembers[__index__].AgeAsOfDate" />
+                                                </div>
+                                            </div>
+
+                                            <button type="button" class="btn btn-outline-danger btn-sm removeHouseholdMemberBtn">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -183,17 +457,20 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Organization section
             const selectedOrganization = document.getElementById("selectedOrganization");
             const existingOrganizationCard = document.getElementById("existingOrganizationCard");
             const newOrganizationCard = document.getElementById("newOrganizationCard");
-            const toggleButton = document.getElementById("toggleNewOrganizationBtn");
+            const toggleOrganizationButton = document.getElementById("toggleNewOrganizationBtn");
             const newOrgInputs = document.querySelectorAll(".new-org-input");
-            const collapseElement = document.getElementById("newOrganizationCollapse");
-            const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseElement, { toggle: false });
+            const organizationCollapseElement = document.getElementById("newOrganizationCollapse");
+            const organizationCollapseInstance = bootstrap.Collapse.getOrCreateInstance(organizationCollapseElement, { toggle: false });
 
             function hasNewOrganizationInput() {
                 for (const input of newOrgInputs) {
-                    if (input.value && input.value.trim() !== "") {
+                    if (input.type === "checkbox") {
+                        if (input.checked) return true;
+                    } else if (input.value && input.value.trim() !== "") {
                         return true;
                     }
                 }
@@ -202,37 +479,24 @@
 
             function setExistingOrganizationDisabled(isDisabled) {
                 selectedOrganization.disabled = isDisabled;
-
-                if (isDisabled) {
-                    existingOrganizationCard.classList.add("disabled-card");
-                } else {
-                    existingOrganizationCard.classList.remove("disabled-card");
-                }
+                existingOrganizationCard.classList.toggle("disabled-card", isDisabled);
             }
 
             function setNewOrganizationDisabled(isDisabled) {
+                newOrganizationCard.classList.toggle("disabled-card", isDisabled);
+                toggleOrganizationButton.disabled = isDisabled;
+
+                newOrgInputs.forEach(input => {
+                    input.disabled = isDisabled;
+                });
+
                 if (isDisabled) {
-                    newOrganizationCard.classList.add("disabled-card");
-                    toggleButton.disabled = true;
-
-                    newOrgInputs.forEach(input => {
-                        input.disabled = true;
-                    });
-
-                    collapseInstance.hide();
-                } else {
-                    newOrganizationCard.classList.remove("disabled-card");
-                    toggleButton.disabled = false;
-
-                    newOrgInputs.forEach(input => {
-                        input.disabled = false;
-                    });
+                    organizationCollapseInstance.hide();
                 }
             }
 
-            function updateWizardState() {
+            function updateOrganizationState() {
                 const hasExistingSelection = selectedOrganization.value !== "";
-                const hasNewInput = hasNewOrganizationInput();
 
                 if (hasExistingSelection) {
                     setNewOrganizationDisabled(true);
@@ -240,7 +504,7 @@
                     return;
                 }
 
-                if (hasNewInput) {
+                if (hasNewOrganizationInput()) {
                     setExistingOrganizationDisabled(true);
                     setNewOrganizationDisabled(false);
                     return;
@@ -250,14 +514,125 @@
                 setNewOrganizationDisabled(false);
             }
 
-            selectedOrganization.addEventListener("change", updateWizardState);
+            selectedOrganization.addEventListener("change", updateOrganizationState);
 
             newOrgInputs.forEach(input => {
-                input.addEventListener("input", updateWizardState);
-                input.addEventListener("change", updateWizardState);
+                input.addEventListener("input", updateOrganizationState);
+                input.addEventListener("change", updateOrganizationState);
             });
 
-            updateWizardState();
+            // Client section
+            const selectedClient = document.getElementById("selectedClient");
+            const existingClientCard = document.getElementById("existingClientCard");
+            const newClientCard = document.getElementById("newClientCard");
+            const toggleClientButton = document.getElementById("toggleNewClientBtn");
+            const clientCollapseElement = document.getElementById("newClientCollapse");
+            const clientCollapseInstance = bootstrap.Collapse.getOrCreateInstance(clientCollapseElement, { toggle: false });
+            const householdMembersContainer = document.getElementById("householdMembersContainer");
+            const householdTemplate = document.getElementById("householdMemberTemplate");
+            const addHouseholdMemberBtn = document.getElementById("addHouseholdMemberBtn");
+
+            function getNewClientInputs() {
+                return document.querySelectorAll(".new-client-input");
+            }
+
+            function hasNewClientInput() {
+                const inputs = getNewClientInputs();
+
+                for (const input of inputs) {
+                    if (input.type === "checkbox") {
+                        if (input.checked) return true;
+                    } else if (input.value && input.value.trim() !== "") {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function setExistingClientDisabled(isDisabled) {
+                selectedClient.disabled = isDisabled;
+                existingClientCard.classList.toggle("disabled-card", isDisabled);
+            }
+
+            function setNewClientDisabled(isDisabled) {
+                newClientCard.classList.toggle("disabled-card", isDisabled);
+                toggleClientButton.disabled = isDisabled;
+                addHouseholdMemberBtn.disabled = isDisabled;
+
+                getNewClientInputs().forEach(input => {
+                    input.disabled = isDisabled;
+                });
+
+                document.querySelectorAll(".removeHouseholdMemberBtn").forEach(button => {
+                    button.disabled = isDisabled;
+                });
+
+                if (isDisabled) {
+                    clientCollapseInstance.hide();
+                }
+            }
+
+            function updateClientState() {
+                const hasExistingSelection = selectedClient.value !== "";
+
+                if (hasExistingSelection) {
+                    setNewClientDisabled(true);
+                    setExistingClientDisabled(false);
+                    return;
+                }
+
+                if (hasNewClientInput()) {
+                    setExistingClientDisabled(true);
+                    setNewClientDisabled(false);
+                    return;
+                }
+
+                setExistingClientDisabled(false);
+                setNewClientDisabled(false);
+            }
+
+            function rebindRemoveButtons() {
+                document.querySelectorAll(".removeHouseholdMemberBtn").forEach(button => {
+                    button.onclick = function () {
+                        const items = householdMembersContainer.querySelectorAll(".household-member-item");
+
+                        if (items.length > 1) {
+                            button.closest(".household-member-item").remove();
+                            updateClientState();
+                        } else {
+                            const parent = button.closest(".household-member-item");
+                            parent.querySelectorAll("input").forEach(input => input.value = "");
+                            updateClientState();
+                        }
+                    };
+                });
+            }
+
+            addHouseholdMemberBtn.addEventListener("click", function () {
+                const index = householdMembersContainer.querySelectorAll(".household-member-item").length;
+                const html = householdTemplate.innerHTML.replaceAll("__index__", index);
+                householdMembersContainer.insertAdjacentHTML("beforeend", html);
+                rebindRemoveButtons();
+                updateClientState();
+            });
+
+            selectedClient.addEventListener("change", updateClientState);
+
+            document.addEventListener("input", function (e) {
+                if (e.target.classList.contains("new-client-input")) {
+                    updateClientState();
+                }
+            });
+
+            document.addEventListener("change", function (e) {
+                if (e.target.classList.contains("new-client-input")) {
+                    updateClientState();
+                }
+            });
+
+            rebindRemoveButtons();
+            updateOrganizationState();
+            updateClientState();
         });
     </script>
 }
