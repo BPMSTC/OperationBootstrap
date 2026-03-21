@@ -35,6 +35,10 @@
 
     var organizationCollapseCssClass = expandNewOrganization ? "collapse show" : "collapse";
     var clientCollapseCssClass = expandNewClient ? "collapse show" : "collapse";
+    var expandHouseholdMembers =
+        (Model.HouseholdMembers?.Any(h => h.HasStarted) ?? false) ||
+        ViewData.ModelState.Keys.Any(k => k.StartsWith("HouseholdMembers["));
+    var householdCollapseCssClass = expandHouseholdMembers ? "collapse show" : "collapse";
 }
 
 <div class="container py-4">
@@ -347,50 +351,63 @@
                                 </div>
 
                                 <hr />
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0">Household Members</h5>
-                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="addHouseholdMemberBtn">
-                                        + Add Household Member
-                                    </button>
-                                </div>
+                                <hr />
+                                <button class="btn btn-outline-secondary mb-3"
+                                        type="button"
+                                        id="toggleHouseholdMembersBtn"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#householdMembersCollapse"
+                                        aria-expanded="@(expandHouseholdMembers.ToString().ToLower())"
+                                        aria-controls="householdMembersCollapse">
+                                    + Add Household Members
+                                </button>
 
-                                <div id="householdMembersContainer">
-                                    @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
-                                    {
-                                        <div class="card border-0 bg-light mb-3 household-member-item">
-                                            <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <label asp-for="HouseholdMembers[i].FirstName" class="form-label"></label>
-                                                        <input asp-for="HouseholdMembers[i].FirstName" class="form-control household-input new-client-input" />
-                                                        <span asp-validation-for="HouseholdMembers[i].FirstName" class="text-danger"></span>
+                                <div id="householdMembersCollapse" class="@householdCollapseCssClass">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h5 class="mb-0">Household Members</h5>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="addHouseholdMemberBtn">
+                                            + Add Household Member
+                                        </button>
+                                    </div>
+
+                                    <div id="householdMembersContainer">
+                                        @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+                                        {
+                                            <div class="card border-0 bg-light mb-3 household-member-item">
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label asp-for="HouseholdMembers[i].FirstName" class="form-label"></label>
+                                                            <input asp-for="HouseholdMembers[i].FirstName" class="form-control household-input new-client-input" />
+                                                            <span asp-validation-for="HouseholdMembers[i].FirstName" class="text-danger"></span>
+                                                        </div>
+
+                                                        <div class="col-md-6 mb-3">
+                                                            <label asp-for="HouseholdMembers[i].LastName" class="form-label"></label>
+                                                            <input asp-for="HouseholdMembers[i].LastName" class="form-control household-input new-client-input" />
+                                                            <span asp-validation-for="HouseholdMembers[i].LastName" class="text-danger"></span>
+                                                        </div>
+
+                                                        <div class="col-md-6 mb-3">
+                                                            <label asp-for="HouseholdMembers[i].DateOfBirth" class="form-label"></label>
+                                                            <input asp-for="HouseholdMembers[i].DateOfBirth" class="form-control household-input new-client-input" type="date" />
+                                                            <span asp-validation-for="HouseholdMembers[i].DateOfBirth" class="text-danger"></span>
+                                                        </div>
+
+                                                        <div class="col-md-6 mb-3">
+                                                            <label asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-label"></label>
+                                                            <input asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-control household-input new-client-input" type="date" />
+                                                            <span asp-validation-for="HouseholdMembers[i].AgeAsOfDate" class="text-danger"></span>
+                                                        </div>
                                                     </div>
 
-                                                    <div class="col-md-6 mb-3">
-                                                        <label asp-for="HouseholdMembers[i].LastName" class="form-label"></label>
-                                                        <input asp-for="HouseholdMembers[i].LastName" class="form-control household-input new-client-input" />
-                                                        <span asp-validation-for="HouseholdMembers[i].LastName" class="text-danger"></span>
-                                                    </div>
-
-                                                    <div class="col-md-6 mb-3">
-                                                        <label asp-for="HouseholdMembers[i].DateOfBirth" class="form-label"></label>
-                                                        <input asp-for="HouseholdMembers[i].DateOfBirth" class="form-control household-input new-client-input" type="date" />
-                                                        <span asp-validation-for="HouseholdMembers[i].DateOfBirth" class="text-danger"></span>
-                                                    </div>
-
-                                                    <div class="col-md-6 mb-3">
-                                                        <label asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-label"></label>
-                                                        <input asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-control household-input new-client-input" type="date" />
-                                                        <span asp-validation-for="HouseholdMembers[i].AgeAsOfDate" class="text-danger"></span>
-                                                    </div>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm removeHouseholdMemberBtn">
+                                                        Remove
+                                                    </button>
                                                 </div>
-
-                                                <button type="button" class="btn btn-outline-danger btn-sm removeHouseholdMemberBtn">
-                                                    Remove
-                                                </button>
                                             </div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
 
                                 <template id="householdMemberTemplate">
@@ -528,9 +545,13 @@
             const toggleClientButton = document.getElementById("toggleNewClientBtn");
             const clientCollapseElement = document.getElementById("newClientCollapse");
             const clientCollapseInstance = bootstrap.Collapse.getOrCreateInstance(clientCollapseElement, { toggle: false });
+            const householdCollapseElement = document.getElementById("householdMembersCollapse");
+            const householdCollapseInstance = bootstrap.Collapse.getOrCreateInstance(householdCollapseElement, { toggle: false });
             const householdMembersContainer = document.getElementById("householdMembersContainer");
             const householdTemplate = document.getElementById("householdMemberTemplate");
             const addHouseholdMemberBtn = document.getElementById("addHouseholdMemberBtn");
+            const householdCollapseElement = document.getElementById("householdMembersCollapse");
+            const householdCollapseInstance = bootstrap.Collapse.getOrCreateInstance(householdCollapseElement, { toggle: false });
 
             function getNewClientInputs() {
                 return document.querySelectorAll(".new-client-input");
@@ -568,6 +589,7 @@
                 });
 
                 if (isDisabled) {
+                    householdCollapseInstance.hide();
                     clientCollapseInstance.hide();
                 }
             }
@@ -612,6 +634,7 @@
                 const index = householdMembersContainer.querySelectorAll(".household-member-item").length;
                 const html = householdTemplate.innerHTML.replaceAll("__index__", index);
                 householdMembersContainer.insertAdjacentHTML("beforeend", html);
+                householdCollapseInstance.show();
                 rebindRemoveButtons();
                 updateClientState();
             });
