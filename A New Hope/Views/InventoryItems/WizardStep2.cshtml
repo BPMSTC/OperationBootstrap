@@ -1,0 +1,135 @@
+﻿@model A_New_Hope.Models.ViewModels.InventoryWizardStep1ViewModel
+
+@{
+    ViewData["Title"] = "Inventory Wizard - Step 2";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h1 class="mb-1">Inventory Wizard - Step 2</h1>
+                    <p class="text-muted mb-0">
+                        Review the inventory item changes below. Nothing has been saved yet. Click Confirm Changes to complete the update.
+                    </p>
+                </div>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <div class="row g-4">
+                <!-- Action Summary -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-dark text-white">
+                            <h5 class="mb-0">1. Wizard Action</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">Action Type</dt>
+                                <dd class="col-sm-7">
+                                    @if (string.Equals(Model.ActionType, "Update", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span>Update Existing Inventory Item</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Add New Inventory Item</span>
+                                    }
+                                </dd>
+
+                                @if (string.Equals(Model.ActionType, "Update", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <dt class="col-sm-5">Selected Item</dt>
+                                    <dd class="col-sm-7">
+                                        @(string.IsNullOrWhiteSpace(Model.ExistingInventoryItemDisplayName)
+                                                                            ? "Not provided"
+                                                                            : Model.ExistingInventoryItemDisplayName)
+                                    </dd>
+                                }
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Values -->
+                <div class="col-lg-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">2. Final Values</h5>
+                        </div>
+                        <div class="card-body">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">Item Name</dt>
+                                <dd class="col-sm-7">
+                                    @(string.IsNullOrWhiteSpace(Model.Name) ? "Not provided" : Model.Name)
+                                </dd>
+
+                                <dt class="col-sm-5">Category</dt>
+                                <dd class="col-sm-7">
+                                    @(string.IsNullOrWhiteSpace(Model.CategoryDisplayName)
+                                                                        ? "Not provided"
+                                                                        : Model.CategoryDisplayName)
+                                </dd>
+
+                                <dt class="col-sm-5">Baseline Item</dt>
+                                <dd class="col-sm-7">@(Model.IsBaseline ? "Yes" : "No")</dd>
+
+                                <dt class="col-sm-5">Available</dt>
+                                <dd class="col-sm-7">@(Model.IsAvailable ? "Yes" : "No")</dd>
+
+                                <dt class="col-sm-5">Active</dt>
+                                <dd class="col-sm-7">@(Model.IsActive ? "Yes" : "No")</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary / Warning -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">3. Confirmation Summary</h5>
+                </div>
+                <div class="card-body">
+                    @if (string.Equals(Model.ActionType, "Update", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <p class="mb-0">
+                            You are about to update the selected inventory item with the values shown above.
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="mb-0">
+                            You are about to create a new inventory item with the values shown above.
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-body d-flex justify-content-between flex-wrap gap-2">
+                    <a asp-action="WizardStep1" class="btn btn-outline-secondary">
+                        Back to Step 1
+                    </a>
+
+                    <form asp-action="WizardStep2Confirm" method="post" class="m-0">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success">
+                            Confirm Changes
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

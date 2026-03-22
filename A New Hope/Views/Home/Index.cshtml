@@ -107,13 +107,15 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card workflow-card">
                     <div class="card-body">
-                        <div class="workflow-title">Client Wizard</div>
+                        <div class="workflow-title">Inventory Wizard</div>
                         <p class="workflow-text">
-                            Create or locate a client record and guide the user through client-specific entry steps.
+                            Create a new inventory item or update an existing one using the step-by-step inventory workflow.
                         </p>
-                        <button class="btn neutral-btn-secondary mt-auto" disabled>
-                            Coming Soon
-                        </button>
+                        <a asp-controller="InventoryItems"
+                           asp-action="WizardStep1"
+                           class="btn neutral-btn-primary mt-auto">
+                            Start Inventory Wizard
+                        </a>
                     </div>
                 </div>
             </div>
@@ -121,9 +123,9 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card workflow-card">
                     <div class="card-body">
-                        <div class="workflow-title">Referral Details Wizard</div>
+                        <div class="workflow-title">Client Wizard</div>
                         <p class="workflow-text">
-                            Complete referral-specific details such as dates, status, notes, and related follow-up information.
+                            Create or locate a client record and guide the user through client-specific entry steps.
                         </p>
                         <button class="btn neutral-btn-secondary mt-auto" disabled>
                             Coming Soon

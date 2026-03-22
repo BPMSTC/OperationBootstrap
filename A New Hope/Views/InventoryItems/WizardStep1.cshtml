@@ -1,0 +1,312 @@
+﻿@model A_New_Hope.Models.ViewModels.InventoryWizardStep1ViewModel
+
+@{
+    ViewData["Title"] = "Inventory Wizard - Step 1";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-12 col-xl-10">
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h1 class="mb-1">Inventory Wizard - Step 1</h1>
+                    <p class="text-muted mb-0">
+                        Enter inventory item changes below. Nothing will be saved until you review and confirm on Step 2.
+                    </p>
+                </div>
+            </div>
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+
+            <form asp-action="WizardStep1" method="post" novalidate>
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">1. Choose Inventory Action</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="radio"
+                                           asp-for="ActionType"
+                                           id="actionCreate"
+                                           value="Create" />
+                                    <label class="form-check-label" for="actionCreate">
+                                        Add New Inventory Item
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="radio"
+                                           asp-for="ActionType"
+                                           id="actionUpdate"
+                                           value="Update" />
+                                    <label class="form-check-label" for="actionUpdate">
+                                        Update Existing Inventory Item
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <span asp-validation-for="ActionType" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm border-0 h-100" id="existingItemCard">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">2A. Select Existing Inventory Item</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small">
+                                    Use this path when updating an existing inventory item.
+                                </p>
+
+                                <div class="mb-3">
+                                    <label asp-for="ExistingInventoryItemId" class="form-label"></label>
+                                    <select asp-for="ExistingInventoryItemId"
+                                            asp-items="Model.ExistingInventoryItems"
+                                            class="form-select"
+                                            id="ExistingInventoryItemId">
+                                        <option value="">-- Select existing inventory item --</option>
+                                    </select>
+                                    <span asp-validation-for="ExistingInventoryItemId" class="text-danger"></span>
+                                </div>
+
+                                <div class="d-grid mb-3">
+                                    <button type="submit"
+                                            class="btn btn-outline-primary"
+                                            formaction="@Url.Action("LoadExistingItem", "InventoryItems")"
+                                            formmethod="post"
+                                            id="loadExistingItemButton">
+                                        Load Selected Item
+                                    </button>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit"
+                                            class="btn btn-outline-secondary"
+                                            formaction="@Url.Action("ResetToCreate", "InventoryItems")"
+                                            formmethod="post"
+                                            id="resetToCreateButton">
+                                        Reset to Create New
+                                    </button>
+                                </div>
+
+                                <div class="alert alert-light border small mb-0">
+                                    Select an existing item and click <strong>Load Selected Item</strong> to populate the editable fields on the right.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-2 d-flex align-items-center justify-content-center">
+                        <div class="text-center w-100">
+                            <div class="border-top mb-2"></div>
+                            <span class="badge bg-light text-dark border px-3 py-2">OR</span>
+                            <div class="border-top mt-2"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm border-0 h-100" id="itemDetailsCard">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">2B. Inventory Item Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small">
+                                    Enter the inventory item details to create a new item or update the selected one.
+                                </p>
+
+                                <div class="mb-3">
+                                    <label asp-for="Name" class="form-label"></label>
+                                    <input asp-for="Name" class="form-control" id="Name" />
+                                    <span asp-validation-for="Name" class="text-danger"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label asp-for="CategoryId" class="form-label"></label>
+                                    <select asp-for="CategoryId"
+                                            asp-items="Model.Categories"
+                                            class="form-select"
+                                            id="CategoryId">
+                                        <option value="">-- Select category --</option>
+                                    </select>
+                                    <span asp-validation-for="CategoryId" class="text-danger"></span>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input asp-for="IsBaseline" class="form-check-input" id="IsBaseline" />
+                                            <label asp-for="IsBaseline" class="form-check-label"></label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input asp-for="IsAvailable" class="form-check-input" id="IsAvailable" />
+                                            <label asp-for="IsAvailable" class="form-check-label"></label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input asp-for="IsActive" class="form-check-input" id="IsActive" />
+                                            <label asp-for="IsActive" class="form-check-label"></label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (Model.IsExistingItemLoaded && !string.IsNullOrWhiteSpace(Model.ExistingInventoryItemDisplayName))
+                                {
+                                    <div class="alert alert-info mt-3 mb-0">
+                                        Currently editing: <strong>@Model.ExistingInventoryItemDisplayName</strong>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-body d-flex justify-content-between flex-wrap gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+
+                        <button type="submit" class="btn btn-primary">
+                            Continue to Step 2
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const actionCreate = document.getElementById("actionCreate");
+            const actionUpdate = document.getElementById("actionUpdate");
+
+            const existingInventoryItem = document.getElementById("ExistingInventoryItemId");
+            const loadExistingItemButton = document.getElementById("loadExistingItemButton");
+            const resetToCreateButton = document.getElementById("resetToCreateButton");
+
+            const nameInput = document.getElementById("Name");
+            const categorySelect = document.getElementById("CategoryId");
+            const isBaseline = document.getElementById("IsBaseline");
+            const isAvailable = document.getElementById("IsAvailable");
+            const isActive = document.getElementById("IsActive");
+
+            const existingItemCard = document.getElementById("existingItemCard");
+            const itemDetailsCard = document.getElementById("itemDetailsCard");
+
+            function hasDetailsValue() {
+                return (nameInput.value && nameInput.value.trim() !== "") ||
+                       (categorySelect.value && categorySelect.value !== "");
+            }
+
+            function disableDetails(disabled) {
+                nameInput.disabled = disabled;
+                categorySelect.disabled = disabled;
+                isBaseline.disabled = disabled;
+                isAvailable.disabled = disabled;
+                isActive.disabled = disabled;
+                itemDetailsCard.classList.toggle("opacity-50", disabled);
+            }
+
+            function disableExisting(disabled) {
+                existingInventoryItem.disabled = disabled;
+                loadExistingItemButton.disabled = disabled;
+                if (resetToCreateButton) {
+                    resetToCreateButton.disabled = false;
+                }
+                existingItemCard.classList.toggle("opacity-50", disabled);
+            }
+
+            function syncUi() {
+                const isCreate = actionCreate.checked;
+                const isUpdate = actionUpdate.checked;
+                const hasTypedDetails = hasDetailsValue();
+
+                if (isCreate) {
+                    disableExisting(true);
+                    disableDetails(false);
+                    return;
+                }
+
+                if (isUpdate) {
+                    disableExisting(false);
+                    disableDetails(false);
+                    return;
+                }
+
+                if (hasTypedDetails) {
+                    actionCreate.checked = true;
+                    disableExisting(true);
+                    disableDetails(false);
+                    return;
+                }
+
+                disableExisting(false);
+                disableDetails(false);
+            }
+
+            actionCreate.addEventListener("change", function () {
+                if (actionCreate.checked) {
+                    existingInventoryItem.value = "";
+                }
+                syncUi();
+            });
+
+            actionUpdate.addEventListener("change", function () {
+                syncUi();
+            });
+
+            existingInventoryItem.addEventListener("change", function () {
+                if (existingInventoryItem.value !== "") {
+                    actionUpdate.checked = true;
+                }
+                syncUi();
+            });
+
+            nameInput.addEventListener("input", function () {
+                if (nameInput.value.trim() !== "") {
+                    actionCreate.checked = true;
+                }
+                syncUi();
+            });
+
+            categorySelect.addEventListener("change", function () {
+                if (categorySelect.value !== "") {
+                    actionCreate.checked = true;
+                }
+                syncUi();
+            });
+
+            syncUi();
+        });
+    </script>
+}
