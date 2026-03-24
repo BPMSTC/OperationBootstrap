@@ -6,12 +6,11 @@
     .staff-tile {
         transition: transform 0.15s ease, box-shadow 0.15s ease;
         border-radius: 12px;
-        min-height: 140px;
     }
 
         .staff-tile:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
         }
 
     .staff-icon {
@@ -23,9 +22,9 @@
 
     <h2 class="text-center mb-4">Staff Panel</h2>
 
-    <div class="row g-4 justify-content-center">
-
-        <!-- Clients -->
+    <!-- 👥 Clients -->
+    <h4 class="mb-3">Clients</h4>
+    <div class="row g-3">
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="ClientProfiles" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -35,7 +34,6 @@
             </a>
         </div>
 
-        <!-- Household Members -->
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="HouseholdMembers" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -44,8 +42,11 @@
                 </div>
             </a>
         </div>
+    </div>
 
-        <!-- Inventory Items -->
+    <!-- 📦 Inventory -->
+    <h4 class="mt-5 mb-3">Inventory</h4>
+    <div class="row g-3">
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="InventoryItems" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -55,7 +56,6 @@
             </a>
         </div>
 
-        <!-- Inventory Groups -->
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="InventoryChoiceGroups" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -65,7 +65,6 @@
             </a>
         </div>
 
-        <!-- Group Items -->
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="InventoryChoiceGroupItems" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -75,7 +74,6 @@
             </a>
         </div>
 
-        <!-- Item Options -->
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="InventoryItemOptions" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -84,8 +82,11 @@
                 </div>
             </a>
         </div>
+    </div>
 
-        <!-- Referrals -->
+    <!-- 🔗 Referrals -->
+    <h4 class="mt-5 mb-3">Referrals</h4>
+    <div class="row g-3">
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="Referrals" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -95,7 +96,6 @@
             </a>
         </div>
 
-        <!-- Organizations -->
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="ReferringOrganizations" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -104,8 +104,11 @@
                 </div>
             </a>
         </div>
+    </div>
 
-        <!-- Users -->
+    <!-- ⚙️ System -->
+    <h4 class="mt-5 mb-3">System</h4>
+    <div class="row g-3">
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="Users" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -116,7 +119,6 @@
         </div>
 
 
-        <!-- Preferences -->
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="UserChoiceGroupPreferences" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -125,8 +127,11 @@
                 </div>
             </a>
         </div>
+    </div>
 
-        <!-- Categories -->
+    <!-- 🏷️ Other -->
+    <h4 class="mt-5 mb-3">Other</h4>
+    <div class="row g-3">
         <div class="col-6 col-md-4 col-lg-3">
             <a asp-controller="Categories" asp-action="Index" class="text-decoration-none text-dark">
                 <div class="card text-center p-4 staff-tile h-100">
@@ -135,6 +140,6 @@
                 </div>
             </a>
         </div>
-
     </div>
+
 </div>
