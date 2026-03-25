@@ -8,24 +8,20 @@
     <h1>Users</h1>
 </div>
 
-<div class="mb-3">
+<div class="mb-3 d-flex justify-content-between align-items-center">
     <a asp-action="Create" class="btn btn-primary">Create New</a>
+    <input type="text" id="searchInput" class="form-control w-auto" placeholder="Search users..." />
 </div>
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
+    <table class="table table-striped table-hover align-middle" id="usersTable">
         <thead>
             <tr>
                 <th>Email</th>
                 <th>Name</th>
                 <th>@Html.DisplayNameFor(model => model.PhoneNumber)</th>
                 <th>@Html.DisplayNameFor(model => model.City)</th>
-                @* <th>@Html.DisplayNameFor(model => model.State)</th>
-                <th>@Html.DisplayNameFor(model => model.PostalCode)</th> *@
-                @* <th>@Html.DisplayNameFor(model => model.DateOfBirth)</th> *@
                 <th>@Html.DisplayNameFor(model => model.DefaultPreference)</th>
-                @* <th>@Html.DisplayNameFor(model => model.UserType)</th> *@
-                @* <th>Has Login</th> *@
                 <th>@Html.DisplayNameFor(model => model.IsActive)</th>
                 <th class="text-end">Actions</th>
             </tr>
@@ -34,26 +30,12 @@
             @foreach (var item in Model)
             {
                 <tr>
-                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                    <td>@Html.DisplayFor(m => item.Email)</td>
                     <td>@($"{item.LastName}, {item.FirstName}")</td>
-                    <td>@Html.DisplayFor(modelItem => item.PhoneNumber)</td>
-                    <td>@Html.DisplayFor(modelItem => item.City)</td>
-                    @* <td>@Html.DisplayFor(modelItem => item.State)</td>
-                    <td>@Html.DisplayFor(modelItem => item.PostalCode)</td> *@
-                    @* <td>@Html.DisplayFor(modelItem => item.DateOfBirth)</td> *@
-                    <td>@Html.DisplayFor(modelItem => item.DefaultPreference)</td>
-                    @* <td>@Html.DisplayFor(modelItem => item.UserType)</td> *@
-                    @* <td>
-                        @if (item.UserType == A_New_Hope.Models.UserType.Staff || item.UserType == A_New_Hope.Models.UserType.Admin)
-                        {
-                            @(item.HasLoginAccount ? "Yes" : "No")
-                        }
-                        else
-                        {
-                            <span class="text-muted">N/A</span>
-                        }
-                    </td> *@
-                    <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
+                    <td>@Html.DisplayFor(m => item.PhoneNumber)</td>
+                    <td>@Html.DisplayFor(m => item.City)</td>
+                    <td>@Html.DisplayFor(m => item.DefaultPreference)</td>
+                    <td>@Html.DisplayFor(m => item.IsActive)</td>
                     <td class="text-end text-nowrap">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                         <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
@@ -76,3 +58,19 @@
         </tbody>
     </table>
 </div>
+
+@section Scripts {
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('#usersTable tbody tr');
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+
+            tableRows.forEach(row => {
+                const rowText = row.innerText.toLowerCase();
+                row.style.display = rowText.includes(query) ? '' : 'none';
+            });
+        });
+    </script>
+}

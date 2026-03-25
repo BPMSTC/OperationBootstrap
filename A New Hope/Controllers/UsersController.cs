@@ -33,15 +33,33 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted domain users.
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string search)
         {
             _logger.LogInformation("Retrieving users");
 
             try
             {
                 // Retrieve active domain users for display.
-                var domainUsers = await _context.DomainUsers
-                    .Where(u => u.DeletedAt == null)
+                var domainUsersQuery = _context.DomainUsers
+                    .Where(u => u.DeletedAt == null);
+
+                // Apply search filter if provided
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    string lowerSearch = search.ToLower();
+                    domainUsersQuery = domainUsersQuery.Where(u =>
+                        (u.Email != null && u.Email.ToLower().Contains(lowerSearch)) ||
+                        ((u.FirstName != null && u.LastName != null) &&
+                            (u.FirstName + " " + u.LastName).ToLower().Contains(lowerSearch) ||
+                            (u.LastName + ", " + u.FirstName).ToLower().Contains(lowerSearch)) ||
+                        (u.PhoneNumber != null &&
+                            u.PhoneNumber.Replace(" ", "").Replace("-", "")
+                            .Contains(new string(search.Where(char.IsDigit).ToArray())))
+                    );
+                }
+
+                // Order the results
+                var domainUsers = await domainUsersQuery
                     .OrderBy(u => u.LastName)
                     .ThenBy(u => u.FirstName)
                     .ThenBy(u => u.Email)
