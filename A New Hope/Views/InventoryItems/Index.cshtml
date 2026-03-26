@@ -8,12 +8,13 @@
     <h1>Inventory Items</h1>
 </div>
 
-<div class="mb-3">
+<div class="mb-3 d-flex justify-content-between align-items-center">
     <a asp-action="Create" class="btn btn-primary">Create New</a>
+    <input type="text" id="searchInput" class="form-control w-auto" placeholder="Search inventory items..." />
 </div>
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
+    <table class="table table-striped table-hover align-middle" id="inventoryItemsTable">
         <thead>
             <tr>
                 <th>@Html.DisplayNameFor(model => model.Name)</th>
@@ -26,47 +27,72 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var item in Model)
+            @if (Model != null && Model.Any())
             {
-                var options = item.InventoryItemOptions?
-                .OrderBy(o => o.SortOrder)
-                .ThenBy(o => o.Name)
-                .ToList() ?? new List<A_New_Hope.Models.InventoryItemOption>();
+                @foreach (var item in Model)
+                {
+                    var options = item.InventoryItemOptions?
+                        .OrderBy(o => o.SortOrder)
+                        .ThenBy(o => o.Name)
+                        .ToList() ?? new List<A_New_Hope.Models.InventoryItemOption>();
 
+                    <tr>
+                        <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                        <td>
+                            @(
+                                item.Category != null
+                                    ? (item.Category.CategoryGroup != null
+                                        ? $"{item.Category.CategoryGroup.Name} - {item.Category.Name}"
+                                        : item.Category.Name)
+                                    : ""
+                            )
+                        </td>
+                        <td>@Html.DisplayFor(modelItem => item.IsBaseline)</td>
+                        <td>@Html.DisplayFor(modelItem => item.IsAvailable)</td>
+                        <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
+                        <td>
+                            @if (options.Any())
+                            {
+                                <div><strong>@options.Count</strong> option(s)</div>
+                                <div class="text-muted small">
+                                    @string.Join(", ", options.Select(o => o.Name))
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">None</span>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
                 <tr>
-                    <td>@Html.DisplayFor(modelItem => item.Name)</td>
-                    <td>
-                        @(
-                                            item.Category != null
-                                            ? (item.Category.CategoryGroup != null
-                                            ? $"{item.Category.CategoryGroup.Name} - {item.Category.Name}"
-                                            : item.Category.Name)
-                                            : ""
-                                            )
-                    </td>
-                    <td>@Html.DisplayFor(modelItem => item.IsBaseline)</td>
-                    <td>@Html.DisplayFor(modelItem => item.IsAvailable)</td>
-                    <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
-                    <td>
-                        @if (options.Any())
-                        {
-                            <div><strong>@options.Count</strong> option(s)</div>
-                            <div class="text-muted small">
-                                @string.Join(", ", options.Select(o => o.Name))
-                            </div>
-                        }
-                        else
-                        {
-                            <span class="text-muted">None</span>
-                        }
-                    </td>
-                    <td class="text-end text-nowrap">
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
-                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
-                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
-                    </td>
+                    <td colspan="7" class="text-center text-muted">No inventory items found.</td>
                 </tr>
             }
         </tbody>
     </table>
 </div>
+
+@section Scripts {
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('#inventoryItemsTable tbody tr');
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+
+            tableRows.forEach(row => {
+                const rowText = row.innerText.toLowerCase();
+                row.style.display = rowText.includes(query) ? '' : 'none';
+            });
+        });
+    </script>
+}
