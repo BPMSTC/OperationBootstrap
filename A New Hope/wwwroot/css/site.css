@@ -238,20 +238,55 @@ td a {
 }
 
 /* =========================
-   DETAILS PAGE
+   DETAILS PAGE (SAFE + FLEXIBLE)
 ========================= */
-dl.row {
+
+/* Style only Details-style dl blocks (after hr inside a div) */
+.container div > hr + dl.row,
+body div > hr + dl.row {
     background-color: var(--bg-surface);
     border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 0;
 }
 
-    dl.row dt {
+    /* Labels */
+    .container div > hr + dl.row dt,
+    body div > hr + dl.row dt {
         background-color: var(--bg-muted);
+        color: var(--text-main);
+        font-weight: 600;
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        border-right: none;
+        margin: 0;
     }
 
-    dl.row dd {
+    /* Values */
+    .container div > hr + dl.row dd,
+    body div > hr + dl.row dd {
         background-color: var(--bg-surface);
+        color: var(--text-main);
+        padding: 10px;
+        border: 1px solid var(--border-color);
+        margin: 0;
     }
+
+/* =========================
+   DETAILS BUTTON SPACING
+========================= */
+
+/* Handles BOTH structures:
+   1. dl -> div (no wrapper)
+   2. div > dl -> sibling div (wrapped) */
+.container dl.row + div,
+.container div:has(> dl.row) + div,
+body dl.row + div,
+body div:has(> dl.row) + div {
+    margin-top: 16px;
+    padding-left: 6px;
+}
 
 /* =========================
    SIGN IN / LANDING / HOME PAGES

@@ -19,7 +19,13 @@
         </dd>
 
         <dt class="col-sm-3">Referring Organization</dt>
-        <dd class="col-sm-9">@(Model.ReferringOrganization != null ? Model.ReferringOrganization.Name : "")</dd>
+        <dd class="col-sm-9">
+            @(
+                Model.ReferringOrganization != null
+                    ? Model.ReferringOrganization.Name
+                    : ""
+            )
+        </dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredOn)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.ReferredOn)</dd>
@@ -54,6 +60,6 @@
 </div>
 
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
     <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
 </div>
