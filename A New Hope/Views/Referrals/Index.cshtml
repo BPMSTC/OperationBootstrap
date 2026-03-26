@@ -8,12 +8,13 @@
     <h1>Referrals</h1>
 </div>
 
-<div class="mb-3">
+<div class="mb-3 d-flex justify-content-between align-items-center">
     <a asp-action="Create" class="btn btn-primary">Create New</a>
+    <input type="text" id="searchInput" class="form-control w-auto" placeholder="Search referrals..." />
 </div>
 
 <div class="table-responsive">
-    <table class="table table-striped table-hover align-middle referrals-table">
+    <table class="table table-striped table-hover align-middle referrals-table" id="referralsTable">
         <thead>
             <tr>
                 <th>Client</th>
@@ -56,10 +57,26 @@
             else
             {
                 <tr>
-                    <td colspan="11" class="text-center text-muted">No referrals found.</td>
+                    <td colspan="8" class="text-center text-muted">No referrals found.</td>
                 </tr>
             }
         </tbody>
     </table>
 </div>
 
+@section Scripts {
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const tableRows = document.querySelectorAll('#referralsTable tbody tr');
+
+        searchInput.addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+
+            tableRows.forEach(row => {
+                // Check all row text (Client, Org, Referrer, etc.)
+                const rowText = row.innerText.toLowerCase();
+                row.style.display = rowText.includes(query) ? '' : 'none';
+            });
+        });
+    </script>
+}

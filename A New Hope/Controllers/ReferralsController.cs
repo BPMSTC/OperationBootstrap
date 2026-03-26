@@ -42,21 +42,49 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted referrals.
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search)
         {
             _logger.LogInformation("Loading Referrals Index page");
 
-            var referrals = await _context.Referrals
-                .Where(r => r.DeletedAt == null)
-                .Include(r => r.ClientUser)
-                .Include(r => r.ReferringOrganization)
-                .OrderByDescending(r => r.ReferredOn)
-                .ThenBy(r => r.Id)
-                .ToListAsync();
+            try
+            {
+                IQueryable<A_New_Hope.Models.Referral> referralsQuery = _context.Referrals
+                    .Where(r => r.DeletedAt == null)
+                    .Include(r => r.ClientUser)
+                    .Include(r => r.ReferringOrganization);
 
-            _logger.LogInformation("Loaded {Count} referrals", referrals.Count);
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    string lowerSearch = search.ToLower();
 
-            return View(referrals);
+                    referralsQuery = referralsQuery.Where(r =>
+                        // Client full name or email
+                        (r.ClientUser != null && (
+                            (r.ClientUser.FirstName + " " + r.ClientUser.LastName).ToLower().Contains(lowerSearch) ||
+                            (r.ClientUser.LastName + ", " + r.ClientUser.FirstName).ToLower().Contains(lowerSearch) ||
+                            (r.ClientUser.Email != null && r.ClientUser.Email.ToLower().Contains(lowerSearch))
+                        )) ||
+                        // **Referring Organization name**
+                        (r.ReferringOrganization != null && r.ReferringOrganization.Name.ToLower().Contains(lowerSearch)) ||
+                        // **Referrer name**
+                        (!string.IsNullOrEmpty(r.ReferredByName) && r.ReferredByName.ToLower().Contains(lowerSearch))
+                    );
+                }
+
+                var referrals = await referralsQuery
+                    .OrderByDescending(r => r.ReferredOn)
+                    .ThenBy(r => r.Id)
+                    .ToListAsync();
+
+                _logger.LogInformation("Loaded {Count} referrals", referrals.Count);
+
+                return View(referrals);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load referrals");
+                return View("Error");
+            }
         }
 
         // GET: Referrals/Details/5
