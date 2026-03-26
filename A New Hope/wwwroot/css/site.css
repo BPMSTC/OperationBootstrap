@@ -150,10 +150,10 @@ h1,
 
 .table {
     background-color: var(--table-bg) !important; /* dark bg in dark mode */
-    border: 2px solid var(--border-color) !important;
+    border: 2px solid var(--border-color) !important; /* table border */
     border-collapse: separate !important;
     border-spacing: 0 !important;
-    color: var(--text-main) !important; /* text visible */
+    color: var(--text-main) !important;
 }
 
     /* Table cell and border */
@@ -162,12 +162,10 @@ h1,
         border: 1px solid var(--border-color) !important;
         padding: 8px;
         color: var(--text-main) !important;
-        background-color: var(--table-bg) !important; /* ensure dark bg */
+        background-color: var(--table-bg) !important; /* ensures dark bg */
     }
 
     /* Header */
-    .table thead,
-    .table thead tr,
     .table thead th {
         background-color: var(--header-bg) !important;
         color: var(--header-text) !important;
@@ -176,13 +174,11 @@ h1,
 /* Striped rows */
 .table-striped tbody tr:nth-of-type(odd) {
     background-color: var(--table-stripe) !important;
-    color: var(--text-main) !important;
 }
 
 /* Hover rows */
 .table-hover tbody tr:hover {
     background-color: var(--table-hover) !important;
-    color: var(--text-main) !important;
 }
 
 /* Force table text for all children */
@@ -211,9 +207,8 @@ td a {
 ========================= */
 
 .table-responsive {
-    background-color: var(--table-bg) !important; /* match table bg */
-    border: 2px solid var(--border-color) !important;
-    border-radius: 6px;
+    background: none !important; /* container transparent */
+    border: none !important; /* no extra border */
     padding: 0;
     overflow-x: auto;
 }
@@ -231,7 +226,7 @@ td a {
 .container {
     width: 95%;
     max-width: 1200px;
-    margin: 20px auto;
+    margin: 20px auto; /* normal pages still have spacing */
 }
 
 /* =========================
@@ -400,4 +395,105 @@ dl.row {
     .login-card {
         padding: 1.5rem;
     }
+}
+
+/* =========================
+   STAFF PANEL BUTTONS / CARDS
+========================= */
+.container .staff-tile {
+    background-color: var(--bg-surface) !important; /* dark mode surface */
+    color: var(--text-main) !important;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    transition: background-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+    .container .staff-tile:hover {
+        background-color: var(--bg-muted) !important; /* hover effect */
+        color: var(--text-main) !important;
+        transform: translateY(-2px);
+    }
+
+    .container .staff-tile i.staff-icon {
+        font-size: 2.5rem;
+        color: var(--text-main);
+        transition: color 0.2s;
+    }
+
+.dark-mode .container .staff-tile {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+    border: 2px solid var(--border-color);
+}
+
+    .dark-mode .container .staff-tile:hover {
+        background-color: var(--bg-muted) !important;
+    }
+
+    .dark-mode .container .staff-tile i.staff-icon {
+        color: var(--text-main);
+    }
+/* =========================
+   WIZARD DARK MODE
+========================= */
+.dark-mode .card.wizard-card {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    color: #eee;
+}
+
+    .dark-mode .card.wizard-card .card-header,
+    .dark-mode .card.wizard-card .card-header.bg-white {
+        background-color: #2a2a2a !important;
+        color: #eee !important;
+        border-bottom: 1px solid #333;
+    }
+
+    .dark-mode .card.wizard-card .card-body {
+        background-color: #1e1e1e;
+        color: #eee;
+    }
+
+.dark-mode .wizard-divider::before,
+.dark-mode .wizard-divider::after {
+    border-bottom: 1px solid #555;
+}
+
+.dark-mode .wizard-divider span {
+    color: #aaa;
+}
+
+.dark-mode input.form-control,
+.dark-mode select.form-select,
+.dark-mode textarea.form-control {
+    background-color: #2a2a2a;
+    color: #eee;
+    border: 1px solid #444;
+}
+
+    .dark-mode input.form-control::placeholder,
+    .dark-mode textarea.form-control::placeholder {
+        color: #aaa;
+    }
+
+.dark-mode .disabled-card {
+    opacity: 0.6;
+    background-color: #1a1a1a;
+    color: #aaa;
+}
+
+.dark-mode .collapse.show {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 0.25rem;
+}
+
+.dark-mode .card.wizard-card.shadow-sm {
+    box-shadow: none;
+}
+
+.dark-mode .card.wizard-card .bg-light,
+.dark-mode .card.wizard-card .bg-white {
+    background-color: #1e1e1e !important;
+    color: #eee !important;
 }

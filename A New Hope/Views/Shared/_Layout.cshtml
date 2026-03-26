@@ -10,8 +10,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - A_New_Hope</title>
 
+    <!-- Apply theme immediately to prevent flash -->
     <script>
-            // Apply theme BEFORE page renders (prevents flash)
             (function () {
                 const theme = localStorage.getItem("theme");
                 if (theme === "dark") {
@@ -25,7 +25,7 @@
 </head>
 <body>
     <header>
-        <nav id="mainNavbarBar" class="navbar navbar-expand-sm navbar-light bg-light border-bottom mb-3">
+        <nav id="mainNavbarBar" class="navbar navbar-expand-sm navbar-light border-bottom mb-3">
             <div class="container-fluid">
 
                 <!-- LEFT: Toggle + Logo -->
@@ -57,17 +57,17 @@
                         <ul class="navbar-nav ms-auto align-items-center">
 
                             <li class="nav-item">
-                                <a class="nav-link text-dark" href="/Home/Index">Home</a>
+                                <a class="nav-link" href="/Home/Index">Home</a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="StaffPanel" asp-action="Index">Staff Panel</a>
+                                <a class="nav-link" asp-controller="StaffPanel" asp-action="Index">Staff Panel</a>
                             </li>
 
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="AdminPanel" asp-action="Index">Admin Panel</a>
+                                    <a class="nav-link" asp-controller="AdminPanel" asp-action="Index">Admin Panel</a>
                                 </li>
                             }
 
@@ -139,11 +139,11 @@
                 }
             }
 
-            // Load saved theme
+            // Apply saved theme immediately
             const savedTheme = localStorage.getItem("theme") || "light";
             applyTheme(savedTheme);
 
-            // Toggle click
+            // Toggle button
             toggleBtn.addEventListener("click", () => {
                 const newTheme = document.documentElement.classList.contains("dark-mode")
                     ? "light"
@@ -154,11 +154,7 @@
             });
     </script>
 
-    @section Scripts {
-        @{
-            await Html.RenderPartialAsync("_ValidationScriptsPartial");
-        }
-    }
+    @await Html.PartialAsync("_ValidationScriptsPartial")
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
