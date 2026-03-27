@@ -68,6 +68,30 @@ body {
         color: #ffffff !important;
     }
 
+.navbar-dark.border-bottom {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* very subtle highlight */
+}
+
+/* =========================
+   DARK MODE NAVBAR FIX
+========================= */
+
+/* Force navbar background dark and remove any lines/shadows */
+.navbar-dark {
+    background-color: #212529 !important; /* solid dark background */
+    border: none !important; /* remove any border */
+    box-shadow: none !important; /* remove subtle shadows that look like lines */
+}
+
+    /* Optional: ensure nav links still readable */
+    .navbar-dark .nav-link {
+        color: #e9ecef !important;
+    }
+
+        .navbar-dark .nav-link:hover {
+            color: #ffffff !important;
+        }
+
 /* =========================
    HEADERS
 ========================= */
@@ -106,12 +130,12 @@ h1,
     }
 
 .btn-danger {
-    background-color: var(--danger-bg) !important;
-    border: 2px solid var(--border-color) !important;
+    background-color: #cb1e4f !important;
+    border: 2px solid #cb1e4f !important;
 }
 
     .btn-danger:hover {
-        background-color: var(--danger-hover) !important;
+        background-color: #a11942 !important; /* slightly darker for hover */
     }
 
 /* =========================

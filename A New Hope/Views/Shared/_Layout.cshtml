@@ -38,7 +38,8 @@
 
                     <!-- Logo -->
                     <a class="navbar-brand d-flex align-items-center" href="/Home/Index">
-                        <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
+                        <img id="siteLogo"
+                             src="/images/logo_Operation-Bootstrap-tagline.svg"
                              alt="Operation Bootstrap Logo"
                              style="height:50px;" />
                     </a>
@@ -118,6 +119,7 @@
             const toggleBtn = document.getElementById("themeToggle");
             const icon = document.getElementById("themeIcon");
             const navbar = document.getElementById("mainNavbarBar");
+            const logo = document.getElementById("siteLogo");
 
             function applyTheme(theme) {
                 if (theme === "dark") {
@@ -128,6 +130,10 @@
 
                     icon.classList.remove("bi-moon");
                     icon.classList.add("bi-sun");
+
+                    // Dark mode logo
+                    logo.src = "/images/logo_Operation-Bootstrap-tagline-Dark.svg";
+
                 } else {
                     document.documentElement.classList.remove("dark-mode");
 
@@ -136,6 +142,9 @@
 
                     icon.classList.remove("bi-sun");
                     icon.classList.add("bi-moon");
+
+                    // Light mode logo
+                    logo.src = "/images/logo_Operation-Bootstrap-tagline.svg";
                 }
             }
 
