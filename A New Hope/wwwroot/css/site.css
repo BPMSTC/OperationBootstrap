@@ -2,6 +2,9 @@
    THEME VARIABLES
 ========================= */
 :root {
+    --action-edit: #1688c9;      /* st5 */
+--action-details: #6461aa;   /* st7 */
+--action-delete: #cb1e4f;    /* st3 */
     --bg-main: #f0f2f5;
     --bg-surface: #ffffff;
     --bg-muted: #f8f9fa;
@@ -262,40 +265,48 @@ td a {
 }
 
 /* =========================
-   DETAILS PAGE (SAFE + FLEXIBLE)
+   INDEX ACTION BUTTONS (ISOLATED - NO TABLE CONFLICT)
 ========================= */
 
-/* Style only Details-style dl blocks (after hr inside a div) */
-.container div > hr + dl.row,
-body div > hr + dl.row {
-    background-color: var(--bg-surface);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 16px;
-    margin: 0;
+/* EDIT */
+a.btn-outline-primary[href*="/Edit"] {
+    color: var(--action-edit) !important;
+    border-color: var(--action-edit) !important;
 }
 
-    /* Labels */
-    .container div > hr + dl.row dt,
-    body div > hr + dl.row dt {
-        background-color: var(--bg-muted);
-        color: var(--text-main);
-        font-weight: 600;
-        padding: 10px;
-        border: 1px solid var(--border-color);
-        border-right: none;
-        margin: 0;
+    a.btn-outline-primary[href*="/Edit"]:hover {
+        background-color: var(--action-edit) !important;
+        color: #fff !important;
     }
 
-    /* Values */
-    .container div > hr + dl.row dd,
-    body div > hr + dl.row dd {
-        background-color: var(--bg-surface);
-        color: var(--text-main);
-        padding: 10px;
-        border: 1px solid var(--border-color);
-        margin: 0;
+/* DETAILS */
+a.btn-outline-secondary[href*="/Details"] {
+    color: var(--action-details) !important;
+    border-color: var(--action-details) !important;
+}
+
+    a.btn-outline-secondary[href*="/Details"]:hover {
+        background-color: var(--action-details) !important;
+        color: #fff !important;
     }
+
+/* DELETE */
+a.btn-outline-danger[href*="/Delete"] {
+    color: var(--action-delete) !important;
+    border-color: var(--action-delete) !important;
+}
+
+    a.btn-outline-danger[href*="/Delete"]:hover {
+        background-color: var(--action-delete) !important;
+        color: #fff !important;
+    }
+
+/* Smooth hover */
+a.btn-outline-primary[href*="/Edit"],
+a.btn-outline-secondary[href*="/Details"],
+a.btn-outline-danger[href*="/Delete"] {
+    transition: all 0.15s ease-in-out;
+}
 
 /* =========================
    DETAILS BUTTON SPACING
