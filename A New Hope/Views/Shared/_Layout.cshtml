@@ -28,15 +28,8 @@
         <nav id="mainNavbarBar" class="navbar navbar-expand-sm navbar-light border-bottom mb-3">
             <div class="container-fluid">
 
-                <!-- LEFT: Toggle + Logo -->
+                <!-- LEFT: Logo only -->
                 <div class="d-flex align-items-center gap-2">
-
-                    <!-- Dark Mode Toggle -->
-                    <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
-                        <i id="themeIcon" class="bi bi-moon"></i>
-                    </button>
-
-                    <!-- Logo -->
                     <a class="navbar-brand d-flex align-items-center" href="/Home/Index">
                         <img id="siteLogo"
                              src="/images/logo_Operation-Bootstrap-tagline.svg"
@@ -72,6 +65,13 @@
                                 </li>
                             }
 
+                            <!-- Dark Mode Toggle (MOVED RIGHT) -->
+                            <li class="nav-item me-2">
+                                <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+                                    <i id="themeIcon" class="bi bi-moon"></i>
+                                </button>
+                            </li>
+
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
@@ -86,7 +86,15 @@
                     }
                     else
                     {
-                        <ul class="navbar-nav ms-auto">
+                        <ul class="navbar-nav ms-auto align-items-center">
+
+                            <!-- Also show toggle when logged out -->
+                            <li class="nav-item me-2">
+                                <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+                                    <i id="themeIcon" class="bi bi-moon"></i>
+                                </button>
+                            </li>
+
                             <li class="nav-item">
                                 <a class="btn btn-sm btn-outline-primary fw-semibold" href="/Account/Login">
                                     Sign In
@@ -131,7 +139,6 @@
                     icon.classList.remove("bi-moon");
                     icon.classList.add("bi-sun");
 
-                    // Dark mode logo
                     logo.src = "/images/logo_Operation-Bootstrap-tagline-Dark.svg";
 
                 } else {
@@ -143,16 +150,13 @@
                     icon.classList.remove("bi-sun");
                     icon.classList.add("bi-moon");
 
-                    // Light mode logo
                     logo.src = "/images/logo_Operation-Bootstrap-tagline.svg";
                 }
             }
 
-            // Apply saved theme immediately
             const savedTheme = localStorage.getItem("theme") || "light";
             applyTheme(savedTheme);
 
-            // Toggle button
             toggleBtn.addEventListener("click", () => {
                 const newTheme = document.documentElement.classList.contains("dark-mode")
                     ? "light"
