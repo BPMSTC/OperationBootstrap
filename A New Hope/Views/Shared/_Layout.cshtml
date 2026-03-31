@@ -9,21 +9,34 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - A_New_Hope</title>
-    <script type="importmap"></script>
+
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+            (function () {
+                const theme = localStorage.getItem("theme");
+                if (theme === "dark") {
+                    document.documentElement.classList.add("dark-mode");
+                }
+            })();
+    </script>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-light border-bottom mb-3">
+        <nav id="mainNavbarBar" class="navbar navbar-expand-sm navbar-light border-bottom mb-3">
             <div class="container-fluid">
 
-                <!-- LEFT: Logo Only -->
-                <a class="navbar-brand d-flex align-items-center" href="/Home/Index">
-                    <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
-                         alt="Operation Bootstrap Logo"
-                         style="height:50px;" />
-                </a>
+                <!-- LEFT: Logo only -->
+                <div class="d-flex align-items-center gap-2">
+                    <a class="navbar-brand d-flex align-items-center" href="/Home/Index">
+                        <img id="siteLogo"
+                             src="/images/logo_Operation-Bootstrap-tagline.svg"
+                             alt="Operation Bootstrap Logo"
+                             style="height:50px;" />
+                    </a>
+                </div>
 
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#mainNavbar" aria-controls="mainNavbar"
@@ -35,37 +48,30 @@
 
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <!-- RIGHT SIDE NAV -->
                         <ul class="navbar-nav ms-auto align-items-center">
 
-                            <!-- Home -->
                             <li class="nav-item">
-                                <a class="nav-link text-dark" href="/Home/Index">Home</a>
+                                <a class="nav-link" href="/Home/Index">Home</a>
                             </li>
 
-                            <!-- Staff Panel -->
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="StaffPanel" asp-action="Index">Staff Panel</a>
+                                <a class="nav-link" asp-controller="StaffPanel" asp-action="Index">Staff Panel</a>
                             </li>
 
-                            <!-- Admin Panel -->
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-controller="AdminPanel" asp-action="Index">Admin Panel</a>
+                                    <a class="nav-link" asp-controller="AdminPanel" asp-action="Index">Admin Panel</a>
                                 </li>
                             }
 
-                            <!-- (OPTIONAL) Username - COMMENTED OUT -->
-                            @*
-                    <li class="nav-item me-2">
-                        <span class="navbar-text text-muted" style="font-size:0.875rem;">
-                            @User.Identity.Name
-                        </span>
-                    </li>
-                    *@
+                            <!-- Dark Mode Toggle (MOVED RIGHT) -->
+                            <li class="nav-item me-2">
+                                <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+                                    <i id="themeIcon" class="bi bi-moon"></i>
+                                </button>
+                            </li>
 
-                            <!-- Logout -->
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
@@ -80,8 +86,15 @@
                     }
                     else
                     {
-                        <!-- NOT LOGGED IN -->
-                        <ul class="navbar-nav ms-auto">
+                        <ul class="navbar-nav ms-auto align-items-center">
+
+                            <!-- Also show toggle when logged out -->
+                            <li class="nav-item me-2">
+                                <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
+                                    <i id="themeIcon" class="bi bi-moon"></i>
+                                </button>
+                            </li>
+
                             <li class="nav-item">
                                 <a class="btn btn-sm btn-outline-primary fw-semibold" href="/Account/Login">
                                     Sign In
@@ -109,13 +122,52 @@
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
 
-    @section Scripts {
-        @{
-            await Html.RenderPartialAsync("_ValidationScriptsPartial");
-        }
-    }
+    <script>
+            const toggleBtn = document.getElementById("themeToggle");
+            const icon = document.getElementById("themeIcon");
+            const navbar = document.getElementById("mainNavbarBar");
+            const logo = document.getElementById("siteLogo");
+
+            function applyTheme(theme) {
+                if (theme === "dark") {
+                    document.documentElement.classList.add("dark-mode");
+
+                    navbar.classList.remove("navbar-light", "bg-light");
+                    navbar.classList.add("navbar-dark", "bg-dark");
+
+                    icon.classList.remove("bi-moon");
+                    icon.classList.add("bi-sun");
+
+                    logo.src = "/images/logo_Operation-Bootstrap-tagline-Dark.svg";
+
+                } else {
+                    document.documentElement.classList.remove("dark-mode");
+
+                    navbar.classList.remove("navbar-dark", "bg-dark");
+                    navbar.classList.add("navbar-light", "bg-light");
+
+                    icon.classList.remove("bi-sun");
+                    icon.classList.add("bi-moon");
+
+                    logo.src = "/images/logo_Operation-Bootstrap-tagline.svg";
+                }
+            }
+
+            const savedTheme = localStorage.getItem("theme") || "light";
+            applyTheme(savedTheme);
+
+            toggleBtn.addEventListener("click", () => {
+                const newTheme = document.documentElement.classList.contains("dark-mode")
+                    ? "light"
+                    : "dark";
+
+                localStorage.setItem("theme", newTheme);
+                applyTheme(newTheme);
+            });
+    </script>
+
+    @await Html.PartialAsync("_ValidationScriptsPartial")
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
