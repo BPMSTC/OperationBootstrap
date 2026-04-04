@@ -2,7 +2,7 @@
     ViewData["Title"] = "Welcome";
 }
 
-<style>
+@* <style>
     body {
         background-color: #f0f2f5 !important;
         font-family: Arial, sans-serif;
@@ -96,14 +96,15 @@
             padding: 1.5rem;
         }
     }
-</style>
+</style> *@
 
 <div class="container landing-wrapper">
     <div class="landing-shell">
         <div class="landing-panel">
 
             <div class="brand-logo">
-                <img src="~/images/logo_Operation-Bootstrap-tagline.svg"
+                <img id="landingLogo"
+                     src="/images/logo_Operation-Bootstrap-tagline.svg"
                      alt="Operation Bootstrap Logo" />
             </div>
 
@@ -124,3 +125,27 @@
         </div>
     </div>
 </div>
+
+<script>
+    const landingLogo = document.getElementById("landingLogo");
+
+    function syncLogoWithTheme() {
+        if (!landingLogo) return;
+
+        const isDark = document.documentElement.classList.contains("dark-mode");
+
+        landingLogo.src = isDark
+            ? "/images/logo_Operation-Bootstrap-tagline-Dark.svg"
+            : "/images/logo_Operation-Bootstrap-tagline.svg";
+    }
+
+    // ✅ Set correct logo on page load
+    syncLogoWithTheme();
+
+    // ✅ Watch for theme changes (no interference with your toggle logic)
+    const observer = new MutationObserver(syncLogoWithTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ["class"]
+    });
+</script>
