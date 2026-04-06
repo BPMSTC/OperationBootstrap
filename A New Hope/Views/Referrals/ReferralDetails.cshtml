@@ -1,0 +1,99 @@
+﻿@model A_New_Hope.Models.ViewModels.Referrals.ReferralDetailsViewModel
+
+@{
+    ViewData["Title"] = "Referral Details";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h2 class="mb-1">Referral Details</h2>
+                        <p class="text-muted mb-0">
+                            Enter the details for this referral.
+                        </p>
+                    </div>
+
+                    <form asp-action="ReferralDetails" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="card border-0 bg-light mb-4">
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label asp-for="Referral.ReferredOn" class="form-label"></label>
+                                        <input asp-for="Referral.ReferredOn" class="form-control" />
+                                        <span asp-validation-for="Referral.ReferredOn" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Referral.Status" class="form-label"></label>
+                                        <select asp-for="Referral.Status"
+                                                asp-items="Model.ReferralStatusOptions"
+                                                class="form-select">
+                                            <option value="">-- Select status --</option>
+                                        </select>
+                                        <span asp-validation-for="Referral.Status" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Referral.ValidFrom" class="form-label"></label>
+                                        <input asp-for="Referral.ValidFrom" class="form-control" />
+                                        <span asp-validation-for="Referral.ValidFrom" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Referral.ValidTo" class="form-label"></label>
+                                        <input asp-for="Referral.ValidTo" class="form-control" />
+                                        <span asp-validation-for="Referral.ValidTo" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Referral.ReferredByName" class="form-label"></label>
+                                        <input asp-for="Referral.ReferredByName" class="form-control" />
+                                        <span asp-validation-for="Referral.ReferredByName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="Referral.ReferredByPhoneNumber" class="form-label"></label>
+                                        <input asp-for="Referral.ReferredByPhoneNumber" class="form-control" />
+                                        <span asp-validation-for="Referral.ReferredByPhoneNumber" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label asp-for="Referral.ReferredByEmail" class="form-label"></label>
+                                        <input asp-for="Referral.ReferredByEmail" class="form-control" />
+                                        <span asp-validation-for="Referral.ReferredByEmail" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label asp-for="Referral.Notes" class="form-label"></label>
+                                        <textarea asp-for="Referral.Notes" class="form-control" rows="5"></textarea>
+                                        <span asp-validation-for="Referral.Notes" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between pt-2">
+                            <a asp-action="HouseholdEntry" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Next: Review</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

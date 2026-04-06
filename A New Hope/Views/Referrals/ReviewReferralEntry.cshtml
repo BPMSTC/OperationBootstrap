@@ -1,0 +1,276 @@
+﻿@model A_New_Hope.Models.ViewModels.Referrals.ReferralEntryReviewViewModel
+
+@{
+    ViewData["Title"] = "Review Referral Entry";
+    var draft = Model.Draft;
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-9 col-lg-10">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h2 class="mb-1">Review Referral Entry</h2>
+                        <p class="text-muted mb-0">
+                            Review the information below before confirming the referral.
+                        </p>
+                    </div>
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @TempData["ErrorMessage"]
+                        </div>
+                    }
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <!-- Referring Organization -->
+                    <div class="card border-0 bg-light mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">Referring Organization</h5>
+                                <a asp-action="OrganizationEntry" class="btn btn-outline-secondary btn-sm">Edit</a>
+                            </div>
+
+                            @if (draft.HasExistingOrganization)
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Selected Organization</dt>
+                                    <dd class="col-sm-8">@Model.SelectedOrganizationDisplayName</dd>
+                                </dl>
+                            }
+                            else
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Organization Name</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.Name)</dd>
+
+                                    <dt class="col-sm-4">Primary Type of Service</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.Type)</dd>
+
+                                    <dt class="col-sm-4">Contact Person Name</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.PrimaryContactName)</dd>
+
+                                    <dt class="col-sm-4">Email Address</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.Email)</dd>
+
+                                    <dt class="col-sm-4">Phone Number</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.PhoneNumber)</dd>
+
+                                    <dt class="col-sm-4">Address Line 1</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.AddressLine1)</dd>
+
+                                    <dt class="col-sm-4">Address Line 2</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.AddressLine2)</dd>
+
+                                    <dt class="col-sm-4">City</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.City)</dd>
+
+                                    <dt class="col-sm-4">State</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.State)</dd>
+
+                                    <dt class="col-sm-4">ZIP Code</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.PostalCode)</dd>
+
+                                    <dt class="col-sm-4">Notes</dt>
+                                    <dd class="col-sm-8">@DisplayMultilineOrDash(draft.NewOrganization.Notes)</dd>
+                                </dl>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Client -->
+                    <div class="card border-0 bg-light mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">Client</h5>
+                                <a asp-action="ClientEntry" class="btn btn-outline-secondary btn-sm">Edit</a>
+                            </div>
+
+                            @if (draft.HasExistingClient)
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">Selected Client</dt>
+                                    <dd class="col-sm-8">@Model.SelectedClientDisplayName</dd>
+                                </dl>
+                            }
+                            else
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">First Name</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.FirstName)</dd>
+
+                                    <dt class="col-sm-4">Last Name</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.LastName)</dd>
+
+                                    <dt class="col-sm-4">Email Address</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.Email)</dd>
+
+                                    <dt class="col-sm-4">Phone Number</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.PhoneNumber)</dd>
+
+                                    <dt class="col-sm-4">Address Line 1</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.AddressLine1)</dd>
+
+                                    <dt class="col-sm-4">Address Line 2</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.AddressLine2)</dd>
+
+                                    <dt class="col-sm-4">City</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.City)</dd>
+
+                                    <dt class="col-sm-4">State</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.State)</dd>
+
+                                    <dt class="col-sm-4">ZIP Code</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.PostalCode)</dd>
+
+                                    <dt class="col-sm-4">Date of Birth</dt>
+                                    <dd class="col-sm-8">@DisplayDateOnlyOrDash(draft.NewClient.DateOfBirth)</dd>
+
+                                    <dt class="col-sm-4">Employment Status</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.EmploymentStatus)</dd>
+
+                                    <dt class="col-sm-4">Monthly Earned Income</dt>
+                                    <dd class="col-sm-8">@DisplayMoneyOrDash(draft.NewClient.EarnedIncomeMonthly)</dd>
+
+                                    <dt class="col-sm-4">Currently Unhoused</dt>
+                                    <dd class="col-sm-8">@(draft.NewClient.IsUnhoused ? "Yes" : "No")</dd>
+                                </dl>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Household Members -->
+                    @if (draft.RequiresHouseholdStep)
+                    {
+                        <div class="card border-0 bg-light mb-4">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">Household Members</h5>
+                                    <a asp-action="HouseholdEntry" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                </div>
+
+                                @if (draft.HouseholdMembers.Any(h => h.HasStarted))
+                                {
+                                    @for (int i = 0; i < draft.HouseholdMembers.Count; i++)
+                                    {
+                                        var member = draft.HouseholdMembers[i];
+
+                                        if (!member.HasStarted)
+                                        {
+                                            continue;
+                                        }
+
+                                        <div class="border rounded p-3 mb-3 bg-white">
+                                            <h6 class="mb-3">Household Member @(i + 1)</h6>
+
+                                            <dl class="row mb-0">
+                                                <dt class="col-sm-4">First Name</dt>
+                                                <dd class="col-sm-8">@DisplayOrDash(member.FirstName)</dd>
+
+                                                <dt class="col-sm-4">Last Name</dt>
+                                                <dd class="col-sm-8">@DisplayOrDash(member.LastName)</dd>
+
+                                                <dt class="col-sm-4">Date of Birth</dt>
+                                                <dd class="col-sm-8">@DisplayDateTimeOrDash(member.DateOfBirth)</dd>
+
+                                                <dt class="col-sm-4">Age As Of Date</dt>
+                                                <dd class="col-sm-8">@DisplayDateTimeOrDash(member.AgeAsOfDate)</dd>
+                                            </dl>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-muted mb-0">No household members were added.</p>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Referral Details -->
+                    <div class="card border-0 bg-light mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">Referral Details</h5>
+                                <a asp-action="ReferralDetails" class="btn btn-outline-secondary btn-sm">Edit</a>
+                            </div>
+
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Referral Date</dt>
+                                <dd class="col-sm-8">@DisplayDateTimeOrDash(draft.Referral.ReferredOn)</dd>
+
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8">@DisplayEnumOrDash(draft.Referral.Status)</dd>
+
+                                <dt class="col-sm-4">Valid From</dt>
+                                <dd class="col-sm-8">@DisplayDateTimeOrDash(draft.Referral.ValidFrom)</dd>
+
+                                <dt class="col-sm-4">Valid To</dt>
+                                <dd class="col-sm-8">@DisplayDateTimeOrDash(draft.Referral.ValidTo)</dd>
+
+                                <dt class="col-sm-4">Referrer Name</dt>
+                                <dd class="col-sm-8">@DisplayOrDash(draft.Referral.ReferredByName)</dd>
+
+                                <dt class="col-sm-4">Referrer Phone Number</dt>
+                                <dd class="col-sm-8">@DisplayOrDash(draft.Referral.ReferredByPhoneNumber)</dd>
+
+                                <dt class="col-sm-4">Referrer Email Address</dt>
+                                <dd class="col-sm-8">@DisplayOrDash(draft.Referral.ReferredByEmail)</dd>
+
+                                <dt class="col-sm-4">Referral Notes</dt>
+                                <dd class="col-sm-8">@DisplayMultilineOrDash(draft.Referral.Notes)</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <form asp-action="ConfirmReferralEntry" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="d-flex justify-content-between pt-2">
+                            <a asp-action="ReferralDetails" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Confirm Referral</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@functions {
+    private string DisplayOrDash(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "—" : value;
+    }
+
+    private string DisplayMultilineOrDash(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "—" : value;
+    }
+
+    private string DisplayDateTimeOrDash(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("MM/dd/yyyy") : "—";
+    }
+
+    private string DisplayDateOnlyOrDash(DateOnly? value)
+    {
+        return value.HasValue ? value.Value.ToString("MM/dd/yyyy") : "—";
+    }
+
+    private string DisplayMoneyOrDash(decimal? value)
+    {
+        return value.HasValue ? value.Value.ToString("C") : "—";
+    }
+
+    private string DisplayEnumOrDash(Enum? value)
+    {
+        return value?.ToString() ?? "—";
+    }
+}

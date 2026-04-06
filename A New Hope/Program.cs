@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog; // ADDED
+using A_New_Hope.Services;
+using A_New_Hope.Services.Interfaces;
 
 try
 {
@@ -29,6 +31,14 @@ try
     {
         options.Filters.Add<LoggingScopeFilter>();
     });
+
+    // ------------------------------
+    // Services/Interfaces
+    // ------------------------------
+
+    builder.Services.AddScoped<IReferringOrganizationService, ReferringOrganizationService>();
+    builder.Services.AddScoped<IClientEntryService, ClientEntryService>();
+    builder.Services.AddScoped<IReferralService, ReferralService>();
 
     // Identity UI endpoints (e.g., /Identity/Account/Login)
     builder.Services.AddRazorPages();
