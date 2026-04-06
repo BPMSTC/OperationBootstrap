@@ -1,9 +1,9 @@
 ﻿using A_New_Hope.Models;
-using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Models.Inputs;
 
 namespace A_New_Hope.Services.Interfaces
 {
-    public interface IClientEntryService
+    public interface IClientCreationService
     {
         Task<DomainUser> CreateClientWithProfileAndHouseholdAsync(
             ClientEntryInput clientInput,

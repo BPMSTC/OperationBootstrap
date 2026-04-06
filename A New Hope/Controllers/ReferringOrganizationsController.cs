@@ -1,8 +1,11 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.Inputs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Services.Interfaces;
 
 namespace A_New_Hope.Controllers
 {
@@ -13,6 +16,7 @@ namespace A_New_Hope.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ReferringOrganizationsController> _logger;
+        private readonly IReferringOrganizationService _referringOrganizationService;
 
         // Store the allowed 2-letter US state codes for validation.
         private static readonly HashSet<string> ValidUsStateCodes = new(StringComparer.OrdinalIgnoreCase)
@@ -27,10 +31,14 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Creates the controller with the required database context and logger.
         /// </summary>
-        public ReferringOrganizationsController(ApplicationDbContext context, ILogger<ReferringOrganizationsController> logger)
+        public ReferringOrganizationsController(
+            ApplicationDbContext context,
+            ILogger<ReferringOrganizationsController> logger,
+            IReferringOrganizationService referringOrganizationService)
         {
             _context = context;
             _logger = logger;
+            _referringOrganizationService = referringOrganizationService;
         }
 
         // GET: ReferringOrganizations
@@ -125,22 +133,43 @@ namespace A_New_Hope.Controllers
                 return View(referringOrganization);
             }
 
-            // Set audit fields for the new referring organization record.
-            var now = DateTime.UtcNow;
-            referringOrganization.CreatedAt = now;
-            referringOrganization.UpdatedAt = now;
-            referringOrganization.CreatedByUserId = null; // Replace when auth/user tracking is added.
-            referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
-
-            // Queue the new referring organization for insert.
-            _context.Add(referringOrganization);
-
             try
             {
-                await _context.SaveChangesAsync();
+                var input = new ReferringOrganizationEntryInput
+                {
+                    Name = referringOrganization.Name,
+                    Type = referringOrganization.Type,
+                    PrimaryContactName = referringOrganization.PrimaryContactName,
+                    Email = referringOrganization.Email,
+                    PhoneNumber = referringOrganization.PhoneNumber,
+                    AddressLine1 = referringOrganization.AddressLine1,
+                    AddressLine2 = referringOrganization.AddressLine2,
+                    City = referringOrganization.City,
+                    State = referringOrganization.State,
+                    PostalCode = referringOrganization.PostalCode,
+                    Notes = referringOrganization.Notes
+                };
 
-                _logger.LogInformation("Referring Organization Id {Id} created successfully", referringOrganization.Id);
-                return RedirectToAction(nameof(Index));
+                var organizationId = await _referringOrganizationService.CreateAndReturnIdAsync(
+                    input,
+                    actingUserId: null);
+
+                _logger.LogInformation("Referring Organization Id {Id} created successfully", organizationId);
+                return RedirectToAction(nameof(Details), new { id = organizationId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Business validation failed while creating Referring Organization '{Name}'", referringOrganization.Name);
+
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(referringOrganization);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Argument validation failed while creating Referring Organization '{Name}'", referringOrganization.Name);
+
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(referringOrganization);
             }
             catch (DbUpdateException ex)
             {

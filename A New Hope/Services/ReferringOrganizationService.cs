@@ -1,6 +1,6 @@
 ﻿using A_New_Hope.Data;
 using A_New_Hope.Models;
-using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Models.Inputs;
 using A_New_Hope.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 

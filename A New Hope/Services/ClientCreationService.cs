@@ -1,19 +1,19 @@
 ﻿using A_New_Hope.Data;
 using A_New_Hope.Models;
-using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Models.Inputs;
 using A_New_Hope.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Services
 {
-    public class ClientEntryService : IClientEntryService
+    public class ClientCreationService : IClientCreationService
     {
         private readonly ApplicationDbContext _context;
-        private readonly ILogger<ClientEntryService> _logger;
+        private readonly ILogger<ClientCreationService> _logger;
 
-        public ClientEntryService(
+        public ClientCreationService(
             ApplicationDbContext context,
-            ILogger<ClientEntryService> logger)
+            ILogger<ClientCreationService> logger)
         {
             _context = context;
             _logger = logger;

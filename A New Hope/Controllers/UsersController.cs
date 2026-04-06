@@ -1,11 +1,14 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Services.Interfaces;
 
 namespace A_New_Hope.Controllers
 {
@@ -18,15 +21,21 @@ namespace A_New_Hope.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ILogger<UsersController> _logger;
+        private readonly IClientCreationService _clientCreationService;
 
         /// <summary>
         /// Creates the controller with the required services.
         /// </summary>
-        public UsersController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ILogger<UsersController> logger)
+        public UsersController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            ILogger<UsersController> logger,
+            IClientCreationService clientCreationService)
         {
             _context = context;
             _userManager = userManager;
             _logger = logger;
+            _clientCreationService = clientCreationService;
         }
 
         // GET: Users
@@ -135,29 +144,78 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogInformation("Creating user Email = {Email}", user.Email);
 
-            // Remove navigation properties that are not posted by the form.
             ModelState.Remove(nameof(DomainUser.CreatedByUser));
             ModelState.Remove(nameof(DomainUser.UpdatedByUser));
             ModelState.Remove(nameof(DomainUser.ClientProfile));
 
-            // Normalize incoming values before business-rule validation.
             NormalizeDomainUser(user);
             await ApplyDomainUserValidationAsync(user);
 
-            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 return View(user);
             }
 
-            // Set audit fields for the new domain user record.
+            // Client path: use the reusable client-creation service.
+            if (user.UserType == UserType.Client)
+            {
+                try
+                {
+                    var input = new ClientEntryInput
+                    {
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Email = user.Email,
+                        PhoneNumber = user.PhoneNumber,
+                        AddressLine1 = user.AddressLine1,
+                        AddressLine2 = user.AddressLine2,
+                        City = user.City,
+                        State = user.State,
+                        PostalCode = user.PostalCode,
+                        DateOfBirth = user.DateOfBirth,
+                        EmploymentStatus = null,
+                        EarnedIncomeMonthly = null,
+                        IsUnhoused = false
+                    };
+
+                    var clientId = await _clientCreationService.CreateClientAndReturnIdAsync(
+                        input,
+                        householdInputs: new List<HouseholdMemberEntryInput>(),
+                        actingUserId: null);
+
+                    _logger.LogInformation("Client user created successfully. UserId = {UserId}", clientId);
+                    return RedirectToAction(nameof(Details), new { id = clientId });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(ex, "Business validation failed while creating client Email = {Email}", user.Email);
+
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                    return View(user);
+                }
+                catch (ArgumentException ex)
+                {
+                    _logger.LogWarning(ex, "Argument validation failed while creating client Email = {Email}", user.Email);
+
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                    return View(user);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Failed to create client Email = {Email}", user.Email);
+
+                    ModelState.AddModelError("", "Unable to save user.");
+                    return View(user);
+                }
+            }
+
+            // Non-client path: keep existing direct-create behavior for Staff/Admin.
             var now = DateTime.UtcNow;
             user.CreatedAt = now;
             user.UpdatedAt = now;
             user.CreatedByUserId = null;
             user.UpdatedByUserId = null;
 
-            // Queue the new domain user for insert.
             _context.Add(user);
 
             try

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using A_New_Hope.Models.Inputs;
 
 namespace A_New_Hope.Models.ViewModels.Referrals
 {

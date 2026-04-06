@@ -1,6 +1,6 @@
-﻿
-using A_New_Hope.Data;
+﻿using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
 using A_New_Hope.Models.ViewModels.Referrals;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +20,7 @@ namespace A_New_Hope.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ILogger<ReferralsController> _logger;
         private readonly IReferringOrganizationService _referringOrganizationService;
-        private readonly IClientEntryService _clientEntryService;
+        private readonly IClientCreationService _clientEntryService;
         private readonly IReferralService _referralService;
 
         private const string ReferralWizardSessionKey = "ReferralWizard.Step1";
@@ -43,7 +43,7 @@ namespace A_New_Hope.Controllers
             ApplicationDbContext context,
             ILogger<ReferralsController> logger,
             IReferringOrganizationService referringOrganizationService,
-            IClientEntryService clientEntryService,
+            IClientCreationService clientEntryService,
             IReferralService referralService)
         {
             _context = context;
@@ -132,20 +132,44 @@ namespace A_New_Hope.Controllers
                 return View(referral);
             }
 
-            var now = DateTime.UtcNow;
-            referral.CreatedAt = now;
-            referral.UpdatedAt = now;
-            referral.CreatedByUserId = null;
-            referral.UpdatedByUserId = null;
-
-            _context.Add(referral);
-
             try
             {
-                await _context.SaveChangesAsync();
+                var referralInput = new ReferralDetailsInput
+                {
+                    ReferredOn = referral.ReferredOn,
+                    Status = referral.Status,
+                    ValidFrom = referral.ValidFrom,
+                    ValidTo = referral.ValidTo,
+                    ReferredByName = referral.ReferredByName,
+                    ReferredByPhoneNumber = referral.ReferredByPhoneNumber,
+                    ReferredByEmail = referral.ReferredByEmail,
+                    Notes = referral.Notes
+                };
 
-                _logger.LogInformation("Referral Id {Id} created successfully", referral.Id);
-                return RedirectToAction(nameof(Index));
+                var referralId = await _referralService.CreateAndReturnIdAsync(
+                    referralInput,
+                    referral.ClientUserId,
+                    referral.ReferringOrganizationId,
+                    actingUserId: null);
+
+                _logger.LogInformation("Referral Id {Id} created successfully", referralId);
+                return RedirectToAction(nameof(Details), new { id = referralId });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Business validation failed while creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                return View(referral);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Argument validation failed while creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
+                ModelState.AddModelError(string.Empty, ex.Message);
+                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                return View(referral);
             }
             catch (DbUpdateException ex)
             {

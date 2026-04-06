@@ -37,7 +37,7 @@ try
     // ------------------------------
 
     builder.Services.AddScoped<IReferringOrganizationService, ReferringOrganizationService>();
-    builder.Services.AddScoped<IClientEntryService, ClientEntryService>();
+    builder.Services.AddScoped<IClientCreationService, ClientCreationService>();
     builder.Services.AddScoped<IReferralService, ReferralService>();
 
     // Identity UI endpoints (e.g., /Identity/Account/Login)
