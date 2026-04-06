@@ -750,31 +750,6 @@ namespace A_New_Hope.Controllers
         }
 
         // =========================================================
-        // EXISTING SESSION HELPERS - OLD WIZARD FLOW
-        // KEEP TEMPORARILY DURING TRANSITION
-        // =========================================================
-
-        private void SaveWizardStep1ToSession(ReferralWizardStep1ViewModel vm)
-        {
-            var json = System.Text.Json.JsonSerializer.Serialize(vm);
-            HttpContext.Session.SetString(ReferralWizardSessionKey, json);
-        }
-
-        private ReferralWizardStep1ViewModel? LoadWizardStep1FromSession()
-        {
-            var json = HttpContext.Session.GetString(ReferralWizardSessionKey);
-
-            return string.IsNullOrWhiteSpace(json)
-                ? null
-                : System.Text.Json.JsonSerializer.Deserialize<ReferralWizardStep1ViewModel>(json);
-        }
-
-        private void ClearWizardStep1Session()
-        {
-            HttpContext.Session.Remove(ReferralWizardSessionKey);
-        }
-
-        // =========================================================
         // DROPDOWNS - STANDARD CRUD
         // =========================================================
 
