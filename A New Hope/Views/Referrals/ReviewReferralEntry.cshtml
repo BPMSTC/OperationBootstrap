@@ -9,7 +9,7 @@
     <div class="row justify-content-center">
         <div class="col-xl-9 col-lg-10">
 
-            <div class="card shadow-sm border-0">
+            <div class="card wizard-card shadow-sm border-0">
                 <div class="card-body p-4">
                     <div class="mb-4">
                         <h2 class="mb-1">Review Referral Entry</h2>
@@ -28,11 +28,11 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                     <!-- Referring Organization -->
-                    <div class="card border-0 bg-light mb-4">
+                    <div class="card wizard-card shadow-sm border-0 mb-4">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h5 class="card-title mb-0">Referring Organization</h5>
-                                <a asp-action="OrganizationEntry" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                <a asp-action="OrganizationEntry" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
                             </div>
 
                             @if (draft.HasExistingOrganization)
@@ -83,11 +83,11 @@
                     </div>
 
                     <!-- Client -->
-                    <div class="card border-0 bg-light mb-4">
+                    <div class="card wizard-card shadow-sm border-0 mb-4">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h5 class="card-title mb-0">Client</h5>
-                                <a asp-action="ClientEntry" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                <a asp-action="ClientEntry" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
                             </div>
 
                             @if (draft.HasExistingClient)
@@ -146,11 +146,11 @@
                     <!-- Household Members -->
                     @if (draft.RequiresHouseholdStep)
                     {
-                        <div class="card border-0 bg-light mb-4">
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <h5 class="card-title mb-0">Household Members</h5>
-                                    <a asp-action="HouseholdEntry" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                    <a asp-action="HouseholdEntry" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
                                 </div>
 
                                 @if (draft.HouseholdMembers.Any(h => h.HasStarted))
@@ -164,7 +164,7 @@
                                             continue;
                                         }
 
-                                        <div class="border rounded p-3 mb-3 bg-white">
+                                        <div class="card wizard-card shadow-sm border-0 p-3 mb-3">
                                             <h6 class="mb-3">Household Member @(i + 1)</h6>
 
                                             <dl class="row mb-0">
@@ -192,11 +192,11 @@
                     }
 
                     <!-- Referral Details -->
-                    <div class="card border-0 bg-light mb-4">
+                    <div class="card wizard-card shadow-sm border-0 mb-4">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h5 class="card-title mb-0">Referral Details</h5>
-                                <a asp-action="ReferralDetails" class="btn btn-outline-secondary btn-sm">Edit</a>
+                                <a asp-action="ReferralDetails" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
                             </div>
 
                             <dl class="row mb-0">

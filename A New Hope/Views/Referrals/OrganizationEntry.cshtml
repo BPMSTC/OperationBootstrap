@@ -8,7 +8,7 @@
     <div class="row justify-content-center">
         <div class="col-xl-8 col-lg-10">
 
-            <div class="card shadow-sm border-0">
+            <div class="card wizard-card shadow-sm border-0">
                 <div class="card-body p-4">
                     <div class="mb-4">
                         <h2 class="mb-1">Referring Organization</h2>
@@ -22,8 +22,32 @@
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
+                        <!-- Selection Cards -->
+                        <div class="mb-4">
+                            <div class="d-flex flex-wrap gap-2">
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="organizationMode"
+                                       id="existingOrganizationOption"
+                                       autocomplete="off">
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="existingOrganizationOption">
+                                    Existing Organization
+                                </label>
+
+                                <input type="radio"
+                                       class="btn-check"
+                                       name="organizationMode"
+                                       id="newOrganizationOption"
+                                       autocomplete="off">
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="newOrganizationOption">
+                                    New Organization
+                                </label>
+                            </div>
+                        </div>
                         <!-- Existing Organization -->
-                        <div class="card border-0 bg-light mb-4">
+                        <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="existingOrganizationCard">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Use Existing Organization</h5>
 
@@ -40,10 +64,8 @@
                             </div>
                         </div>
 
-                        <div class="text-center text-muted fw-semibold my-3">OR</div>
-
                         <!-- New Organization -->
-                        <div class="card border-0 bg-light mb-4" id="newOrganizationCard">
+                        <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="newOrganizationCard">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Enter New Organization</h5>
 
@@ -136,6 +158,12 @@
 
     <script>
         (function () {
+            const existingCard = document.getElementById("existingOrganizationCard");
+            const newCard = document.getElementById("newOrganizationCard");
+
+            const existingOption = document.getElementById("existingOrganizationOption");
+            const newOption = document.getElementById("newOrganizationOption");
+
             const existingSelect = document.getElementById("existingOrganizationSelect");
             const newFields = document.querySelectorAll(".new-org-field");
 
@@ -148,6 +176,32 @@
                     }
                 }
                 return false;
+            }
+
+            function showExistingOrganization() {
+                existingCard.classList.remove("d-none");
+                newCard.classList.add("d-none");
+
+                if (existingOption) {
+                    existingOption.checked = true;
+                }
+            }
+
+            function showNewOrganization() {
+                newCard.classList.remove("d-none");
+                existingCard.classList.add("d-none");
+
+                if (newOption) {
+                    newOption.checked = true;
+                }
+            }
+
+            function hideBothSections() {
+                existingCard.classList.add("d-none");
+                newCard.classList.add("d-none");
+
+                if (existingOption) existingOption.checked = false;
+                if (newOption) newOption.checked = false;
             }
 
             function toggleNewFieldsFromExistingSelection() {
@@ -170,6 +224,22 @@
                 }
             }
 
+            if (existingOption) {
+                existingOption.addEventListener("change", function () {
+                    if (existingOption.checked) {
+                        showExistingOrganization();
+                    }
+                });
+            }
+
+            if (newOption) {
+                newOption.addEventListener("change", function () {
+                    if (newOption.checked) {
+                        showNewOrganization();
+                    }
+                });
+            }
+
             if (existingSelect) {
                 existingSelect.addEventListener("change", function () {
                     toggleNewFieldsFromExistingSelection();
@@ -187,6 +257,17 @@
                     toggleNewFieldsFromExistingSelection();
                 });
             });
+
+            const hasExistingSelection = existingSelect && existingSelect.value !== "";
+            const hasNewInput = hasNewOrganizationInput();
+
+            if (hasExistingSelection) {
+                showExistingOrganization();
+            } else if (hasNewInput) {
+                showNewOrganization();
+            } else {
+                hideBothSections();
+            }
 
             toggleExistingSelectFromNewInput();
             toggleNewFieldsFromExistingSelection();
