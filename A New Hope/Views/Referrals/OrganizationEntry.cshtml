@@ -22,23 +22,24 @@
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                        <!-- Selection Cards -->
                         <div class="mb-4">
                             <div class="d-flex flex-wrap gap-2">
-                                <input type="radio"
+                                <input asp-for="OrganizationMode"
+                                       type="radio"
                                        class="btn-check"
-                                       name="organizationMode"
                                        id="existingOrganizationOption"
+                                       value="existing"
                                        autocomplete="off">
                                 <label class="btn btn-outline-primary rounded-pill px-4"
                                        for="existingOrganizationOption">
                                     Existing Organization
                                 </label>
 
-                                <input type="radio"
+                                <input asp-for="OrganizationMode"
+                                       type="radio"
                                        class="btn-check"
-                                       name="organizationMode"
                                        id="newOrganizationOption"
+                                       value="new"
                                        autocomplete="off">
                                 <label class="btn btn-outline-primary rounded-pill px-4"
                                        for="newOrganizationOption">
@@ -46,6 +47,7 @@
                                 </label>
                             </div>
                         </div>
+
                         <!-- Existing Organization -->
                         <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="existingOrganizationCard">
                             <div class="card-body">
@@ -185,6 +187,14 @@
                 if (existingOption) {
                     existingOption.checked = true;
                 }
+
+                if (existingSelect) {
+                    existingSelect.disabled = false;
+                }
+
+                newFields.forEach(field => {
+                    field.disabled = true;
+                });
             }
 
             function showNewOrganization() {
@@ -194,6 +204,14 @@
                 if (newOption) {
                     newOption.checked = true;
                 }
+
+                if (existingSelect) {
+                    existingSelect.disabled = true;
+                }
+
+                newFields.forEach(field => {
+                    field.disabled = false;
+                });
             }
 
             function hideBothSections() {
@@ -202,26 +220,14 @@
 
                 if (existingOption) existingOption.checked = false;
                 if (newOption) newOption.checked = false;
-            }
-
-            function toggleNewFieldsFromExistingSelection() {
-                const hasExistingSelection = existingSelect && existingSelect.value !== "";
-
-                newFields.forEach(field => {
-                    field.disabled = hasExistingSelection;
-                });
-            }
-
-            function toggleExistingSelectFromNewInput() {
-                const hasNewInput = hasNewOrganizationInput();
 
                 if (existingSelect) {
-                    existingSelect.disabled = hasNewInput;
-
-                    if (hasNewInput) {
-                        existingSelect.value = "";
-                    }
+                    existingSelect.disabled = false;
                 }
+
+                newFields.forEach(field => {
+                    field.disabled = false;
+                });
             }
 
             if (existingOption) {
@@ -240,37 +246,21 @@
                 });
             }
 
-            if (existingSelect) {
-                existingSelect.addEventListener("change", function () {
-                    toggleNewFieldsFromExistingSelection();
-                });
-            }
-
-            newFields.forEach(field => {
-                field.addEventListener("input", function () {
-                    toggleExistingSelectFromNewInput();
-                    toggleNewFieldsFromExistingSelection();
-                });
-
-                field.addEventListener("change", function () {
-                    toggleExistingSelectFromNewInput();
-                    toggleNewFieldsFromExistingSelection();
-                });
-            });
-
+            const selectedMode = document.querySelector('input[name="OrganizationMode"]:checked')?.value;
             const hasExistingSelection = existingSelect && existingSelect.value !== "";
             const hasNewInput = hasNewOrganizationInput();
 
-            if (hasExistingSelection) {
+            if (selectedMode === "existing") {
+                showExistingOrganization();
+            } else if (selectedMode === "new") {
+                showNewOrganization();
+            } else if (hasExistingSelection) {
                 showExistingOrganization();
             } else if (hasNewInput) {
                 showNewOrganization();
             } else {
                 hideBothSections();
             }
-
-            toggleExistingSelectFromNewInput();
-            toggleNewFieldsFromExistingSelection();
         })();
     </script>
 }

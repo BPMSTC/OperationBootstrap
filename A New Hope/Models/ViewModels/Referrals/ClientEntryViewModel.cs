@@ -5,6 +5,9 @@ namespace A_New_Hope.Models.ViewModels.Referrals
 {
     public class ClientEntryViewModel
     {
+
+        public string? ClientMode { get; set; }
+
         public ulong? SelectedClientUserId { get; set; }
 
         public ClientEntryInput NewClient { get; set; } = new();

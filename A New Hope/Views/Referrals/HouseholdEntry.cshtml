@@ -13,7 +13,7 @@
                     <div class="mb-4">
                         <h2 class="mb-1">Household Members</h2>
                         <p class="text-muted mb-0">
-                            Add household members for the new client as needed. Leave blank if none apply.
+                            Does the new client have household members?
                         </p>
                     </div>
 
@@ -22,55 +22,82 @@
 
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
-                        <div id="householdMembersContainer">
-                            @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
-                            {
-                                <div class="card wizard-card shadow-sm border-0 mb-4 household-member-card">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <h5 class="card-title mb-0">Household Member @(i + 1)</h5>
+                        <div class="mb-4">
+                            <div class="d-flex flex-wrap gap-2">
+                                <input asp-for="HasHouseholdMembers"
+                                       type="radio"
+                                       class="btn-check"
+                                       id="householdYesOption"
+                                       value="true"
+                                       autocomplete="off" />
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="householdYesOption">
+                                    Yes
+                                </label>
 
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-sm rounded-pill px-3 remove-household-member"
-                                                    @(Model.HouseholdMembers.Count == 1 ? "style=display:none;" : "")>
-                                                Remove
-                                            </button>
-                                        </div>
+                                <input asp-for="HasHouseholdMembers"
+                                       type="radio"
+                                       class="btn-check"
+                                       id="householdNoOption"
+                                       value="false"
+                                       autocomplete="off" />
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="householdNoOption">
+                                    No
+                                </label>
+                            </div>
+                        </div>
+                        <div id="householdEntrySection" class="d-none">
+                            <div id="householdMembersContainer">
+                                @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+                                {
+                                    <div class="card wizard-card shadow-sm border-0 mb-4 household-member-card">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="card-title mb-0">Household Member @(i + 1)</h5>
 
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label asp-for="HouseholdMembers[i].FirstName" class="form-label"></label>
-                                                <input asp-for="HouseholdMembers[i].FirstName" class="form-control" />
-                                                <span asp-validation-for="HouseholdMembers[i].FirstName" class="text-danger"></span>
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm rounded-pill px-3 remove-household-member"
+                                                        @(Model.HouseholdMembers.Count == 1 ? "style=display:none;" : "")>
+                                                    Remove
+                                                </button>
                                             </div>
 
-                                            <div class="col-md-6">
-                                                <label asp-for="HouseholdMembers[i].LastName" class="form-label"></label>
-                                                <input asp-for="HouseholdMembers[i].LastName" class="form-control" />
-                                                <span asp-validation-for="HouseholdMembers[i].LastName" class="text-danger"></span>
-                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label asp-for="HouseholdMembers[i].FirstName" class="form-label"></label>
+                                                    <input asp-for="HouseholdMembers[i].FirstName" class="form-control" />
+                                                    <span asp-validation-for="HouseholdMembers[i].FirstName" class="text-danger"></span>
+                                                </div>
 
-                                            <div class="col-md-6">
-                                                <label asp-for="HouseholdMembers[i].DateOfBirth" class="form-label"></label>
-                                                <input asp-for="HouseholdMembers[i].DateOfBirth" class="form-control" />
-                                                <span asp-validation-for="HouseholdMembers[i].DateOfBirth" class="text-danger"></span>
-                                            </div>
+                                                <div class="col-md-6">
+                                                    <label asp-for="HouseholdMembers[i].LastName" class="form-label"></label>
+                                                    <input asp-for="HouseholdMembers[i].LastName" class="form-control" />
+                                                    <span asp-validation-for="HouseholdMembers[i].LastName" class="text-danger"></span>
+                                                </div>
 
-                                            <div class="col-md-6">
-                                                <label asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-label"></label>
-                                                <input asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-control" />
-                                                <span asp-validation-for="HouseholdMembers[i].AgeAsOfDate" class="text-danger"></span>
+                                                <div class="col-md-6">
+                                                    <label asp-for="HouseholdMembers[i].DateOfBirth" class="form-label"></label>
+                                                    <input asp-for="HouseholdMembers[i].DateOfBirth" class="form-control" />
+                                                    <span asp-validation-for="HouseholdMembers[i].DateOfBirth" class="text-danger"></span>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-label"></label>
+                                                    <input asp-for="HouseholdMembers[i].AgeAsOfDate" class="form-control" />
+                                                    <span asp-validation-for="HouseholdMembers[i].AgeAsOfDate" class="text-danger"></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            }
-                        </div>
+                                }
+                            </div>
 
-                        <div class="mb-4">
-                            <button type="button" id="addHouseholdMemberBtn" class="btn btn-outline-primary rounded-pill px-4">
-                                Add Another Household Member
-                            </button>
+                            <div class="mb-4">
+                                <button type="button" id="addHouseholdMemberBtn" class="btn btn-outline-primary rounded-pill px-4">
+                                    Add Another Household Member
+                                </button>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-between pt-2">
@@ -135,6 +162,20 @@
             const addButton = document.getElementById("addHouseholdMemberBtn");
             const template = document.getElementById("householdMemberTemplate");
 
+            const section = document.getElementById("householdEntrySection");
+            const yesOption = document.getElementById("householdYesOption");
+            const noOption = document.getElementById("householdNoOption");
+
+            function showHouseholdSection() {
+                section.classList.remove("d-none");
+                yesOption.checked = true;
+            }
+
+            function hideHouseholdSection() {
+                section.classList.add("d-none");
+                noOption.checked = true;
+            }
+
             function updateTitlesAndRemoveButtons() {
                 const cards = container.querySelectorAll(".household-member-card");
 
@@ -169,32 +210,93 @@
                 const cards = container.querySelectorAll(".household-member-card");
 
                 cards.forEach((card, index) => {
-                    const html = card.innerHTML
-                        .replaceAll(/\[\d+\]/g, `[${index}]`)
-                        .replaceAll(/_\d+__/g, `_${index}__`);
+                    const title = card.querySelector(".card-title");
+                    if (title) {
+                        title.textContent = `Household Member ${index + 1}`;
+                    }
 
-                    card.innerHTML = html;
+                    const labels = card.querySelectorAll("label[for]");
+                    labels.forEach(label => {
+                        const currentFor = label.getAttribute("for");
+                        if (currentFor) {
+                            label.setAttribute(
+                                "for",
+                                currentFor.replace(/HouseholdMembers_\d+__/g, `HouseholdMembers_${index}__`)
+                            );
+                        }
+                    });
+
+                    const inputs = card.querySelectorAll("input");
+                    inputs.forEach(input => {
+                        const currentId = input.id;
+                        const currentName = input.name;
+
+                        if (currentId) {
+                            input.id = currentId.replace(/HouseholdMembers_\d+__/g, `HouseholdMembers_${index}__`);
+                        }
+
+                        if (currentName) {
+                            input.name = currentName.replace(/HouseholdMembers\[\d+\]/g, `HouseholdMembers[${index}]`);
+                        }
+                    });
+
+                    const validationSpans = card.querySelectorAll("span[data-valmsg-for]");
+                    validationSpans.forEach(span => {
+                        const currentValMsgFor = span.getAttribute("data-valmsg-for");
+                        if (currentValMsgFor) {
+                            span.setAttribute(
+                                "data-valmsg-for",
+                                currentValMsgFor.replace(/HouseholdMembers\[\d+\]/g, `HouseholdMembers[${index}]`)
+                            );
+                        }
+                    });
                 });
 
                 wireRemoveButtons();
                 updateTitlesAndRemoveButtons();
             }
 
-            addButton.addEventListener("click", function () {
-                const index = container.querySelectorAll(".household-member-card").length;
+            if (addButton) {
+                addButton.addEventListener("click", function () {
+                    const index = container.querySelectorAll(".household-member-card").length;
 
-                let html = template.innerHTML
-                    .replaceAll("__INDEX_DISPLAY__", index + 1)
-                    .replaceAll(/__INDEX__/g, index);
+                    let html = template.innerHTML
+                        .replaceAll("__INDEX_DISPLAY__", index + 1)
+                        .replaceAll(/__INDEX__/g, index);
 
-                const wrapper = document.createElement("div");
-                wrapper.innerHTML = html.trim();
+                    const wrapper = document.createElement("div");
+                    wrapper.innerHTML = html.trim();
 
-                container.appendChild(wrapper.firstElementChild);
+                    container.appendChild(wrapper.firstElementChild);
 
-                wireRemoveButtons();
-                updateTitlesAndRemoveButtons();
-            });
+                    wireRemoveButtons();
+                    updateTitlesAndRemoveButtons();
+                });
+            }
+
+            if (yesOption) {
+                yesOption.addEventListener("change", function () {
+                    if (yesOption.checked) {
+                        showHouseholdSection();
+                    }
+                });
+            }
+
+            if (noOption) {
+                noOption.addEventListener("change", function () {
+                    if (noOption.checked) {
+                        hideHouseholdSection();
+                    }
+                });
+            }
+
+            const selectedMode = document.querySelector('input[name="HasHouseholdMembers"]:checked')?.value;
+
+            if (selectedMode === "true") {
+                showHouseholdSection();
+            } else {
+                hideHouseholdSection();
+            }
 
             wireRemoveButtons();
             updateTitlesAndRemoveButtons();

@@ -5,6 +5,9 @@ namespace A_New_Hope.Models.ViewModels.Referrals
 {
     public class OrganizationEntryViewModel
     {
+
+        public string? OrganizationMode { get; set; }
+
         public ulong? SelectedReferringOrganizationId { get; set; }
 
         public ReferringOrganizationEntryInput NewOrganization { get; set; } = new();

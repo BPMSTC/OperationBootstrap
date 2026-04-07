@@ -215,7 +215,10 @@ namespace A_New_Hope.Controllers
             var vm = new OrganizationEntryViewModel
             {
                 SelectedReferringOrganizationId = draft.ExistingReferringOrganizationId,
-                NewOrganization = draft.NewOrganization ?? new ReferringOrganizationEntryInput()
+                NewOrganization = draft.NewOrganization ?? new ReferringOrganizationEntryInput(),
+                OrganizationMode = draft.HasExistingOrganization ? "existing"
+                    : draft.HasNewOrganization ? "new"
+                    : null
             };
 
             await PopulateOrganizationEntryDropdowns(vm);
@@ -242,8 +245,16 @@ namespace A_New_Hope.Controllers
 
             var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
 
-            draft.ExistingReferringOrganizationId = vm.SelectedReferringOrganizationId;
-            draft.NewOrganization = vm.NewOrganization ?? new ReferringOrganizationEntryInput();
+            if (string.Equals(vm.OrganizationMode, "existing", StringComparison.OrdinalIgnoreCase))
+            {
+                draft.ExistingReferringOrganizationId = vm.SelectedReferringOrganizationId;
+                draft.NewOrganization = new ReferringOrganizationEntryInput();
+            }
+            else
+            {
+                draft.ExistingReferringOrganizationId = null;
+                draft.NewOrganization = vm.NewOrganization ?? new ReferringOrganizationEntryInput();
+            }
 
             SaveReferralEntryDraft(draft);
 
@@ -268,7 +279,10 @@ namespace A_New_Hope.Controllers
             var vm = new ClientEntryViewModel
             {
                 SelectedClientUserId = draft.ExistingClientUserId,
-                NewClient = draft.NewClient ?? new ClientEntryInput()
+                NewClient = draft.NewClient ?? new ClientEntryInput(),
+                ClientMode = draft.HasExistingClient ? "existing"
+                    : draft.HasNewClient ? "new"
+                    : null
             };
 
             await PopulateClientEntryDropdowns(vm);
@@ -295,8 +309,17 @@ namespace A_New_Hope.Controllers
 
             var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
 
-            draft.ExistingClientUserId = vm.SelectedClientUserId;
-            draft.NewClient = vm.NewClient ?? new ClientEntryInput();
+            if (string.Equals(vm.ClientMode, "existing", StringComparison.OrdinalIgnoreCase))
+            {
+                draft.ExistingClientUserId = vm.SelectedClientUserId;
+                draft.NewClient = new ClientEntryInput();
+                draft.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+            }
+            else
+            {
+                draft.ExistingClientUserId = null;
+                draft.NewClient = vm.NewClient ?? new ClientEntryInput();
+            }
 
             SaveReferralEntryDraft(draft);
 
@@ -332,7 +355,8 @@ namespace A_New_Hope.Controllers
             {
                 HouseholdMembers = draft.HouseholdMembers.Any()
                     ? draft.HouseholdMembers
-                    : new List<HouseholdMemberEntryInput> { new HouseholdMemberEntryInput() }
+                    : new List<HouseholdMemberEntryInput> { new HouseholdMemberEntryInput() },
+                HasHouseholdMembers = draft.HouseholdMembers.Any(h => h.HasStarted)
             };
 
             return View(vm);
@@ -347,8 +371,15 @@ namespace A_New_Hope.Controllers
 
             vm.HouseholdMembers ??= new List<HouseholdMemberEntryInput>();
 
-            NormalizeHouseholdEntry(vm);
-            ApplyHouseholdEntryValidation(vm);
+            if (!vm.HasHouseholdMembers)
+            {
+                vm.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+            }
+            else
+            {
+                NormalizeHouseholdEntry(vm);
+                ApplyHouseholdEntryValidation(vm);
+            }
 
             if (!ModelState.IsValid)
             {
@@ -387,7 +418,8 @@ namespace A_New_Hope.Controllers
 
             var vm = new ReferralDetailsViewModel
             {
-                Referral = draft.Referral ?? new ReferralDetailsInput()
+                Referral = draft.Referral ?? new ReferralDetailsInput(),
+                BackAction = draft.RequiresHouseholdStep ? nameof(HouseholdEntry) : nameof(ClientEntry)
             };
 
             await PopulateReferralDetailsDropdowns(vm);
@@ -893,18 +925,12 @@ namespace A_New_Hope.Controllers
 
         private async Task ApplyOrganizationEntryValidationAsync(OrganizationEntryViewModel vm)
         {
-            bool selectedExisting = vm.HasSelectedExistingOrganization;
-            bool enteredNew = vm.HasStartedNewOrganization;
+            bool selectedExisting = string.Equals(vm.OrganizationMode, "existing", StringComparison.OrdinalIgnoreCase);
+            bool enteredNew = string.Equals(vm.OrganizationMode, "new", StringComparison.OrdinalIgnoreCase);
 
             if (!selectedExisting && !enteredNew)
             {
-                ModelState.AddModelError(string.Empty, "Select an existing organization or enter a new organization.");
-                return;
-            }
-
-            if (selectedExisting && enteredNew)
-            {
-                ModelState.AddModelError(string.Empty, "Choose either an existing organization or enter a new one, not both.");
+                ModelState.AddModelError(string.Empty, "Select Existing Organization or New Organization.");
                 return;
             }
 
@@ -1026,23 +1052,23 @@ namespace A_New_Hope.Controllers
 
         private async Task ApplyClientEntryValidationAsync(ClientEntryViewModel vm)
         {
-            bool selectedExisting = vm.HasSelectedExistingClient;
-            bool enteredNew = vm.HasStartedNewClient;
+            bool usingExisting = string.Equals(vm.ClientMode, "existing", StringComparison.OrdinalIgnoreCase);
+            bool usingNew = string.Equals(vm.ClientMode, "new", StringComparison.OrdinalIgnoreCase);
 
-            if (!selectedExisting && !enteredNew)
+            if (!usingExisting && !usingNew)
             {
-                ModelState.AddModelError(string.Empty, "Select an existing client or enter a new client.");
+                ModelState.AddModelError(string.Empty, "Select Existing Client or New Client.");
                 return;
             }
 
-            if (selectedExisting && enteredNew)
+            if (usingExisting)
             {
-                ModelState.AddModelError(string.Empty, "Choose either an existing client or enter a new one, not both.");
-                return;
-            }
+                if (!vm.SelectedClientUserId.HasValue)
+                {
+                    ModelState.AddModelError(nameof(vm.SelectedClientUserId), "Select a client.");
+                    return;
+                }
 
-            if (selectedExisting)
-            {
                 var exists = await _context.DomainUsers.AnyAsync(u =>
                     u.Id == vm.SelectedClientUserId &&
                     u.DeletedAt == null &&
@@ -1326,8 +1352,11 @@ namespace A_New_Hope.Controllers
             {
                 var orgVm = new OrganizationEntryViewModel
                 {
-                    SelectedReferringOrganizationId = null,
-                    NewOrganization = draft.NewOrganization ?? new ReferringOrganizationEntryInput()
+                    SelectedReferringOrganizationId = draft.ExistingReferringOrganizationId,
+                    NewOrganization = draft.NewOrganization ?? new ReferringOrganizationEntryInput(),
+                    OrganizationMode = draft.HasExistingOrganization ? "existing"
+                        : draft.HasNewOrganization ? "new"
+                        : null
                 };
 
                 NormalizeOrganizationEntry(orgVm);
@@ -1370,8 +1399,11 @@ namespace A_New_Hope.Controllers
             {
                 var clientVm = new ClientEntryViewModel
                 {
-                    SelectedClientUserId = null,
-                    NewClient = draft.NewClient ?? new ClientEntryInput()
+                    SelectedClientUserId = draft.ExistingClientUserId,
+                    NewClient = draft.NewClient ?? new ClientEntryInput(),
+                    ClientMode = draft.HasExistingClient ? "existing"
+                        : draft.HasNewClient ? "new"
+                        : null
                 };
 
                 NormalizeClientEntry(clientVm);
