@@ -33,50 +33,57 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted domain users.
         /// </summary>
-        public async Task<IActionResult> Index(string search)
+        public async Task<IActionResult> Index(string searchTerm)
         {
             _logger.LogInformation("Retrieving users");
 
             try
             {
-                // Retrieve active domain users for display.
-                var domainUsersQuery = _context.DomainUsers
+                var query = _context.DomainUsers
                     .Where(u => u.DeletedAt == null);
 
-                // Apply search filter if provided
-                if (!string.IsNullOrWhiteSpace(search))
+                if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
-                    string lowerSearch = search.ToLower();
-                    domainUsersQuery = domainUsersQuery.Where(u =>
-                        (u.Email != null && u.Email.ToLower().Contains(lowerSearch)) ||
-                        ((u.FirstName != null && u.LastName != null) &&
-                            (u.FirstName + " " + u.LastName).ToLower().Contains(lowerSearch) ||
-                            (u.LastName + ", " + u.FirstName).ToLower().Contains(lowerSearch)) ||
+                    searchTerm = searchTerm.Trim();
+                    var digitsOnly = new string(searchTerm.Where(char.IsDigit).ToArray());
+
+                    query = query.Where(u =>
+                        (u.Email != null && u.Email.Contains(searchTerm)) ||
+
+                        (u.FirstName != null && u.FirstName.Contains(searchTerm)) ||
+                        (u.LastName != null && u.LastName.Contains(searchTerm)) ||
+
+                        (u.FirstName != null && u.LastName != null &&
+                            (u.FirstName + " " + u.LastName).Contains(searchTerm)) ||
+
+                        (u.City != null && u.City.Contains(searchTerm)) ||
+                        (u.State != null && u.State.Contains(searchTerm)) ||
+                        (u.PostalCode != null && u.PostalCode.Contains(searchTerm)) ||
+
+                        (u.AddressLine1 != null && u.AddressLine1.Contains(searchTerm)) ||
+                        (u.AddressLine2 != null && u.AddressLine2.Contains(searchTerm)) ||
+
                         (u.PhoneNumber != null &&
                             u.PhoneNumber.Replace(" ", "").Replace("-", "")
-                            .Contains(new string(search.Where(char.IsDigit).ToArray())))
+                            .Contains(digitsOnly))
                     );
                 }
 
-                // Order the results
-                var domainUsers = await domainUsersQuery
+                var domainUsers = await query
                     .OrderBy(u => u.LastName)
                     .ThenBy(u => u.FirstName)
                     .ThenBy(u => u.Email)
                     .ToListAsync();
 
-                // Retrieve Identity-to-domain user links for login account display.
                 var identityLinks = await _context.Users
                     .Where(iu => iu.DomainUserId != null)
                     .Select(iu => new { iu.Id, iu.DomainUserId })
                     .ToListAsync();
 
-                // Build a lookup dictionary keyed by DomainUserId.
                 var identityByDomainUserId = identityLinks
                     .Where(x => x.DomainUserId.HasValue)
                     .ToDictionary(x => x.DomainUserId!.Value, x => x.Id);
 
-                // Project domain users into the index view model.
                 var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
                 {
                     Id = u.Id,
@@ -94,6 +101,8 @@ namespace A_New_Hope.Controllers
                     HasLoginAccount = identityByDomainUserId.ContainsKey(u.Id),
                     IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
                 }).ToList();
+
+                ViewData["CurrentFilter"] = searchTerm;
 
                 _logger.LogInformation("Retrieved {UserCount} users", users.Count);
 
