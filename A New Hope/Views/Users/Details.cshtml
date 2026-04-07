@@ -1,4 +1,4 @@
-@model A_New_Hope.Models.DomainUser
+@model A_New_Hope.Models.ViewModels.Users.UserDetailsViewModel
 
 @{
     ViewData["Title"] = "User Details";
@@ -9,71 +9,148 @@
 <div>
     <hr />
     <dl class="row">
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.Email)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.Email)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PhoneNumber)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.PhoneNumber)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.PhoneNumber)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.FirstName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.FirstName)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.FirstName)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.FirstName)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.LastName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.LastName)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.LastName)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.LastName)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine1)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine1)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.AddressLine1)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.AddressLine1)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine2)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine2)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.AddressLine2)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.AddressLine2)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.City)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.City)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.City)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.City)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.State)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.State)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.State)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.State)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PostalCode)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PostalCode)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.PostalCode)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.PostalCode)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DateOfBirth)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DateOfBirth)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.DateOfBirth)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.DateOfBirth)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DefaultPreference)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DefaultPreference)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.DefaultPreference)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.DefaultPreference)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UserType)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UserType)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.UserType)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.UserType)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.IsActive)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.IsActive)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.CreatedAt)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.CreatedAt)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.UpdatedAt)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.UpdatedAt)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DeletedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DeletedAt)</dd>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.DeletedAt)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.User.DeletedAt)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedByUser)</dt>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.CreatedByUser)</dt>
         <dd class="col-sm-9">
-            @(
-            Model.CreatedByUser != null ? Model.CreatedByUser.Id.ToString() : ""
-        )
+            @(Model.User.CreatedByUser != null ? Model.User.CreatedByUser.Id.ToString() : "")
         </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedByUser)</dt>
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.UpdatedByUser)</dt>
         <dd class="col-sm-9">
-            @(
-            Model.UpdatedByUser != null ? Model.UpdatedByUser.Id.ToString() : ""
-        )
+            @(Model.User.UpdatedByUser != null ? Model.User.UpdatedByUser.Id.ToString() : "")
         </dd>
+
+        <dt class="col-sm-3">Login Account</dt>
+        <dd class="col-sm-9">@(Model.HasLoginAccount ? "Yes" : "No")</dd>
     </dl>
 </div>
 
+@if (Model.IsClient)
+{
+    <div class="mt-4">
+        <h3>Client Profile</h3>
+        <hr />
+
+        @if (Model.ClientProfile != null)
+        {
+            <dl class="row">
+                <dt class="col-sm-3">Employment Status</dt>
+                <dd class="col-sm-9">@Model.ClientProfile.EmploymentStatus</dd>
+
+                <dt class="col-sm-3">Monthly Earned Income</dt>
+                <dd class="col-sm-9">
+                    @(Model.ClientProfile.EarnedIncomeMonthly.HasValue
+                                ? Model.ClientProfile.EarnedIncomeMonthly.Value.ToString("C")
+                                : "")
+                </dd>
+
+                <dt class="col-sm-3">Unhoused</dt>
+                <dd class="col-sm-9">@(Model.ClientProfile.IsUnhoused ? "Yes" : "No")</dd>
+            </dl>
+        }
+        else
+        {
+            <p class="text-muted">No client profile found.</p>
+        }
+    </div>
+
+    <div class="mt-4">
+        <h3>Household Members</h3>
+        <hr />
+
+        @if (Model.HouseholdMembers != null && Model.HouseholdMembers.Any())
+        {
+            @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+            {
+                var member = Model.HouseholdMembers[i];
+
+                <div class="card wizard-card shadow-sm border-0 mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Household Member @(i + 1)</h5>
+
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3">First Name</dt>
+                            <dd class="col-sm-9">@member.FirstName</dd>
+
+                            <dt class="col-sm-3">Last Name</dt>
+                            <dd class="col-sm-9">@member.LastName</dd>
+
+                            <dt class="col-sm-3">Date of Birth</dt>
+                            <dd class="col-sm-9">@member.DateOfBirth</dd>
+
+                            <dt class="col-sm-3">Age As Of Date</dt>
+                            <dd class="col-sm-9">@member.AgeAsOfDate</dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted">No household members found.</p>
+        }
+    </div>
+}
+
 <div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+    <a asp-action="Edit" asp-route-id="@Model.User.Id" class="btn btn-primary">Edit</a>
+
+    @if (Model.User.UserType == A_New_Hope.Models.UserType.Client && Model.User.IsActive && Model.User.DeletedAt == null)
+    {
+        <a asp-controller="Referrals"
+           asp-action="StartReferralEntryForClient"
+           asp-route-id="@Model.User.Id"
+           class="btn btn-outline-primary rounded-pill ms-1">
+            Create Referral
+        </a>
+    }
+
     <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
 </div>
