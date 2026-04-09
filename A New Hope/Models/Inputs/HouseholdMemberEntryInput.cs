@@ -1,12 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace A_New_Hope.Models.ViewModels
+namespace A_New_Hope.Models.Inputs
 {
     /// <summary>
-    /// View model for one optional household member row
-    /// in Referral Wizard Step 1.
+    /// Household member entry row captured during Referral Entry.
     /// </summary>
-    public class ReferralWizardHouseholdMemberViewModel
+    public class HouseholdMemberEntryInput
     {
         [Display(Name = "First Name")]
         [MaxLength(100)]

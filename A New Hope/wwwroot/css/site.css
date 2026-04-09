@@ -1,3 +1,22 @@
+
+/* Dark mode autofill / autocomplete fix */
+.dark-mode input:-webkit-autofill,
+.dark-mode input:-webkit-autofill:hover,
+.dark-mode input:-webkit-autofill:focus,
+.dark-mode textarea:-webkit-autofill,
+.dark-mode textarea:-webkit-autofill:hover,
+.dark-mode textarea:-webkit-autofill:focus,
+.dark-mode select:-webkit-autofill,
+.dark-mode select:-webkit-autofill:hover,
+.dark-mode select:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text-main) !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+    box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+    caret-color: var(--text-main) !important;
+    border: 2px solid var(--border-color) !important;
+    transition: background-color 9999s ease-in-out 0s;
+}
+
 /* =========================
    THEME VARIABLES
 ========================= */
@@ -566,4 +585,98 @@ body div:has(> dl.row) + div {
 .dark-mode .card.wizard-card .bg-white {
     background-color: #1e1e1e !important;
     color: #eee !important;
+}
+
+/* =========================
+   SELECTION CARD
+========================= */
+
+.selection-card {
+    transition: all 0.15s ease-in-out;
+    border: 2px solid var(--border-color) !important;
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+    cursor: pointer;
+    border-radius: 12px;
+}
+
+.selection-card:hover {
+    border-color: var(--btn-primary-bg) !important;
+    background-color: var(--bg-muted) !important;
+    transform: translateY(-2px);
+}
+
+.btn-check:checked + .selection-card {
+    border-color: var(--btn-primary-bg) !important;
+    background-color: var(--bg-muted) !important;
+    box-shadow: 0 0 0 0.2rem rgba(73, 80, 87, 0.15);
+}
+
+.selection-card .card-title {
+    color: var(--text-main) !important;
+}
+
+.selection-card .card-text {
+    color: var(--text-muted) !important;
+}
+
+/* Dark mode override */
+.dark-mode .selection-card {
+    background-color: var(--bg-surface) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.dark-mode .selection-card:hover {
+    background-color: var(--bg-muted) !important;
+    border-color: var(--btn-primary-hover) !important;
+}
+
+.dark-mode .btn-check:checked + .selection-card {
+    background-color: var(--bg-muted) !important;
+    border-color: var(--btn-primary-hover) !important;
+    box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.2);
+}
+
+.dark-mode .selection-card .card-title,
+.dark-mode .selection-card .card-text {
+    color: var(--text-main) !important;
+}
+
+.dark-mode .btn-outline-primary.rounded-pill {
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+    background-color: var(--bg-surface) !important;
+}
+
+.dark-mode .btn-check:checked + .btn-outline-primary.rounded-pill {
+    background-color: var(--btn-primary-bg) !important;
+    border-color: var(--btn-primary-bg) !important;
+    color: #fff !important;
+}
+
+/* Household add button dark mode polish */
+.dark-mode #addHouseholdMemberBtn.btn-outline-primary.rounded-pill {
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+    background-color: var(--bg-surface) !important;
+}
+
+.dark-mode #addHouseholdMemberBtn.btn-outline-primary.rounded-pill:hover {
+    background-color: var(--bg-muted) !important;
+    border-color: var(--btn-primary-hover) !important;
+    color: var(--text-main) !important;
+}
+
+/* Household remove button dark mode polish */
+.dark-mode .remove-household-member.btn-outline-danger.rounded-pill {
+    color: #ffb3b3 !important;
+    border-color: #6b2d2d !important;
+    background-color: var(--bg-surface) !important;
+}
+
+.dark-mode .remove-household-member.btn-outline-danger.rounded-pill:hover {
+    color: #fff !important;
+    background-color: #6b2d2d !important;
+    border-color: #6b2d2d !important;
 }

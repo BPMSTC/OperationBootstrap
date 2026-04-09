@@ -1,0 +1,318 @@
+﻿@model A_New_Hope.Models.ViewModels.Referrals.ClientEntryViewModel
+
+@{
+    ViewData["Title"] = "Client";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card wizard-card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h2 class="mb-1">Client</h2>
+                        <p class="text-muted mb-0">
+                            Select an existing client or enter a new client.
+                        </p>
+                    </div>
+
+                    <form asp-action="ClientEntry" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-4">
+                            <div class="d-flex flex-wrap gap-2">
+                                <input asp-for="ClientMode"
+                                       type="radio"
+                                       class="btn-check"
+                                       id="existingClientOption"
+                                       value="existing"
+                                       autocomplete="off">
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="existingClientOption">
+                                    Existing Client
+                                </label>
+
+                                <input asp-for="ClientMode"
+                                       type="radio"
+                                       class="btn-check"
+                                       id="newClientOption"
+                                       value="new"
+                                       autocomplete="off">
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="newClientOption">
+                                    New Client
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Existing Client -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="existingClientCard">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Use Existing Client</h5>
+
+                                <div class="mb-3">
+                                    <label asp-for="SelectedClientUserId" class="form-label"></label>
+                                    <select asp-for="SelectedClientUserId"
+                                            asp-items="Model.ExistingClients"
+                                            class="form-select"
+                                            id="existingClientSelect">
+                                        <option value="">-- Select a client --</option>
+                                    </select>
+                                    <span asp-validation-for="SelectedClientUserId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- New Client -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="newClientCard">
+                            <div class="card-body">
+                                <h5 class="card-title mb-3">Enter New Client</h5>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label asp-for="NewClient.FirstName" class="form-label"></label>
+                                        <input asp-for="NewClient.FirstName" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.FirstName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="NewClient.LastName" class="form-label"></label>
+                                        <input asp-for="NewClient.LastName" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.LastName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="NewClient.Email" class="form-label"></label>
+                                        <input asp-for="NewClient.Email" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.Email" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="NewClient.PhoneNumber" class="form-label"></label>
+                                        <input asp-for="NewClient.PhoneNumber" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.PhoneNumber" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <div class="form-check mt-2">
+                                            <input asp-for="NewClient.IsUnhoused"
+                                                   class="form-check-input new-client-field"
+                                                   id="newClientIsUnhoused" />
+                                            <label class="form-check-label" for="newClientIsUnhoused">Unhoused</label>
+                                        </div>
+                                        <span asp-validation-for="NewClient.IsUnhoused" class="text-danger"></span>
+                                    </div>
+
+                                    <div id="clientAddressFields">
+                                        <div class="row g-3">
+                                            <div class="col-md-12">
+                                                <label asp-for="NewClient.AddressLine1" class="form-label"></label>
+                                                <input asp-for="NewClient.AddressLine1" class="form-control new-client-field address-client-field" />
+                                                <span asp-validation-for="NewClient.AddressLine1" class="text-danger"></span>
+                                            </div>
+
+                                            <div class="col-md-12">
+                                                <label asp-for="NewClient.AddressLine2" class="form-label"></label>
+                                                <input asp-for="NewClient.AddressLine2" class="form-control new-client-field address-client-field" />
+                                                <span asp-validation-for="NewClient.AddressLine2" class="text-danger"></span>
+                                            </div>
+
+                                            <div class="col-md-5">
+                                                <label asp-for="NewClient.City" class="form-label"></label>
+                                                <input asp-for="NewClient.City" class="form-control new-client-field address-client-field" />
+                                                <span asp-validation-for="NewClient.City" class="text-danger"></span>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <label asp-for="NewClient.State" class="form-label"></label>
+                                                <input asp-for="NewClient.State" class="form-control new-client-field address-client-field" maxlength="2" />
+                                                <span asp-validation-for="NewClient.State" class="text-danger"></span>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label asp-for="NewClient.PostalCode" class="form-label"></label>
+                                                <input asp-for="NewClient.PostalCode" class="form-control new-client-field address-client-field" />
+                                                <span asp-validation-for="NewClient.PostalCode" class="text-danger"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label asp-for="NewClient.DateOfBirth" class="form-label"></label>
+                                        <input asp-for="NewClient.DateOfBirth" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.DateOfBirth" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="NewClient.EmploymentStatus" class="form-label"></label>
+                                        <input asp-for="NewClient.EmploymentStatus" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.EmploymentStatus" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="NewClient.EarnedIncomeMonthly" class="form-label"></label>
+                                        <input asp-for="NewClient.EarnedIncomeMonthly" class="form-control new-client-field" />
+                                        <span asp-validation-for="NewClient.EarnedIncomeMonthly" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between pt-2">
+                            <a asp-action="OrganizationEntry" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Next</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        (function () {
+            const existingCard = document.getElementById("existingClientCard");
+            const newCard = document.getElementById("newClientCard");
+
+            const existingOption = document.getElementById("existingClientOption");
+            const newOption = document.getElementById("newClientOption");
+
+            const existingSelect = document.getElementById("existingClientSelect");
+            const newFields = document.querySelectorAll(".new-client-field");
+
+            const unhousedCheckbox = document.getElementById("newClientIsUnhoused");
+            const addressContainer = document.getElementById("clientAddressFields");
+            const addressFields = document.querySelectorAll(".address-client-field");
+
+            function hasNewClientInput() {
+                for (const field of newFields) {
+                    if (field.type === "checkbox") {
+                        if (field.checked) return true;
+                    } else if (field.value && field.value.trim() !== "") {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function updateAddressVisibility() {
+                if (!unhousedCheckbox || !addressContainer) return;
+
+                const isUnhoused = unhousedCheckbox.checked;
+
+                if (isUnhoused) {
+                    addressContainer.classList.add("d-none");
+
+                    addressFields.forEach(field => {
+                        field.disabled = true;
+                    });
+                } else {
+                    addressContainer.classList.remove("d-none");
+
+                    addressFields.forEach(field => {
+                        field.disabled = false;
+                    });
+                }
+            }
+
+            function showExistingClient() {
+                existingCard.classList.remove("d-none");
+                newCard.classList.add("d-none");
+
+                if (existingOption) {
+                    existingOption.checked = true;
+                }
+
+                if (existingSelect) {
+                    existingSelect.disabled = false;
+                }
+
+                newFields.forEach(field => {
+                    field.disabled = true;
+                });
+            }
+
+            function showNewClient() {
+                newCard.classList.remove("d-none");
+                existingCard.classList.add("d-none");
+
+                if (newOption) {
+                    newOption.checked = true;
+                }
+
+                if (existingSelect) {
+                    existingSelect.disabled = true;
+                }
+
+                newFields.forEach(field => {
+                    field.disabled = false;
+                });
+
+                updateAddressVisibility();
+            }
+
+            function hideBothSections() {
+                existingCard.classList.add("d-none");
+                newCard.classList.add("d-none");
+
+                if (existingOption) existingOption.checked = false;
+                if (newOption) newOption.checked = false;
+
+                if (existingSelect) {
+                    existingSelect.disabled = false;
+                }
+
+                newFields.forEach(field => {
+                    field.disabled = false;
+                });
+
+                updateAddressVisibility();
+            }
+
+            if (existingOption) {
+                existingOption.addEventListener("change", function () {
+                    if (existingOption.checked) {
+                        showExistingClient();
+                    }
+                });
+            }
+
+            if (newOption) {
+                newOption.addEventListener("change", function () {
+                    if (newOption.checked) {
+                        showNewClient();
+                    }
+                });
+            }
+
+            if (unhousedCheckbox) {
+                unhousedCheckbox.addEventListener("change", function () {
+                    updateAddressVisibility();
+                });
+            }
+
+            const selectedMode = document.querySelector('input[name="ClientMode"]:checked')?.value;
+            const hasExistingSelection = existingSelect && existingSelect.value !== "";
+            const hasNewInput = hasNewClientInput();
+
+            if (selectedMode === "existing") {
+                showExistingClient();
+            } else if (selectedMode === "new") {
+                showNewClient();
+            } else if (hasExistingSelection) {
+                showExistingClient();
+            } else if (hasNewInput) {
+                showNewClient();
+            } else {
+                hideBothSections();
+            }
+        })();
+    </script>
+}
