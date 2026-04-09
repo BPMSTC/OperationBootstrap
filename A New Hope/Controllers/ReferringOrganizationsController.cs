@@ -37,19 +37,53 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted referring organizations.
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? searchTerm)
         {
             _logger.LogInformation("Loading Referring Organizations Index page");
 
-            // Retrieve active referring organizations for display.
-            var referringOrganizations = await _context.ReferringOrganizations
-                .Where(r => r.DeletedAt == null)
-                .OrderBy(r => r.Name)
-                .ToListAsync();
+            try
+            {
+                var query = _context.ReferringOrganizations
+                    .Where(r => r.DeletedAt == null);
 
-            _logger.LogInformation("Loaded {Count} referring organizations", referringOrganizations.Count);
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    searchTerm = searchTerm.Trim();
+                    var digitsOnly = new string(searchTerm.Where(char.IsDigit).ToArray());
 
-            return View(referringOrganizations);
+                    query = query.Where(r =>
+                        (r.Name != null && r.Name.Contains(searchTerm)) ||
+                        (r.PrimaryContactName != null && r.PrimaryContactName.Contains(searchTerm)) ||
+                        (r.Email != null && r.Email.Contains(searchTerm)) ||
+                        (r.City != null && r.City.Contains(searchTerm)) ||
+                        (r.State != null && r.State.Contains(searchTerm)) ||
+
+                        // ✅ Safe phone search
+                        (!string.IsNullOrEmpty(digitsOnly) &&
+                            r.PhoneNumber != null &&
+                            r.PhoneNumber.Replace(" ", "")
+                                         .Replace("-", "")
+                                         .Replace("(", "")
+                                         .Replace(")", "")
+                                         .Contains(digitsOnly))
+                    );
+                }
+
+                var referringOrganizations = await query
+                    .OrderBy(r => r.Name)
+                    .ToListAsync();
+
+                ViewData["CurrentFilter"] = searchTerm;
+
+                _logger.LogInformation("Loaded {Count} referring organizations", referringOrganizations.Count);
+
+                return View(referringOrganizations);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load referring organizations");
+                return View("Error");
+            }
         }
 
         // GET: ReferringOrganizations/Details/5

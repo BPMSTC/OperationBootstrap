@@ -27,24 +27,52 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted inventory items.
         /// </summary>
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? search)
         {
             _logger.LogInformation("Loading InventoryItems Index page");
 
-            // Retrieve active inventory items with related category display data.
-            var inventoryItems = await _context.InventoryItems
-                .Where(i => i.DeletedAt == null)
-                .Include(i => i.Category)
-                    .ThenInclude(c => c.CategoryGroup)
-                .Include(i => i.InventoryItemOptions
-                    .Where(o => o.DeletedAt == null))
-                .OrderBy(i => i.Category.Name)
-                .ThenBy(i => i.Name)
-                .ToListAsync();
+            try
+            {
+                // Base query: non-deleted inventory items with includes
+                IQueryable<A_New_Hope.Models.InventoryItem> inventoryQuery = _context.InventoryItems
+                    .Where(i => i.DeletedAt == null)
+                    .Include(i => i.Category)
+                        .ThenInclude(c => c.CategoryGroup)
+                    .Include(i => i.InventoryItemOptions.Where(o => o.DeletedAt == null));
 
-            _logger.LogInformation("Loaded {Count} inventory items", inventoryItems.Count);
+                // Apply search filter if provided
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    string lowerSearch = search.ToLower();
 
-            return View(inventoryItems);
+                    inventoryQuery = inventoryQuery.Where(i =>
+                        // Item name
+                        (i.Name != null && i.Name.ToLower().Contains(lowerSearch)) ||
+                        // Category name
+                        (i.Category != null && i.Category.Name != null && i.Category.Name.ToLower().Contains(lowerSearch)) ||
+                        // CategoryGroup name
+                        (i.Category != null && i.Category.CategoryGroup != null && i.Category.CategoryGroup.Name != null &&
+                            i.Category.CategoryGroup.Name.ToLower().Contains(lowerSearch)) ||
+                        // Options names
+                        (i.InventoryItemOptions.Any(o => o.Name != null && o.Name.ToLower().Contains(lowerSearch)))
+                    );
+                }
+
+                // Order results
+                var inventoryItems = await inventoryQuery
+                    .OrderBy(i => i.Category.Name)
+                    .ThenBy(i => i.Name)
+                    .ToListAsync();
+
+                _logger.LogInformation("Loaded {Count} inventory items", inventoryItems.Count);
+
+                return View(inventoryItems);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load inventory items");
+                return View("Error");
+            }
         }
 
         // GET: InventoryItems/Details/5
