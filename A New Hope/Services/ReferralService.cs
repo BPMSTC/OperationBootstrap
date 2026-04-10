@@ -64,9 +64,6 @@ namespace A_New_Hope.Services
                 Status = input.Status!.Value,
                 ValidFrom = input.ValidFrom,
                 ValidTo = input.ValidTo,
-                ReferredByName = input.ReferredByName,
-                ReferredByPhoneNumber = input.ReferredByPhoneNumber,
-                ReferredByEmail = input.ReferredByEmail,
                 Notes = input.Notes,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -98,9 +95,6 @@ namespace A_New_Hope.Services
 
         private static void Normalize(ReferralDetailsInput input)
         {
-            input.ReferredByName = NullIfWhiteSpace(input.ReferredByName);
-            input.ReferredByPhoneNumber = NullIfWhiteSpace(input.ReferredByPhoneNumber);
-            input.ReferredByEmail = NullIfWhiteSpace(input.ReferredByEmail);
             input.Notes = NullIfWhiteSpace(input.Notes);
         }
 

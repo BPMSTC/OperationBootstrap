@@ -33,7 +33,6 @@
                 <th>@Html.DisplayNameFor(model => model.ReferredOn)</th>
                 <th>@Html.DisplayNameFor(model => model.Status)</th>
                 <th>@Html.DisplayNameFor(model => model.ValidTo)</th>
-                <th>@Html.DisplayNameFor(model => model.ReferredByName)</th>
                 <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
                 <th class="text-end text-nowrap">Actions</th>
             </tr>
@@ -46,16 +45,15 @@
                     <tr>
                         <td>
                             @(
-                                item.ClientUser != null
-                                    ? $"{item.ClientUser.LastName}, {item.ClientUser.FirstName} ({item.ClientUser.Email})"
-                                    : ""
+                            item.ClientUser != null
+                            ? $"{item.ClientUser.LastName}, {item.ClientUser.FirstName} ({item.ClientUser.Email})"
+                            : ""
                             )
                         </td>
                         <td>@(item.ReferringOrganization != null ? item.ReferringOrganization.Name : "")</td>
                         <td>@item.ReferredOn</td>
                         <td>@item.Status</td>
                         <td>@item.ValidTo</td>
-                        <td>@item.ReferredByName</td>
                         <td>@item.UpdatedAt</td>
                         <td class="text-end text-nowrap">
                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
@@ -68,7 +66,7 @@
             else
             {
                 <tr>
-                    <td colspan="8" class="text-center text-muted">No referrals found.</td>
+                    <td colspan="7" class="text-center text-muted">No referrals found.</td>
                 </tr>
             }
         </tbody>

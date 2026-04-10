@@ -88,10 +88,6 @@ namespace A_New_Hope.Controllers
                         (r.ReferringOrganization != null &&
                             r.ReferringOrganization.Name.Contains(searchTerm)) ||
 
-                        // Referrer name
-                        (!string.IsNullOrEmpty(r.ReferredByName) &&
-                            r.ReferredByName.Contains(searchTerm)) ||
-
                         // Status
                         r.Status.ToString().Contains(searchTerm)
                     );
@@ -153,7 +149,7 @@ namespace A_New_Hope.Controllers
         // POST: Referrals/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,ReferredByName,ReferredByPhoneNumber,ReferredByEmail,Notes")] Referral referral)
+        public async Task<IActionResult> Create([Bind("ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,Notes")] Referral referral)
         {
             _logger.LogInformation("Attempting to create Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
 
@@ -180,9 +176,6 @@ namespace A_New_Hope.Controllers
                     Status = referral.Status,
                     ValidFrom = referral.ValidFrom,
                     ValidTo = referral.ValidTo,
-                    ReferredByName = referral.ReferredByName,
-                    ReferredByPhoneNumber = referral.ReferredByPhoneNumber,
-                    ReferredByEmail = referral.ReferredByEmail,
                     Notes = referral.Notes
                 };
 
@@ -702,7 +695,7 @@ namespace A_New_Hope.Controllers
         // POST: Referrals/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,ReferredByName,ReferredByPhoneNumber,ReferredByEmail,Notes")] Referral formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,Notes")] Referral formModel)
         {
             _logger.LogInformation("Attempting to edit Referral Id {Id}", id);
 
@@ -742,9 +735,6 @@ namespace A_New_Hope.Controllers
             existing.Status = formModel.Status;
             existing.ValidFrom = formModel.ValidFrom;
             existing.ValidTo = formModel.ValidTo;
-            existing.ReferredByName = formModel.ReferredByName;
-            existing.ReferredByPhoneNumber = formModel.ReferredByPhoneNumber;
-            existing.ReferredByEmail = formModel.ReferredByEmail;
             existing.Notes = formModel.Notes;
 
             existing.UpdatedAt = DateTime.UtcNow;
@@ -1330,10 +1320,6 @@ namespace A_New_Hope.Controllers
         private void NormalizeReferralDetails(ReferralDetailsViewModel vm)
         {
             vm.Referral ??= new ReferralDetailsInput();
-
-            vm.Referral.ReferredByName = NullIfWhiteSpace(vm.Referral.ReferredByName);
-            vm.Referral.ReferredByPhoneNumber = NullIfWhiteSpace(vm.Referral.ReferredByPhoneNumber);
-            vm.Referral.ReferredByEmail = NullIfWhiteSpace(vm.Referral.ReferredByEmail);
             vm.Referral.Notes = NullIfWhiteSpace(vm.Referral.Notes);
         }
 
@@ -1376,24 +1362,6 @@ namespace A_New_Hope.Controllers
                 vm.Referral.ValidFrom.Value.Date > vm.Referral.ValidTo.Value.Date)
             {
                 ModelState.AddModelError("Referral.ValidTo", "Valid To must be on or after Valid From.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(vm.Referral.ReferredByName) &&
-                !IsValidPersonName(vm.Referral.ReferredByName))
-            {
-                ModelState.AddModelError("Referral.ReferredByName", "Referrer name contains invalid characters.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(vm.Referral.ReferredByPhoneNumber) &&
-                !IsValidPhoneNumber(vm.Referral.ReferredByPhoneNumber))
-            {
-                ModelState.AddModelError("Referral.ReferredByPhoneNumber", "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(vm.Referral.ReferredByEmail) &&
-                !IsValidEmail(vm.Referral.ReferredByEmail))
-            {
-                ModelState.AddModelError("Referral.ReferredByEmail", "Email format is invalid.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.Referral.Notes) &&
@@ -1531,9 +1499,6 @@ namespace A_New_Hope.Controllers
 
         private static void NormalizeReferral(Referral model)
         {
-            model.ReferredByName = NullIfWhiteSpace(model.ReferredByName);
-            model.ReferredByPhoneNumber = NullIfWhiteSpace(model.ReferredByPhoneNumber);
-            model.ReferredByEmail = NullIfWhiteSpace(model.ReferredByEmail);
             model.Notes = NullIfWhiteSpace(model.Notes);
         }
 
@@ -1584,21 +1549,6 @@ namespace A_New_Hope.Controllers
             if (model.ValidTo.HasValue && model.ValidTo.Value < model.ReferredOn)
             {
                 ModelState.AddModelError(nameof(Referral.ValidTo), "Valid To cannot be earlier than Referred On.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.ReferredByName) && !IsValidPersonName(model.ReferredByName))
-            {
-                ModelState.AddModelError(nameof(Referral.ReferredByName), "Referred By Name contains invalid characters.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.ReferredByPhoneNumber) && !IsValidPhoneNumber(model.ReferredByPhoneNumber))
-            {
-                ModelState.AddModelError(nameof(Referral.ReferredByPhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
-            }
-
-            if (!string.IsNullOrWhiteSpace(model.ReferredByEmail) && !IsValidEmail(model.ReferredByEmail))
-            {
-                ModelState.AddModelError(nameof(Referral.ReferredByEmail), "Email format is invalid.");
             }
 
             if (!string.IsNullOrWhiteSpace(model.Notes) && model.Notes.Length > 2000)

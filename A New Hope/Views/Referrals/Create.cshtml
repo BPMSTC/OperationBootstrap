@@ -53,24 +53,6 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="ReferredByName" class="form-label"></label>
-                <input asp-for="ReferredByName" class="form-control" />
-                <span asp-validation-for="ReferredByName" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="ReferredByPhoneNumber" class="form-label"></label>
-                <input asp-for="ReferredByPhoneNumber" class="form-control" />
-                <span asp-validation-for="ReferredByPhoneNumber" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="ReferredByEmail" class="form-label"></label>
-                <input asp-for="ReferredByEmail" class="form-control" />
-                <span asp-validation-for="ReferredByEmail" class="text-danger"></span>
-            </div>
-
-            <div class="mb-3">
                 <label asp-for="Notes" class="form-label"></label>
                 <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
                 <span asp-validation-for="Notes" class="text-danger"></span>
@@ -85,5 +67,7 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

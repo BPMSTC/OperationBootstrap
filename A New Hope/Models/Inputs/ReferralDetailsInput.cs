@@ -24,18 +24,6 @@ namespace A_New_Hope.Models.Inputs
         [DataType(DataType.Date)]
         public DateTime? ValidTo { get; set; }
 
-        [Display(Name = "Referrer Name")]
-        [MaxLength(200)]
-        public string? ReferredByName { get; set; }
-
-        [Display(Name = "Referrer Phone Number")]
-        [MaxLength(25)]
-        public string? ReferredByPhoneNumber { get; set; }
-
-        [Display(Name = "Referrer Email Address")]
-        [MaxLength(254)]
-        public string? ReferredByEmail { get; set; }
-
         [Display(Name = "Referral Notes")]
         [MaxLength(2000)]
         public string? Notes { get; set; }
