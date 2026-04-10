@@ -166,6 +166,7 @@ namespace A_New_Hope.Controllers
                 User = user,
                 ClientProfile = user.ClientProfile,
                 HouseholdMembers = new List<HouseholdMember>(),
+                Referrals = new List<Referral>(),
                 HasLoginAccount = linkedApplicationUser != null,
                 IdentityUserId = linkedApplicationUser?.Id
             };
@@ -173,14 +174,21 @@ namespace A_New_Hope.Controllers
             if (user.UserType == UserType.Client)
             {
                 vm.HouseholdMembers = await _context.HouseholdMembers
-                    .Where(h => h.ClientUserId == user.Id)
+                    .Where(h => h.ClientUserId == user.Id && h.DeletedAt == null)
                     .OrderBy(h => h.LastName)
                     .ThenBy(h => h.FirstName)
+                    .ToListAsync();
+
+                vm.Referrals = await _context.Referrals
+                    .Include(r => r.ReferringOrganization)
+                    .Where(r => r.ClientUserId == user.Id && r.DeletedAt == null)
+                    .OrderByDescending(r => r.ReferredOn)
                     .ToListAsync();
             }
 
             return View(vm);
         }
+
         // GET: Users/Create
         /// <summary>
         /// Shows the create form.
