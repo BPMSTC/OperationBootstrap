@@ -43,7 +43,7 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted domain users.
         /// </summary>
-        public async Task<IActionResult> Index(string searchTerm)
+        public async Task<IActionResult> Index(string searchTerm, string filter)
         {
             _logger.LogInformation("Retrieving users");
 
@@ -52,6 +52,9 @@ namespace A_New_Hope.Controllers
                 var query = _context.DomainUsers
                     .Where(u => u.DeletedAt == null);
 
+                // -------------------------
+                // SEARCH (unchanged)
+                // -------------------------
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     searchTerm = searchTerm.Trim();
@@ -79,6 +82,40 @@ namespace A_New_Hope.Controllers
                     );
                 }
 
+                // -------------------------
+                // FILTER (NEW)
+                // -------------------------
+                filter ??= "all";
+
+                if (!User.IsInRole("Admin"))
+                {
+                    // Non-admins ONLY see clients
+                    query = query.Where(u =>
+                        u.UserType != UserType.Admin &&
+                        u.UserType != UserType.Staff);
+                }
+                else
+                {
+                    // Admin filter toggle
+                    switch (filter)
+                    {
+                        case "clients":
+                            query = query.Where(u => u.UserType == UserType.Client);
+                            break;
+
+                        case "staff":
+                            query = query.Where(u =>
+                                u.UserType == UserType.Admin ||
+                                u.UserType == UserType.Staff);
+                            break;
+
+                            // "all" → no extra filter
+                    }
+                }
+
+                // -------------------------
+                // DATA FETCH (unchanged)
+                // -------------------------
                 var domainUsers = await query
                     .OrderBy(u => u.LastName)
                     .ThenBy(u => u.FirstName)
@@ -112,7 +149,11 @@ namespace A_New_Hope.Controllers
                     IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
                 }).ToList();
 
+                // -------------------------
+                // VIEWDATA (updated)
+                // -------------------------
                 ViewData["CurrentFilter"] = searchTerm;
+                ViewData["UserFilter"] = filter;
 
                 _logger.LogInformation("Retrieved {UserCount} users", users.Count);
 

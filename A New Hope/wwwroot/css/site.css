@@ -681,42 +681,9 @@ body div:has(> dl.row) + div {
     border-color: #6b2d2d !important;
 }
 
-
-/* ADDED FOR USER DETAILS */
-
-.household-toggle {
-    color: inherit;
-    box-shadow: none !important;
-}
-
-.household-toggle:hover {
-    background-color: rgba(0, 0, 0, 0.03) !important;
-    color: inherit;
-}
-
-.household-toggle .household-chevron {
-    transition: transform 0.2s ease-in-out;
-}
-
-.household-toggle[aria-expanded="true"] .household-chevron {
-    transform: rotate(180deg);
-}
-
-.referrals-summary-table {
-    border-top: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.referrals-summary-table thead th {
-    background-color: transparent;
-    border-bottom-width: 1px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.referrals-summary-table tbody td {
-    vertical-align: middle;
-}
-
-.referrals-summary-table tbody tr:last-child td {
-    border-bottom-width: 1px;
+.fixed-bottom-right {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
 }

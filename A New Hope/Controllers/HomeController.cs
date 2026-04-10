@@ -48,5 +48,15 @@ namespace A_New_Hope.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+        public IActionResult ReferralPanel()
+        {
+            return View();
+        }
+
+        public IActionResult InventoryPanel()
+        {
+            return View();
+        }
     }
 }

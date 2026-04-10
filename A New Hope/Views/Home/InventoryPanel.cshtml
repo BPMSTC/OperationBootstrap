@@ -1,0 +1,74 @@
+﻿@{
+    ViewData["Title"] = "Inventory";
+}
+
+<div class="container mt-4 d-flex flex-column" style="min-height: 80vh;">
+
+    <!-- Main Content -->
+    <div>
+        <h2 class="text-center mb-4">Inventory</h2>
+
+        <p class="text-center mb-4">
+            Manage inventory items, groups, and configuration options.
+        </p>
+
+        <div class="row g-3 justify-content-center">
+
+            <!-- Inventory Items -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a asp-controller="InventoryItems"
+                       asp-action="Index"
+                       class="text-decoration-none text-dark">
+                    <div class="card text-center p-4 staff-tile h-100">
+                        <i class="bi bi-box-seam staff-icon"></i>
+                        <div class="mt-2 fw-semibold">Inventory Items</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Inventory Groups -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a asp-controller="InventoryChoiceGroups"
+                       asp-action="Index"
+                       class="text-decoration-none text-dark">
+                    <div class="card text-center p-4 staff-tile h-100">
+                        <i class="bi bi-collection staff-icon"></i>
+                        <div class="mt-2 fw-semibold">Inventory Groups</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Group Items -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a asp-controller="InventoryChoiceGroupItems"
+                       asp-action="Index"
+                       class="text-decoration-none text-dark">
+                    <div class="card text-center p-4 staff-tile h-100">
+                        <i class="bi bi-list-ul staff-icon"></i>
+                        <div class="mt-2 fw-semibold">Group Items</div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Item Options -->
+            <div class="col-6 col-md-4 col-lg-3">
+                <a asp-controller="InventoryItemOptions"
+                       asp-action="Index"
+                       class="text-decoration-none text-dark">
+                    <div class="card text-center p-4 staff-tile h-100">
+                        <i class="bi bi-sliders staff-icon"></i>
+                        <div class="mt-2 fw-semibold">Item Options</div>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="fixed-bottom-right">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary shadow">
+            <i class="bi bi-arrow-left me-1"></i> Back to Home
+        </a>
+    </div>
+
+</div>
