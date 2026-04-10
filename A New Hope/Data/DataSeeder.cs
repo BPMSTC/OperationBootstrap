@@ -1482,9 +1482,6 @@ namespace A_New_Hope.Data
                         ReferredOn = DateTime.UtcNow,
 
                         Status = ReferralStatus.Pending,
-                        ReferredByName = "Alex Rivera",
-                        ReferredByPhoneNumber = "555-100-2000",
-                        ReferredByEmail = "referrals@portagecounty.local",
                         Notes = "Initial seeded referral.",
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,

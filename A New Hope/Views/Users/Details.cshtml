@@ -162,7 +162,6 @@
                             <th>Status</th>
                             <th>Referring Organization</th>
                             <th>Valid Through</th>
-                            <th>Referred By</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -182,7 +181,6 @@
                                 <td>@referral.Status</td>
                                 <td>@(referral.ReferringOrganization?.Name ?? "")</td>
                                 <td>@(referral.ValidTo?.ToString("M/d/yyyy") ?? "")</td>
-                                <td>@(string.IsNullOrWhiteSpace(referral.ReferredByName) ? "" : referral.ReferredByName)</td>
                                 <td class="text-end">
                                     <a asp-controller="Referrals"
                                        asp-action="Details"
