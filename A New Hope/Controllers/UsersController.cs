@@ -2,6 +2,7 @@ using A_New_Hope.Data;
 using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
+using A_New_Hope.Models.ViewModels.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -42,7 +43,7 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Displays all non-deleted domain users.
         /// </summary>
-        public async Task<IActionResult> Index(string searchTerm)
+        public async Task<IActionResult> Index(string searchTerm, string filter)
         {
             _logger.LogInformation("Retrieving users");
 
@@ -51,6 +52,9 @@ namespace A_New_Hope.Controllers
                 var query = _context.DomainUsers
                     .Where(u => u.DeletedAt == null);
 
+                // -------------------------
+                // SEARCH (unchanged)
+                // -------------------------
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     searchTerm = searchTerm.Trim();
@@ -78,6 +82,40 @@ namespace A_New_Hope.Controllers
                     );
                 }
 
+                // -------------------------
+                // FILTER (NEW)
+                // -------------------------
+                filter ??= "all";
+
+                if (!User.IsInRole("Admin"))
+                {
+                    // Non-admins ONLY see clients
+                    query = query.Where(u =>
+                        u.UserType != UserType.Admin &&
+                        u.UserType != UserType.Staff);
+                }
+                else
+                {
+                    // Admin filter toggle
+                    switch (filter)
+                    {
+                        case "clients":
+                            query = query.Where(u => u.UserType == UserType.Client);
+                            break;
+
+                        case "staff":
+                            query = query.Where(u =>
+                                u.UserType == UserType.Admin ||
+                                u.UserType == UserType.Staff);
+                            break;
+
+                            // "all" → no extra filter
+                    }
+                }
+
+                // -------------------------
+                // DATA FETCH (unchanged)
+                // -------------------------
                 var domainUsers = await query
                     .OrderBy(u => u.LastName)
                     .ThenBy(u => u.FirstName)
@@ -111,7 +149,11 @@ namespace A_New_Hope.Controllers
                     IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
                 }).ToList();
 
+                // -------------------------
+                // VIEWDATA (updated)
+                // -------------------------
                 ViewData["CurrentFilter"] = searchTerm;
+                ViewData["UserFilter"] = filter;
 
                 _logger.LogInformation("Retrieved {UserCount} users", users.Count);
 
@@ -140,6 +182,9 @@ namespace A_New_Hope.Controllers
             // Retrieve the requested non-deleted domain user.
             var user = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
+                .Include(u => u.CreatedByUser)
+                .Include(u => u.UpdatedByUser)
+                .Include(u => u.ClientProfile)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             // Return not found when the user does not exist.
@@ -149,7 +194,40 @@ namespace A_New_Hope.Controllers
                 return NotFound();
             }
 
-            return View(user);
+            var linkedApplicationUser = await _context.Users
+                .Where(au => au.DomainUserId == user.Id)
+                .Select(au => new
+                {
+                    au.Id
+                })
+                .FirstOrDefaultAsync();
+
+            var vm = new UserDetailsViewModel
+            {
+                User = user,
+                ClientProfile = user.ClientProfile,
+                HouseholdMembers = new List<HouseholdMember>(),
+                Referrals = new List<Referral>(),
+                HasLoginAccount = linkedApplicationUser != null,
+                IdentityUserId = linkedApplicationUser?.Id
+            };
+
+            if (user.UserType == UserType.Client)
+            {
+                vm.HouseholdMembers = await _context.HouseholdMembers
+                    .Where(h => h.ClientUserId == user.Id && h.DeletedAt == null)
+                    .OrderBy(h => h.LastName)
+                    .ThenBy(h => h.FirstName)
+                    .ToListAsync();
+
+                vm.Referrals = await _context.Referrals
+                    .Include(r => r.ReferringOrganization)
+                    .Where(r => r.ClientUserId == user.Id && r.DeletedAt == null)
+                    .OrderByDescending(r => r.ReferredOn)
+                    .ToListAsync();
+            }
+
+            return View(vm);
         }
 
         // GET: Users/Create

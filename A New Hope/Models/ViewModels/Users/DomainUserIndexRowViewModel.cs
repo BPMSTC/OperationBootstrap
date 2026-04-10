@@ -1,4 +1,4 @@
-﻿namespace A_New_Hope.Models.ViewModels
+﻿namespace A_New_Hope.Models.ViewModels.Users
 {
     /// <summary>
     /// DomainUserIndexRowViewModel

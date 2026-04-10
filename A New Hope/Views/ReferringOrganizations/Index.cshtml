@@ -28,17 +28,13 @@
     <table class="table table-striped table-hover align-middle">
         <thead>
             <tr>
-                <th>@Html.DisplayNameFor(model => model.Name)</th>
-                <th>@Html.DisplayNameFor(model => model.Type)</th>
-                <th>@Html.DisplayNameFor(model => model.PrimaryContactName)</th>
-                <th>@Html.DisplayNameFor(model => model.PhoneNumber)</th>
-                <th>@Html.DisplayNameFor(model => model.Email)</th>
-                <th>@Html.DisplayNameFor(model => model.City)</th>
-                <th>@Html.DisplayNameFor(model => model.State)</th>
-                <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
+                <th>Organization Name</th>
+                <th>Main Contact</th>
+                <th>Point of Contact</th>
                 <th class="text-end">Actions</th>
             </tr>
         </thead>
+
         <tbody>
             @if (Model != null && Model.Any())
             {
@@ -46,13 +42,22 @@
                 {
                     <tr>
                         <td>@item.Name</td>
-                        <td>@item.Type</td>
+
                         <td>@item.PrimaryContactName</td>
-                        <td>@item.PhoneNumber</td>
-                        <td>@item.Email</td>
-                        <td>@item.City</td>
-                        <td>@item.State</td>
-                        <td>@item.UpdatedAt</td>
+
+                        <td>
+                            @{
+                                var poc =
+                                    !string.IsNullOrWhiteSpace(item.Email)
+                                        ? item.Email
+                                        : !string.IsNullOrWhiteSpace(item.PhoneNumber)
+                                            ? item.PhoneNumber
+                                            : "N/A";
+                            }
+
+                            @poc
+                        </td>
+
                         <td class="text-end text-nowrap">
                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
@@ -64,7 +69,9 @@
             else
             {
                 <tr>
-                    <td colspan="9" class="text-center text-muted">No organizations found.</td>
+                    <td colspan="4" class="text-center text-muted">
+                        No organizations found.
+                    </td>
                 </tr>
             }
         </tbody>

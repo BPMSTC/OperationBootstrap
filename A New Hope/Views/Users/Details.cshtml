@@ -1,79 +1,312 @@
-@model A_New_Hope.Models.DomainUser
+@model A_New_Hope.Models.ViewModels.Users.UserDetailsViewModel
 
 @{
-    ViewData["Title"] = "User Details";
+    var heading = Model.User.UserType switch
+    {
+        A_New_Hope.Models.UserType.Admin => "Admin Details",
+        A_New_Hope.Models.UserType.Staff => "Staff Details",
+        A_New_Hope.Models.UserType.Client => "Client Details",
+        _ => "User Details"
+    };
+
+    var hideAddress = Model.IsClient
+        && Model.ClientProfile != null
+        && Model.ClientProfile.IsUnhoused;
+
+    ViewData["Title"] = heading;
 }
 
-<h1>User Details</h1>
+<h1>@heading</h1>
 
 <div>
     <hr />
-    <dl class="row">
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+    <dl class="row mb-0">
+        <dt class="col-sm-3 mb-3">First Name</dt>
+        <dd class="col-sm-9 mb-3">@Model.User.FirstName</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PhoneNumber)</dd>
+        <dt class="col-sm-3 mb-3">Last Name</dt>
+        <dd class="col-sm-9 mb-3">@Model.User.LastName</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.FirstName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.FirstName)</dd>
+        @if (Model.IsClient && Model.ClientProfile != null)
+        {
+            <dt class="col-sm-3 mb-3">Unhoused</dt>
+            <dd class="col-sm-9 mb-3">@(Model.ClientProfile.IsUnhoused ? "Yes" : "No")</dd>
+        }
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.LastName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.LastName)</dd>
+        @if (!hideAddress)
+        {
+            <dt class="col-sm-3 mb-3">Address Line 1</dt>
+            <dd class="col-sm-9 mb-3">@Model.User.AddressLine1</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine1)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine1)</dd>
+            <dt class="col-sm-3 mb-3">Address Line 2</dt>
+            <dd class="col-sm-9 mb-3">@Model.User.AddressLine2</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine2)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine2)</dd>
+            <dt class="col-sm-3 mb-3">City</dt>
+            <dd class="col-sm-9 mb-3">@Model.User.City</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.City)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.City)</dd>
+            <dt class="col-sm-3 mb-3">State</dt>
+            <dd class="col-sm-9 mb-3">@Model.User.State</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.State)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.State)</dd>
+            <dt class="col-sm-3 mb-3">Postal Code</dt>
+            <dd class="col-sm-9 mb-3">@Model.User.PostalCode</dd>
+        }
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PostalCode)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PostalCode)</dd>
+        <dt class="col-sm-3 mb-3">Email Address</dt>
+        <dd class="col-sm-9 mb-3">@Model.User.Email</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DateOfBirth)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DateOfBirth)</dd>
+        <dt class="col-sm-3 mb-3">Phone Number</dt>
+        <dd class="col-sm-9 mb-3">@Model.User.PhoneNumber</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DefaultPreference)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DefaultPreference)</dd>
+        <dt class="col-sm-3 mb-3">Date of Birth</dt>
+        <dd class="col-sm-9 mb-3">@Model.User.DateOfBirth</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UserType)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UserType)</dd>
+        <dt class="col-sm-3 mb-3">Default Preference</dt>
+        <dd class="col-sm-9 mb-3">@Model.User.DefaultPreference</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+        @if (Model.IsClient && Model.ClientProfile != null)
+        {
+            <dt class="col-sm-3 mb-3">Employment Status</dt>
+            <dd class="col-sm-9 mb-3">@Model.ClientProfile.EmploymentStatus</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.DeletedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.DeletedAt)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedByUser)</dt>
-        <dd class="col-sm-9">
-            @(
-            Model.CreatedByUser != null ? Model.CreatedByUser.Id.ToString() : ""
-        )
-        </dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedByUser)</dt>
-        <dd class="col-sm-9">
-            @(
-            Model.UpdatedByUser != null ? Model.UpdatedByUser.Id.ToString() : ""
-        )
-        </dd>
+            <dt class="col-sm-3 mb-3">Monthly Earned Income</dt>
+            <dd class="col-sm-9 mb-3">
+                @(Model.ClientProfile.EarnedIncomeMonthly.HasValue
+                            ? Model.ClientProfile.EarnedIncomeMonthly.Value.ToString("C")
+                            : "")
+            </dd>
+        }
     </dl>
 </div>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+@if (Model.IsClient && Model.HouseholdMembers != null && Model.HouseholdMembers.Any())
+{
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h3 class="mb-0">Household Members</h3>
+            <button type="button"
+                    id="toggleAllHouseholdMembers"
+                    class="btn btn-outline-secondary btn-sm rounded-pill">
+                Expand All
+            </button>
+        </div>
+        <hr />
+
+        @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+        {
+            var member = Model.HouseholdMembers[i];
+            var collapseId = $"householdMember{i}";
+            var memberDisplayName = string.Join(" ",
+            new[] { member.FirstName, member.LastName }
+            .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+            if (string.IsNullOrWhiteSpace(memberDisplayName))
+            {
+                memberDisplayName = $"Household Member {i + 1}";
+            }
+
+            <div class="border rounded-3 mb-2 overflow-hidden household-member-item">
+                <button class="btn w-100 text-start d-flex justify-content-between align-items-center px-3 py-2 border-0 bg-transparent household-toggle"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#@collapseId"
+                        aria-expanded="false"
+                        aria-controls="@collapseId">
+                    <span class="fw-semibold">@memberDisplayName</span>
+                    <span class="household-chevron fs-6" aria-hidden="true">&#x25BE;</span>
+                </button>
+
+                <div class="collapse household-collapse" id="@collapseId">
+                    <div class="px-3 pb-3 pt-1">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-3 mb-3">First Name</dt>
+                            <dd class="col-sm-9 mb-3">@member.FirstName</dd>
+
+                            <dt class="col-sm-3 mb-3">Last Name</dt>
+                            <dd class="col-sm-9 mb-3">@member.LastName</dd>
+
+                            <dt class="col-sm-3 mb-3">Date of Birth</dt>
+                            <dd class="col-sm-9 mb-3">@member.DateOfBirth</dd>
+
+                            <dt class="col-sm-3 mb-3">Age As Of Date</dt>
+                            <dd class="col-sm-9 mb-3">@member.AgeAsOfDate</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (Model.IsClient)
+{
+    <div id="referrals-section" class="mt-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h3 class="mb-0" id="referralsHeading">Open Referrals</h3>
+
+            <button type="button"
+                    id="toggleReferralsView"
+                    class="btn btn-outline-secondary btn-sm rounded-pill">
+                Show All Referrals
+            </button>
+        </div>
+
+        <hr />
+
+        @if (Model.Referrals != null && Model.Referrals.Any())
+        {
+            <div class="table-responsive">
+                <table class="table align-middle referrals-summary-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Referred On</th>
+                            <th>Status</th>
+                            <th>Referring Organization</th>
+                            <th>Valid Through</th>
+                            <th>Referred By</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referralsTableBody">
+                        @foreach (var referral in Model.Referrals)
+                        {
+                            var today = DateTime.Today;
+
+                            var isOpenReferral =
+                            referral.Status == A_New_Hope.Models.ReferralStatus.Approved &&
+                            referral.ValidTo.HasValue &&
+                            referral.ValidTo.Value.Date >= today;
+
+                            <tr class="referral-row"
+                                data-open="@isOpenReferral.ToString().ToLower()">
+                                <td>@referral.ReferredOn.ToString("M/d/yyyy")</td>
+                                <td>@referral.Status</td>
+                                <td>@(referral.ReferringOrganization?.Name ?? "")</td>
+                                <td>@(referral.ValidTo?.ToString("M/d/yyyy") ?? "")</td>
+                                <td>@(string.IsNullOrWhiteSpace(referral.ReferredByName) ? "" : referral.ReferredByName)</td>
+                                <td class="text-end">
+                                    <a asp-controller="Referrals"
+                                       asp-action="Details"
+                                       asp-route-id="@referral.Id"
+                                       class="btn btn-sm btn-outline-primary rounded-pill">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <p id="noOpenReferralsMessage" class="text-muted mb-0 mt-3 d-none">
+                No open referrals were found for this client.
+            </p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">
+                No referrals were found for this client.
+            </p>
+        }
+    </div>
+}
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.User.Id" class="btn btn-primary">Edit</a>
+
+    @if (Model.User.UserType == A_New_Hope.Models.UserType.Client && Model.User.IsActive && Model.User.DeletedAt == null)
+    {
+        <a asp-controller="Referrals"
+           asp-action="StartReferralEntryForClient"
+           asp-route-id="@Model.User.Id"
+           class="btn btn-outline-primary rounded-pill ms-1">
+            Create Referral
+        </a>
+    }
+
     <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleAllButton = document.getElementById("toggleAllHouseholdMembers");
+        const collapses = document.querySelectorAll(".household-collapse");
+
+        if (toggleAllButton && collapses.length > 0 && typeof bootstrap !== "undefined") {
+            function areAllExpanded() {
+                return Array.from(collapses).every(c => c.classList.contains("show"));
+            }
+
+            function updateToggleAllText() {
+                toggleAllButton.textContent = areAllExpanded() ? "Collapse All" : "Expand All";
+            }
+
+            toggleAllButton.addEventListener("click", function () {
+                const expand = !areAllExpanded();
+
+                collapses.forEach(collapseElement => {
+                    const collapseInstance =
+                        bootstrap.Collapse.getInstance(collapseElement) ||
+                        new bootstrap.Collapse(collapseElement, { toggle: false });
+
+                    if (expand) {
+                        collapseInstance.show();
+                    } else {
+                        collapseInstance.hide();
+                    }
+                });
+            });
+
+            collapses.forEach(collapseElement => {
+                collapseElement.addEventListener("shown.bs.collapse", updateToggleAllText);
+                collapseElement.addEventListener("hidden.bs.collapse", updateToggleAllText);
+            });
+
+            updateToggleAllText();
+        }
+
+        const referralsToggleButton = document.getElementById("toggleReferralsView");
+        const referralsHeading = document.getElementById("referralsHeading");
+        const referralRows = document.querySelectorAll(".referral-row");
+        const noOpenReferralsMessage = document.getElementById("noOpenReferralsMessage");
+
+        if (referralsToggleButton && referralsHeading && referralRows.length > 0) {
+            let showingAllReferrals = false;
+
+            function applyReferralFilter() {
+                let visibleOpenCount = 0;
+
+                referralRows.forEach(row => {
+                    const isOpen = row.dataset.open === "true";
+
+                    if (showingAllReferrals || isOpen) {
+                        row.classList.remove("d-none");
+
+                        if (isOpen) {
+                            visibleOpenCount++;
+                        }
+                    } else {
+                        row.classList.add("d-none");
+                    }
+                });
+
+                referralsHeading.textContent = showingAllReferrals ? "All Referrals" : "Open Referrals";
+                referralsToggleButton.textContent = showingAllReferrals ? "Show Open Referrals" : "Show All Referrals";
+
+                if (noOpenReferralsMessage) {
+                    if (!showingAllReferrals && visibleOpenCount === 0) {
+                        noOpenReferralsMessage.classList.remove("d-none");
+                    } else {
+                        noOpenReferralsMessage.classList.add("d-none");
+                    }
+                }
+            }
+
+            referralsToggleButton.addEventListener("click", function () {
+                showingAllReferrals = !showingAllReferrals;
+                applyReferralFilter();
+            });
+
+            applyReferralFilter();
+        }
+    });
+</script>

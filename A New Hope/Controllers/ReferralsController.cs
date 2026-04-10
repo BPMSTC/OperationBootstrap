@@ -244,6 +244,44 @@ namespace A_New_Hope.Controllers
             return RedirectToAction(nameof(OrganizationEntry));
         }
 
+        // GET: Referrals/StartReferralEntryForClient
+        [HttpGet]
+        public async Task<IActionResult> StartReferralEntryForClient(ulong id)
+        {
+            _logger.LogInformation("Starting Referral Entry flow for existing ClientUserId {ClientUserId}", id);
+
+            var clientExists = await _context.DomainUsers.AnyAsync(u =>
+                u.Id == id &&
+                u.DeletedAt == null &&
+                u.UserType == UserType.Client &&
+                u.IsActive);
+
+            if (!clientExists)
+            {
+                _logger.LogWarning("Cannot start Referral Entry. ClientUserId {ClientUserId} was not found or is not an active client.", id);
+                TempData["ErrorMessage"] = "The selected client could not be found.";
+                return RedirectToAction("Index", "Users");
+            }
+
+            ClearReferralEntryDraft();
+
+            var draft = new ReferralEntryDraft
+            {
+                ExistingClientUserId = id,
+                NewClient = new ClientEntryInput()
+            };
+
+            if (!draft.HouseholdMembers.Any())
+            {
+                draft.HouseholdMembers.Add(new HouseholdMemberEntryInput());
+            }
+
+            SaveReferralEntryDraft(draft);
+
+            return RedirectToAction(nameof(OrganizationEntry));
+        }
+
+
         // GET: Referrals/OrganizationEntry
         [HttpGet]
         public async Task<IActionResult> OrganizationEntry()
@@ -297,6 +335,11 @@ namespace A_New_Hope.Controllers
             }
 
             SaveReferralEntryDraft(draft);
+
+            if (draft.HasExistingClient)
+            {
+                return RedirectToAction(nameof(ReferralDetails));
+            }
 
             return RedirectToAction(nameof(ClientEntry));
         }
