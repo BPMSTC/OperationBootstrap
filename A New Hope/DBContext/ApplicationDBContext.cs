@@ -123,12 +123,10 @@ namespace A_New_Hope.Data
                 // Map DomainUser to a table named "Users".
                 // (Identity users remain in AspNetUsers.)
                 entity.ToTable("Users");
-                // MySQL-friendly explicit lengths for indexed strings
-                // Email is indexed + unique, so we set max length to avoid long text issues.
+                // MySQL-friendly explicit lengths for string columns.
+                // Email has an explicit max length to avoid long text issues.
                 entity.Property(e => e.Email)
                     .HasMaxLength(255);
-                // Unique email constraint.
-                entity.HasIndex(e => e.Email).IsUnique();
                 // Useful indexes for common filters and “soft delete” queries.
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.DeletedAt);

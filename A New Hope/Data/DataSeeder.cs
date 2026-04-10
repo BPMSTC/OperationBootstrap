@@ -125,9 +125,20 @@ namespace A_New_Hope.Data
             //
             // NOTE: FirstAsync will throw if the email isn't found.
             // In dev seeding, that is usually acceptable because it indicates inconsistent seed state.
-            var adminUser = await context.DomainUsers.FirstAsync(u => u.Email == "admin@anewhope.local");
-            var clientUser1 = await context.DomainUsers.FirstAsync(u => u.Email == "client1@anewhope.local");
-            var clientUser2 = await context.DomainUsers.FirstAsync(u => u.Email == "client2@anewhope.local");
+            var adminUser = await context.DomainUsers.FirstAsync(u =>
+                u.UserType == UserType.Admin &&
+                u.FirstName == "System" &&
+                u.LastName == "Admin");
+
+            var clientUser1 = await context.DomainUsers.FirstAsync(u =>
+                u.UserType == UserType.Client &&
+                u.FirstName == "Jamie" &&
+                u.LastName == "Client");
+
+            var clientUser2 = await context.DomainUsers.FirstAsync(u =>
+                u.UserType == UserType.Client &&
+                u.FirstName == "Taylor" &&
+                u.LastName == "Client");
 
             // ============================================================
             // CLIENT PROFILES

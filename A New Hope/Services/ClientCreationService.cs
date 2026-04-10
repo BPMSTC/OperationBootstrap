@@ -36,24 +36,13 @@ namespace A_New_Hope.Services
 
             ValidateRequiredFields(clientInput);
 
-            var duplicateExists = await _context.DomainUsers
-                .AnyAsync(u =>
-                    u.DeletedAt == null &&
-                    u.UserType == UserType.Client &&
-                    u.Email.ToLower() == clientInput.Email!.ToLower());
-
-            if (duplicateExists)
-            {
-                throw new InvalidOperationException("A client with this email address already exists.");
-            }
-
             var now = DateTime.UtcNow;
 
             var client = new DomainUser
             {
                 FirstName = clientInput.FirstName,
                 LastName = clientInput.LastName,
-                Email = clientInput.Email!,
+                Email = clientInput.Email,
                 PhoneNumber = clientInput.PhoneNumber,
                 AddressLine1 = clientInput.AddressLine1,
                 AddressLine2 = clientInput.AddressLine2,
@@ -107,9 +96,10 @@ namespace A_New_Hope.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Created Client Id {ClientId} with email {ClientEmail}",
+                "Created Client Id {ClientId} for {FirstName} {LastName}",
                 client.Id,
-                client.Email);
+                client.FirstName,
+                client.LastName);
 
             return client;
         }
@@ -160,11 +150,6 @@ namespace A_New_Hope.Services
             if (string.IsNullOrWhiteSpace(input.LastName))
             {
                 throw new ArgumentException("Client last name is required.", nameof(input));
-            }
-
-            if (string.IsNullOrWhiteSpace(input.Email))
-            {
-                throw new ArgumentException("Client email is required.", nameof(input));
             }
         }
 
