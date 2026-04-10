@@ -680,3 +680,10 @@ body div:has(> dl.row) + div {
     background-color: #6b2d2d !important;
     border-color: #6b2d2d !important;
 }
+
+.fixed-bottom-right {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+}
