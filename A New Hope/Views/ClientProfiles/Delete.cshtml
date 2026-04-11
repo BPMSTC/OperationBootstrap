@@ -14,17 +14,14 @@
         <dt class="col-sm-3">Client</dt>
         <dd class="col-sm-9">
             @(
-                Model.User != null
-                    ? $"{Model.User.LastName}, {Model.User.FirstName} ({Model.User.Email})"
-                    : ""
-            )
+                        Model.User != null
+                        ? $"{Model.User.LastName}, {Model.User.FirstName} ({Model.User.Email})"
+                        : ""
+                        )
         </dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.EmploymentStatus)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.EmploymentStatus)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.EarnedIncomeMonthly)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.EarnedIncomeMonthly)</dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsUnhoused)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.IsUnhoused)</dd>

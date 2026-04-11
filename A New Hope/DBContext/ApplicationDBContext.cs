@@ -93,6 +93,7 @@ namespace A_New_Hope.Data
         public DbSet<Referral> Referrals => Set<Referral>();
         public DbSet<InventoryChoiceGroup> InventoryChoiceGroups => Set<InventoryChoiceGroup>();
         public DbSet<InventoryChoiceGroupItem> InventoryChoiceGroupItems => Set<InventoryChoiceGroupItem>();
+        public DbSet<ClientIncome> ClientIncomes => Set<ClientIncome>();
 
 
         /// <summary>
@@ -191,28 +192,17 @@ namespace A_New_Hope.Data
             // =============================================================
             modelBuilder.Entity<ClientProfile>(entity =>
             {
-                // ClientProfile uses UserId as its primary key, enforcing 1:1.
                 entity.HasKey(e => e.UserId);
 
-                // Decimal precision for money-like fields.
-                entity.Property(e => e.EarnedIncomeMonthly)
-                    .HasPrecision(10, 2);
-
-                // Index DeletedAt to speed up “active-only” queries (and query filters).
                 entity.HasIndex(e => e.DeletedAt);
 
-                // Global soft-delete filter.
                 entity.HasQueryFilter(e => e.DeletedAt == null);
 
-                // 1:1 relationship:
-                // DomainUser (principal) -> ClientProfile (dependent)
-                // Cascade means if a DomainUser is physically deleted, the ClientProfile is deleted too.
                 entity.HasOne(e => e.User)
                     .WithOne(u => u.ClientProfile)
                     .HasForeignKey<ClientProfile>(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // Audit relationships for ClientProfile.
                 entity.HasOne(e => e.CreatedByUser)
                     .WithMany()
                     .HasForeignKey(e => e.CreatedByUserId)
@@ -223,6 +213,47 @@ namespace A_New_Hope.Data
                     .HasForeignKey(e => e.UpdatedByUserId)
                     .OnDelete(DeleteBehavior.SetNull);
             });
+
+
+            // =============================================================
+            // CLIENT INCOME
+            // =============================================================
+
+            modelBuilder.Entity<ClientIncome>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasIndex(e => e.ClientProfileUserId);
+                entity.HasIndex(e => e.IncomeType);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.DeletedAt);
+
+                entity.Property(e => e.IncomeType)
+                    .HasConversion<string>()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.MonthlyAmount)
+                    .HasPrecision(10, 2);
+
+                entity.HasQueryFilter(e => e.DeletedAt == null);
+
+                entity.HasOne(e => e.ClientProfile)
+                    .WithMany(p => p.ClientIncomes)
+                    .HasForeignKey(e => e.ClientProfileUserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+
 
             // =============================================================
             // HOUSEHOLD MEMBERS (1:M from DomainUser)

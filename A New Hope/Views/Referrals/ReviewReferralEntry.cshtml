@@ -90,54 +90,92 @@
                                 <a asp-action="ClientEntry" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Edit</a>
                             </div>
 
+                            @{
+                                var newClient = draft.NewClient;
+                            }
+
                             @if (draft.HasExistingClient)
                             {
                                 <dl class="row mb-0">
                                     <dt class="col-sm-4">Selected Client</dt>
-                                    <dd class="col-sm-8">@Model.SelectedClientDisplayName</dd>
+                                    <dd class="col-sm-8">@DisplayOrDash(Model.SelectedClientDisplayName)</dd>
+                                </dl>
+                            }
+                            else if (newClient != null)
+                            {
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-4">First Name</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(newClient.FirstName)</dd>
+
+                                    <dt class="col-sm-4">Last Name</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(newClient.LastName)</dd>
+
+                                    <dt class="col-sm-4">Email Address</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(newClient.Email)</dd>
+
+                                    <dt class="col-sm-4">Phone Number</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(newClient.PhoneNumber)</dd>
+
+                                    <dt class="col-sm-4">Date of Birth</dt>
+                                    <dd class="col-sm-8">@DisplayDateOnlyOrDash(newClient.DateOfBirth)</dd>
+
+                                    <dt class="col-sm-4">Employment Status</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(newClient.EmploymentStatus)</dd>
+
+                                    <dt class="col-sm-4">Currently Unhoused</dt>
+                                    <dd class="col-sm-8">@(newClient.IsUnhoused ? "Yes" : "No")</dd>
+
+                                    @if (!newClient.IsUnhoused)
+                                    {
+                                        <dt class="col-sm-4">Address Line 1</dt>
+                                        <dd class="col-sm-8">@DisplayOrDash(newClient.AddressLine1)</dd>
+
+                                        <dt class="col-sm-4">Address Line 2</dt>
+                                        <dd class="col-sm-8">@DisplayOrDash(newClient.AddressLine2)</dd>
+
+                                        <dt class="col-sm-4">City</dt>
+                                        <dd class="col-sm-8">@DisplayOrDash(newClient.City)</dd>
+
+                                        <dt class="col-sm-4">State</dt>
+                                        <dd class="col-sm-8">@DisplayOrDash(newClient.State)</dd>
+
+                                        <dt class="col-sm-4">ZIP Code</dt>
+                                        <dd class="col-sm-8">@DisplayOrDash(newClient.PostalCode)</dd>
+                                    }
+
+                                    <dt class="col-sm-4">Monthly Income</dt>
+                                    <dd class="col-sm-8">
+                                        @if (newClient.Incomes != null && newClient.Incomes.Any(i => i.HasStarted))
+                                        {
+                                            <div class="d-flex flex-column gap-2">
+                                                @for (int i = 0; i < newClient.Incomes.Count; i++)
+                                                {
+                                                    var income = newClient.Incomes[i];
+
+                                                    if (!income.HasStarted)
+                                                    {
+                                                        continue;
+                                                    }
+
+                                                    <div class="border rounded p-2">
+                                                        <div><strong>Type:</strong> @DisplayNullableEnumOrDash(income.IncomeType)</div>
+                                                        <div><strong>Amount:</strong> @DisplayMoneyOrDash(income.MonthlyAmount)</div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span>—</span>
+                                        }
+                                    </dd>
                                 </dl>
                             }
                             else
                             {
                                 <dl class="row mb-0">
-                                    <dt class="col-sm-4">First Name</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.FirstName)</dd>
-
-                                    <dt class="col-sm-4">Last Name</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.LastName)</dd>
-
-                                    <dt class="col-sm-4">Email Address</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.Email)</dd>
-
-                                    <dt class="col-sm-4">Phone Number</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.PhoneNumber)</dd>
-
-                                    <dt class="col-sm-4">Address Line 1</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.AddressLine1)</dd>
-
-                                    <dt class="col-sm-4">Address Line 2</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.AddressLine2)</dd>
-
-                                    <dt class="col-sm-4">City</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.City)</dd>
-
-                                    <dt class="col-sm-4">State</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.State)</dd>
-
-                                    <dt class="col-sm-4">ZIP Code</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.PostalCode)</dd>
-
-                                    <dt class="col-sm-4">Date of Birth</dt>
-                                    <dd class="col-sm-8">@DisplayDateOnlyOrDash(draft.NewClient.DateOfBirth)</dd>
-
-                                    <dt class="col-sm-4">Employment Status</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewClient.EmploymentStatus)</dd>
-
-                                    <dt class="col-sm-4">Monthly Earned Income</dt>
-                                    <dd class="col-sm-8">@DisplayMoneyOrDash(draft.NewClient.EarnedIncomeMonthly)</dd>
-
-                                    <dt class="col-sm-4">Currently Unhoused</dt>
-                                    <dd class="col-sm-8">@(draft.NewClient.IsUnhoused ? "Yes" : "No")</dd>
+                                    <dt class="col-sm-4">Selected Client</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(Model.SelectedClientDisplayName)</dd>
                                 </dl>
                             }
                         </div>
@@ -263,5 +301,10 @@
     private string DisplayEnumOrDash(Enum? value)
     {
         return value?.ToString() ?? "—";
+    }
+
+    private string DisplayNullableEnumOrDash<TEnum>(TEnum? value) where TEnum : struct, Enum
+    {
+        return value.HasValue ? value.Value.ToString() : "—";
     }
 }

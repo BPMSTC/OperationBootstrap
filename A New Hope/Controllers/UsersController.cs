@@ -207,6 +207,7 @@ namespace A_New_Hope.Controllers
                 User = user,
                 ClientProfile = user.ClientProfile,
                 HouseholdMembers = new List<HouseholdMember>(),
+                ClientIncomes = new List<ClientIncome>(),
                 Referrals = new List<Referral>(),
                 HasLoginAccount = linkedApplicationUser != null,
                 IdentityUserId = linkedApplicationUser?.Id
@@ -218,6 +219,15 @@ namespace A_New_Hope.Controllers
                     .Where(h => h.ClientUserId == user.Id && h.DeletedAt == null)
                     .OrderBy(h => h.LastName)
                     .ThenBy(h => h.FirstName)
+                    .ToListAsync();
+
+                vm.ClientIncomes = await _context.ClientIncomes
+                    .Where(ci =>
+                        ci.ClientProfileUserId == user.Id &&
+                        ci.DeletedAt == null &&
+                        ci.IsActive)
+                    .OrderBy(ci => ci.IncomeType)
+                    .ThenBy(ci => ci.Id)
                     .ToListAsync();
 
                 vm.Referrals = await _context.Referrals
@@ -279,8 +289,8 @@ namespace A_New_Hope.Controllers
                         PostalCode = user.PostalCode,
                         DateOfBirth = user.DateOfBirth,
                         EmploymentStatus = null,
-                        EarnedIncomeMonthly = null,
-                        IsUnhoused = false
+                        IsUnhoused = false,
+                        Incomes = new List<ClientIncomeEntryInput>()
                     };
 
                     var clientId = await _clientCreationService.CreateClientAndReturnIdAsync(

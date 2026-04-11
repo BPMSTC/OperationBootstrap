@@ -260,8 +260,7 @@ namespace A_New_Hope.Controllers
 
             var draft = new ReferralEntryDraft
             {
-                ExistingClientUserId = id,
-                NewClient = new ClientEntryInput()
+                ExistingClientUserId = id
             };
 
             if (!draft.HouseholdMembers.Any())
@@ -273,7 +272,6 @@ namespace A_New_Hope.Controllers
 
             return RedirectToAction(nameof(OrganizationEntry));
         }
-
 
         // GET: Referrals/OrganizationEntry
         [HttpGet]
@@ -327,6 +325,12 @@ namespace A_New_Hope.Controllers
                 draft.NewOrganization = vm.NewOrganization ?? new ReferringOrganizationEntryInput();
             }
 
+            if (draft.HasExistingClient)
+            {
+                draft.NewClient = null;
+                draft.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+            }
+
             SaveReferralEntryDraft(draft);
 
             if (draft.HasExistingClient)
@@ -352,10 +356,18 @@ namespace A_New_Hope.Controllers
                 return RedirectToAction(nameof(StartReferralEntry));
             }
 
+            draft.NewClient ??= new ClientEntryInput();
+            draft.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+            if (!draft.NewClient.Incomes.Any())
+            {
+                draft.NewClient.Incomes.Add(new ClientIncomeEntryInput());
+            }
+
             var vm = new ClientEntryViewModel
             {
                 SelectedClientUserId = draft.ExistingClientUserId,
-                NewClient = draft.NewClient ?? new ClientEntryInput(),
+                NewClient = draft.NewClient,
                 ClientMode = draft.HasExistingClient ? "existing"
                     : draft.HasNewClient ? "new"
                     : null
@@ -379,6 +391,15 @@ namespace A_New_Hope.Controllers
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Client Entry failed validation");
+
+                vm.NewClient ??= new ClientEntryInput();
+                vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+                if (!vm.NewClient.Incomes.Any())
+                {
+                    vm.NewClient.Incomes.Add(new ClientIncomeEntryInput());
+                }
+
                 await PopulateClientEntryDropdowns(vm);
                 return View(vm);
             }
@@ -1121,6 +1142,13 @@ namespace A_New_Hope.Controllers
             vm.NewClient.State = NullIfWhiteSpace(vm.NewClient.State)?.ToUpperInvariant();
             vm.NewClient.PostalCode = NullIfWhiteSpace(vm.NewClient.PostalCode);
             vm.NewClient.EmploymentStatus = NullIfWhiteSpace(vm.NewClient.EmploymentStatus);
+
+            vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+            foreach (var income in vm.NewClient.Incomes)
+            {
+                income.Notes = NullIfWhiteSpace(income.Notes);
+            }
         }
 
         private async Task ApplyClientEntryValidationAsync(ClientEntryViewModel vm)
@@ -1175,24 +1203,26 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError("NewClient.LastName", "Last name contains invalid characters.");
             }
 
-            if (string.IsNullOrWhiteSpace(vm.NewClient.Email))
+            if (!string.IsNullOrWhiteSpace(vm.NewClient.Email))
             {
-                ModelState.AddModelError("NewClient.Email", "Email is required.");
-            }
-            else if (!IsValidEmail(vm.NewClient.Email))
-            {
-                ModelState.AddModelError("NewClient.Email", "Email format is invalid.");
-            }
-            else
-            {
-                var duplicateExists = await _context.DomainUsers.AnyAsync(u =>
-                    u.DeletedAt == null &&
-                    u.UserType == UserType.Client &&
-                    u.Email.ToLower() == vm.NewClient.Email.ToLower());
-
-                if (duplicateExists)
+                if (!IsValidEmail(vm.NewClient.Email))
                 {
-                    ModelState.AddModelError("NewClient.Email", "A client with this email address already exists.");
+                    ModelState.AddModelError("NewClient.Email", "Email format is invalid.");
+                }
+                else
+                {
+                    var normalizedEmail = vm.NewClient.Email.ToLower();
+
+                    var duplicateExists = await _context.DomainUsers.AnyAsync(u =>
+                        u.DeletedAt == null &&
+                        u.UserType == UserType.Client &&
+                        u.Email != null &&
+                        u.Email.ToLower() == normalizedEmail);
+
+                    if (duplicateExists)
+                    {
+                        ModelState.AddModelError("NewClient.Email", "A client with this email address already exists.");
+                    }
                 }
             }
 
@@ -1244,13 +1274,50 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError("NewClient.EmploymentStatus", "Employment status contains invalid characters.");
             }
 
-            if (vm.NewClient.EarnedIncomeMonthly.HasValue &&
-                vm.NewClient.EarnedIncomeMonthly.Value < 0)
+            vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+            for (int i = 0; i < vm.NewClient.Incomes.Count; i++)
             {
-                ModelState.AddModelError("NewClient.EarnedIncomeMonthly", "Monthly earned income must be 0 or greater.");
+                var income = vm.NewClient.Incomes[i];
+
+                if (!income.HasStarted)
+                {
+                    continue;
+                }
+
+                if (!income.IncomeType.HasValue)
+                {
+                    ModelState.AddModelError($"NewClient.Incomes[{i}].IncomeType", "Income type is required.");
+                }
+
+                if (!income.MonthlyAmount.HasValue)
+                {
+                    ModelState.AddModelError($"NewClient.Incomes[{i}].MonthlyAmount", "Monthly amount is required.");
+                }
+                else
+                {
+                    if (income.MonthlyAmount.Value < 0)
+                    {
+                        ModelState.AddModelError($"NewClient.Incomes[{i}].MonthlyAmount", "Monthly amount must be 0 or greater.");
+                    }
+
+                    if (decimal.Round(income.MonthlyAmount.Value, 2) != income.MonthlyAmount.Value)
+                    {
+                        ModelState.AddModelError($"NewClient.Incomes[{i}].MonthlyAmount", "Monthly amount cannot have more than 2 decimal places.");
+                    }
+
+                    if (income.MonthlyAmount.Value > 99999999.99m)
+                    {
+                        ModelState.AddModelError($"NewClient.Incomes[{i}].MonthlyAmount", "Monthly amount exceeds the allowed maximum.");
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(income.Notes) && income.Notes.Length > 250)
+                {
+                    ModelState.AddModelError($"NewClient.Incomes[{i}].Notes", "Notes cannot exceed 250 characters.");
+                }
             }
         }
-
         private void NormalizeHouseholdEntry(HouseholdEntryViewModel vm)
         {
             vm.HouseholdMembers ??= new List<HouseholdMemberEntryInput>();

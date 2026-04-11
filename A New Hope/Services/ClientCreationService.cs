@@ -32,6 +32,7 @@ namespace A_New_Hope.Services
             householdInputs ??= new List<HouseholdMemberEntryInput>();
 
             NormalizeClient(clientInput);
+            NormalizeIncomes(clientInput.Incomes);
             NormalizeHousehold(householdInputs);
 
             ValidateRequiredFields(clientInput);
@@ -65,7 +66,6 @@ namespace A_New_Hope.Services
             {
                 UserId = client.Id,
                 EmploymentStatus = clientInput.EmploymentStatus,
-                EarnedIncomeMonthly = clientInput.EarnedIncomeMonthly,
                 IsUnhoused = clientInput.IsUnhoused,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -74,6 +74,27 @@ namespace A_New_Hope.Services
             };
 
             _context.ClientProfiles.Add(clientProfile);
+
+            if (clientInput.Incomes != null)
+            {
+                foreach (var income in clientInput.Incomes.Where(i => i.HasStarted))
+                {
+                    var clientIncome = new ClientIncome
+                    {
+                        ClientProfileUserId = client.Id,
+                        IncomeType = income.IncomeType!.Value,
+                        MonthlyAmount = income.MonthlyAmount ?? 0m,
+                        IsActive = income.IsActive,
+                        Notes = string.IsNullOrWhiteSpace(income.Notes) ? null : income.Notes.Trim(),
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedByUserId = actingUserId,
+                        UpdatedByUserId = actingUserId
+                    };
+
+                    _context.ClientIncomes.Add(clientIncome);
+                }
+            }
 
             foreach (var member in householdInputs.Where(h => h.HasStarted))
             {
@@ -156,6 +177,19 @@ namespace A_New_Hope.Services
         private static string? NullIfWhiteSpace(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private static void NormalizeIncomes(List<ClientIncomeEntryInput>? incomes)
+        {
+            if (incomes == null)
+            {
+                return;
+            }
+
+            foreach (var income in incomes)
+            {
+                income.Notes = NullIfWhiteSpace(income.Notes);
+            }
         }
     }
 }

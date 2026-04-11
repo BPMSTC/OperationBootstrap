@@ -152,10 +152,7 @@ namespace A_New_Hope.Data
                     {
                         UserId = clientUser1.Id,
                         EmploymentStatus = "Part-time",
-                        EarnedIncomeMonthly = 1200.00m,
                         IsUnhoused = false,
-
-                        // Audit: set to admin for seeded data to indicate “seeded by admin”
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
                         CreatedAt = now,
@@ -165,8 +162,43 @@ namespace A_New_Hope.Data
                     {
                         UserId = clientUser2.Id,
                         EmploymentStatus = "Unemployed",
-                        EarnedIncomeMonthly = 0m,
                         IsUnhoused = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
+            // ============================================================
+            // CLIENT INCOMES
+            // ============================================================
+            // ClientIncomes store categorized monthly income rows for each client profile.
+            if (!await context.ClientIncomes.AnyAsync())
+            {
+                context.ClientIncomes.AddRange(
+                    new ClientIncome
+                    {
+                        ClientProfileUserId = clientUser1.Id,
+                        IncomeType = IncomeType.Employment,
+                        MonthlyAmount = 1200.00m,
+                        IsActive = true,
+                        Notes = null,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ClientIncome
+                    {
+                        ClientProfileUserId = clientUser2.Id,
+                        IncomeType = IncomeType.Unemployment,
+                        MonthlyAmount = 0m,
+                        IsActive = true,
+                        Notes = null,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
                         CreatedAt = now,
