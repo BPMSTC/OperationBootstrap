@@ -20,12 +20,11 @@ namespace A_New_Hope.Models
         /// Front-end validation ensures proper email format and length.
         /// Added Regex for stricter validation of allowed email characters.
         /// </summary>
-        [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Enter a valid email address.")]
         [MaxLength(254)]
         [RegularExpression(@"^[A-Za-z0-9._+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$",
             ErrorMessage = "Email format is invalid.")]
-        public string Email { get; set; } = null!;
+        public string? Email { get; set; }
 
         // -----------------------------------------------------------------
         // Profile / contact information

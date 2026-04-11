@@ -51,12 +51,13 @@ namespace A_New_Hope.Models.Inputs
         [MaxLength(50)]
         public string? EmploymentStatus { get; set; }
 
-        [Display(Name = "Monthly Earned Income")]
-        [Range(0, 9999999999.99, ErrorMessage = "Monthly earned income must be 0 or greater.")]
-        public decimal? EarnedIncomeMonthly { get; set; }
-
         [Display(Name = "Currently Unhoused")]
         public bool IsUnhoused { get; set; }
+
+        /// <summary>
+        /// Income rows captured for the client during referral entry.
+        /// </summary>
+        public List<ClientIncomeEntryInput> Incomes { get; set; } = new();
 
         public bool HasStarted =>
             !string.IsNullOrWhiteSpace(FirstName) ||
@@ -70,7 +71,7 @@ namespace A_New_Hope.Models.Inputs
             !string.IsNullOrWhiteSpace(PostalCode) ||
             DateOfBirth.HasValue ||
             !string.IsNullOrWhiteSpace(EmploymentStatus) ||
-            EarnedIncomeMonthly.HasValue ||
+            Incomes.Any(i => i.HasStarted) ||
             IsUnhoused;
     }
 }

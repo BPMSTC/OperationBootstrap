@@ -63,6 +63,7 @@ namespace A_New_Hope.Controllers
             var clientProfile = await _context.ClientProfiles
                 .Where(c => c.DeletedAt == null)
                 .Include(c => c.User)
+                .Include(c => c.ClientIncomes)
                 .FirstOrDefaultAsync(m => m.UserId == id);
 
             // Return not found when the client profile does not exist.
@@ -94,7 +95,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("UserId,EmploymentStatus,EarnedIncomeMonthly,IsUnhoused")] ClientProfile clientProfile)
+        public async Task<IActionResult> Create([Bind("UserId,EmploymentStatus,IsUnhoused")] ClientProfile clientProfile)
         {
             _logger.LogInformation("Attempting to create ClientProfile for UserId {UserId}", clientProfile.UserId);
 
@@ -178,7 +179,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("UserId,EmploymentStatus,EarnedIncomeMonthly,IsUnhoused")] ClientProfile formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("UserId,EmploymentStatus,IsUnhoused")] ClientProfile formModel)
         {
             _logger.LogInformation("Attempting to edit ClientProfile UserId {UserId}", id);
 
@@ -218,7 +219,6 @@ namespace A_New_Hope.Controllers
 
             // Copy validated form values into the tracked entity.
             existing.EmploymentStatus = formModel.EmploymentStatus;
-            existing.EarnedIncomeMonthly = formModel.EarnedIncomeMonthly;
             existing.IsUnhoused = formModel.IsUnhoused;
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedByUserId = null;
@@ -410,25 +410,6 @@ namespace A_New_Hope.Controllers
             if (!string.IsNullOrWhiteSpace(model.EmploymentStatus) && !ContainsLetterOrDigit(model.EmploymentStatus))
             {
                 ModelState.AddModelError(nameof(ClientProfile.EmploymentStatus), "Employment Status must contain letters or numbers.");
-            }
-
-            // Validate earned income range and precision when provided.
-            if (model.EarnedIncomeMonthly.HasValue)
-            {
-                if (model.EarnedIncomeMonthly.Value < 0)
-                {
-                    ModelState.AddModelError(nameof(ClientProfile.EarnedIncomeMonthly), "Earned Income Monthly cannot be less than 0.");
-                }
-
-                if (decimal.Round(model.EarnedIncomeMonthly.Value, 2) != model.EarnedIncomeMonthly.Value)
-                {
-                    ModelState.AddModelError(nameof(ClientProfile.EarnedIncomeMonthly), "Earned Income Monthly cannot have more than 2 decimal places.");
-                }
-
-                if (model.EarnedIncomeMonthly.Value > 99999999.99m)
-                {
-                    ModelState.AddModelError(nameof(ClientProfile.EarnedIncomeMonthly), "Earned Income Monthly exceeds the allowed maximum.");
-                }
             }
         }
 

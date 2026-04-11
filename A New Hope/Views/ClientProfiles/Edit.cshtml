@@ -19,12 +19,6 @@
                 <span asp-validation-for="EmploymentStatus" class="text-danger"></span>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="EarnedIncomeMonthly" class="form-label"></label>
-                <input asp-for="EarnedIncomeMonthly" class="form-control" />
-                <span asp-validation-for="EarnedIncomeMonthly" class="text-danger"></span>
-            </div>
-
             <div class="form-check mb-3">
                 <input class="form-check-input" asp-for="IsUnhoused" />
                 <label class="form-check-label" asp-for="IsUnhoused"></label>
@@ -39,5 +33,7 @@
 </div>
 
 @section Scripts {
-    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

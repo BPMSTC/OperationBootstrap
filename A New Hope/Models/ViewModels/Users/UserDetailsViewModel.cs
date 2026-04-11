@@ -37,6 +37,12 @@ namespace A_New_Hope.Models.ViewModels.Users
         public List<HouseholdMember> HouseholdMembers { get; set; } = new();
 
         /// <summary>
+        /// Optional collection of monthly income records associated with the client.
+        /// Empty for non-client users or when no income records exist.
+        /// </summary>
+        public List<ClientIncome> ClientIncomes { get; set; } = new();
+
+        /// <summary>
         /// True when the DomainUser has an associated ASP.NET Core Identity login account.
         /// </summary>
         public bool HasLoginAccount { get; set; }

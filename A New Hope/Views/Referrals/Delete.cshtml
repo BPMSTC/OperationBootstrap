@@ -13,10 +13,10 @@
         <dt class="col-sm-3">Client</dt>
         <dd class="col-sm-9">
             @(
-                Model.ClientUser != null
-                    ? $"{Model.ClientUser.LastName}, {Model.ClientUser.FirstName} ({Model.ClientUser.Email})"
-                    : ""
-            )
+                        Model.ClientUser != null
+                        ? $"{Model.ClientUser.LastName}, {Model.ClientUser.FirstName} ({Model.ClientUser.Email})"
+                        : ""
+                        )
         </dd>
 
         <dt class="col-sm-3">Referring Organization</dt>
@@ -34,14 +34,14 @@
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidTo)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.ValidTo)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredByName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ReferredByName)</dd>
+        <dt class="col-sm-3">Referrer Name</dt>
+        <dd class="col-sm-9">@Model.ReferringOrganization?.PrimaryContactName</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredByPhoneNumber)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ReferredByPhoneNumber)</dd>
+        <dt class="col-sm-3">Referrer Phone</dt>
+        <dd class="col-sm-9">@Model.ReferringOrganization?.PhoneNumber</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredByEmail)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ReferredByEmail)</dd>
+        <dt class="col-sm-3">Referrer Email</dt>
+        <dd class="col-sm-9">@Model.ReferringOrganization?.Email</dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Notes)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>

@@ -19,7 +19,6 @@
             <tr>
                 <th>Client</th>
                 <th>@Html.DisplayNameFor(model => model.EmploymentStatus)</th>
-                <th>@Html.DisplayNameFor(model => model.EarnedIncomeMonthly)</th>
                 <th>@Html.DisplayNameFor(model => model.IsUnhoused)</th>
                 <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
                 <th class="text-end">Actions</th>
@@ -31,13 +30,12 @@
                 <tr>
                     <td>
                         @(
-                            item.User != null
-                                ? $"{item.User.LastName}, {item.User.FirstName} ({item.User.Email})"
-                                : ""
-                        )
+                                            item.User != null
+                                            ? $"{item.User.LastName}, {item.User.FirstName} ({item.User.Email})"
+                                            : ""
+                                            )
                     </td>
                     <td>@Html.DisplayFor(modelItem => item.EmploymentStatus)</td>
-                    <td>@Html.DisplayFor(modelItem => item.EarnedIncomeMonthly)</td>
                     <td>@Html.DisplayFor(modelItem => item.IsUnhoused)</td>
                     <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
                     <td class="text-end text-nowrap">

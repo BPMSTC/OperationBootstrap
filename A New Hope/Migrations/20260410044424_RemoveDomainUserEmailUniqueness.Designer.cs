@@ -3,6 +3,7 @@ using System;
 using A_New_Hope.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace A_New_Hope.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410044424_RemoveDomainUserEmailUniqueness")]
+    partial class RemoveDomainUserEmailUniqueness
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -196,63 +199,6 @@ namespace A_New_Hope.Migrations
                     b.ToTable("CategoryGroups");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.ClientIncome", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong>("ClientProfileUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("CreatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("IncomeType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<decimal>("MonthlyAmount")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(250)
-                        .HasColumnType("varchar(250)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("UpdatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClientProfileUserId");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("DeletedAt");
-
-                    b.HasIndex("IncomeType");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("ClientIncomes");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.ClientProfile", b =>
                 {
                     b.Property<ulong>("UserId")
@@ -266,6 +212,10 @@ namespace A_New_Hope.Migrations
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<decimal?>("EarnedIncomeMonthly")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<string>("EmploymentStatus")
                         .HasMaxLength(50)
@@ -669,6 +619,18 @@ namespace A_New_Hope.Migrations
                     b.Property<string>("Notes")
                         .HasMaxLength(2000)
                         .HasColumnType("varchar(2000)");
+
+                    b.Property<string>("ReferredByEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("varchar(254)");
+
+                    b.Property<string>("ReferredByName")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("ReferredByPhoneNumber")
+                        .HasMaxLength(25)
+                        .HasColumnType("varchar(25)");
 
                     b.Property<DateTime>("ReferredOn")
                         .HasColumnType("datetime(6)");
@@ -1081,31 +1043,6 @@ namespace A_New_Hope.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.ClientIncome", b =>
-                {
-                    b.HasOne("A_New_Hope.Models.ClientProfile", "ClientProfile")
-                        .WithMany("ClientIncomes")
-                        .HasForeignKey("ClientProfileUserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ClientProfile");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.ClientProfile", b =>
                 {
                     b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
@@ -1463,11 +1400,6 @@ namespace A_New_Hope.Migrations
             modelBuilder.Entity("A_New_Hope.Models.CategoryGroup", b =>
                 {
                     b.Navigation("Categories");
-                });
-
-            modelBuilder.Entity("A_New_Hope.Models.ClientProfile", b =>
-                {
-                    b.Navigation("ClientIncomes");
                 });
 
             modelBuilder.Entity("A_New_Hope.Models.DomainUser", b =>

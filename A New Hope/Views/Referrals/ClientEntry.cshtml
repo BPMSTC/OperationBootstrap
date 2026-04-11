@@ -1,7 +1,17 @@
 ﻿@model A_New_Hope.Models.ViewModels.Referrals.ClientEntryViewModel
+@using A_New_Hope.Models
+@using A_New_Hope.Models.Inputs
 
 @{
     ViewData["Title"] = "Client";
+
+    Model.NewClient ??= new ClientEntryInput();
+    Model.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+    if (!Model.NewClient.Incomes.Any())
+    {
+        Model.NewClient.Incomes.Add(new ClientIncomeEntryInput());
+    }
 }
 
 <div class="container py-4">
@@ -48,7 +58,6 @@
                             </div>
                         </div>
 
-                        <!-- Existing Client -->
                         <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="existingClientCard">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Use Existing Client</h5>
@@ -66,7 +75,6 @@
                             </div>
                         </div>
 
-                        <!-- New Client -->
                         <div class="card wizard-card shadow-sm border-0 mb-4 d-none" id="newClientCard">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Enter New Client</h5>
@@ -139,6 +147,7 @@
                                             </div>
                                         </div>
                                     </div>
+
                                     <div class="col-md-4">
                                         <label asp-for="NewClient.DateOfBirth" class="form-label"></label>
                                         <input asp-for="NewClient.DateOfBirth" class="form-control new-client-field" />
@@ -150,15 +159,97 @@
                                         <input asp-for="NewClient.EmploymentStatus" class="form-control new-client-field" />
                                         <span asp-validation-for="NewClient.EmploymentStatus" class="text-danger"></span>
                                     </div>
-
-                                    <div class="col-md-4">
-                                        <label asp-for="NewClient.EarnedIncomeMonthly" class="form-label"></label>
-                                        <input asp-for="NewClient.EarnedIncomeMonthly" class="form-control new-client-field" />
-                                        <span asp-validation-for="NewClient.EarnedIncomeMonthly" class="text-danger"></span>
-                                    </div>
                                 </div>
+
+                                <hr class="my-4" />
+
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h5 class="mb-1">Monthly Income</h5>
+                                        <p class="text-muted mb-0">Add one or more income types.</p>
+                                    </div>
+
+                                    <button type="button"
+                                            class="btn btn-outline-primary btn-sm rounded-pill"
+                                            id="addIncomeRowBtn">
+                                        Add Income Type
+                                    </button>
+                                </div>
+
+                                <div id="incomeRowsContainer">
+                                    @for (int i = 0; i < Model.NewClient.Incomes.Count; i++)
+                                    {
+                                        <div class="border rounded p-3 mb-3 income-row">
+                                            <div class="row g-3 align-items-end">
+                                                <div class="col-md-6">
+                                                    <label asp-for="NewClient.Incomes[i].IncomeType" class="form-label"></label>
+                                                    <select asp-for="NewClient.Incomes[i].IncomeType"
+                                                            asp-items="Html.GetEnumSelectList<IncomeType>()"
+                                                            class="form-select new-client-field">
+                                                        <option value="">-- Select income type --</option>
+                                                    </select>
+                                                    <span asp-validation-for="NewClient.Incomes[i].IncomeType" class="text-danger"></span>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <label asp-for="NewClient.Incomes[i].MonthlyAmount" class="form-label"></label>
+                                                    <input asp-for="NewClient.Incomes[i].MonthlyAmount"
+                                                           class="form-control new-client-field"
+                                                           type="number"
+                                                           step="0.01"
+                                                           min="0" />
+                                                    <span asp-validation-for="NewClient.Incomes[i].MonthlyAmount" class="text-danger"></span>
+                                                </div>
+
+                                                <div class="col-md-2">
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-sm w-100 remove-income-row">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                <template id="incomeRowTemplate">
+                                    <div class="border rounded p-3 mb-3 income-row">
+                                        <div class="row g-3 align-items-end">
+                                            <div class="col-md-6">
+                                                <label class="form-label" data-income-label="type">Income Type</label>
+                                                <select class="form-select new-client-field" data-income-input="type">
+                                                    <option value="">-- Select income type --</option>
+                                                    @foreach (var option in Html.GetEnumSelectList<IncomeType>())
+                                                    {
+                                                        <option value="@option.Value">@option.Text</option>
+                                                    }
+                                                </select>
+                                                <span class="text-danger field-validation-valid" data-income-validation="type"></span>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label" data-income-label="amount">Monthly Amount</label>
+                                                <input class="form-control new-client-field"
+                                                       data-income-input="amount"
+                                                       type="number"
+                                                       step="0.01"
+                                                       min="0" />
+                                                <span class="text-danger field-validation-valid" data-income-validation="amount"></span>
+                                            </div>
+
+                                            <div class="col-md-2">
+                                                <button type="button"
+                                                        class="btn btn-outline-danger btn-sm w-100 remove-income-row">
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
                             </div>
                         </div>
+
                         <div class="d-flex justify-content-between pt-2">
                             <a asp-action="OrganizationEntry" class="btn btn-outline-secondary">Back</a>
                             <button type="submit" class="btn btn-primary">Next</button>
@@ -191,8 +282,12 @@
             const addressContainer = document.getElementById("clientAddressFields");
             const addressFields = document.querySelectorAll(".address-client-field");
 
+            const incomeRowsContainer = document.getElementById("incomeRowsContainer");
+            const incomeRowTemplate = document.getElementById("incomeRowTemplate");
+            const addIncomeRowBtn = document.getElementById("addIncomeRowBtn");
+
             function hasNewClientInput() {
-                for (const field of newFields) {
+                for (const field of document.querySelectorAll(".new-client-field")) {
                     if (field.type === "checkbox") {
                         if (field.checked) return true;
                     } else if (field.value && field.value.trim() !== "") {
@@ -209,16 +304,10 @@
 
                 if (isUnhoused) {
                     addressContainer.classList.add("d-none");
-
-                    addressFields.forEach(field => {
-                        field.disabled = true;
-                    });
+                    addressFields.forEach(field => field.disabled = true);
                 } else {
                     addressContainer.classList.remove("d-none");
-
-                    addressFields.forEach(field => {
-                        field.disabled = false;
-                    });
+                    addressFields.forEach(field => field.disabled = false);
                 }
             }
 
@@ -226,15 +315,10 @@
                 existingCard.classList.remove("d-none");
                 newCard.classList.add("d-none");
 
-                if (existingOption) {
-                    existingOption.checked = true;
-                }
+                if (existingOption) existingOption.checked = true;
+                if (existingSelect) existingSelect.disabled = false;
 
-                if (existingSelect) {
-                    existingSelect.disabled = false;
-                }
-
-                newFields.forEach(field => {
+                document.querySelectorAll(".new-client-field").forEach(field => {
                     field.disabled = true;
                 });
             }
@@ -243,15 +327,10 @@
                 newCard.classList.remove("d-none");
                 existingCard.classList.add("d-none");
 
-                if (newOption) {
-                    newOption.checked = true;
-                }
+                if (newOption) newOption.checked = true;
+                if (existingSelect) existingSelect.disabled = true;
 
-                if (existingSelect) {
-                    existingSelect.disabled = true;
-                }
-
-                newFields.forEach(field => {
+                document.querySelectorAll(".new-client-field").forEach(field => {
                     field.disabled = false;
                 });
 
@@ -264,16 +343,85 @@
 
                 if (existingOption) existingOption.checked = false;
                 if (newOption) newOption.checked = false;
+                if (existingSelect) existingSelect.disabled = false;
 
-                if (existingSelect) {
-                    existingSelect.disabled = false;
-                }
-
-                newFields.forEach(field => {
+                document.querySelectorAll(".new-client-field").forEach(field => {
                     field.disabled = false;
                 });
 
                 updateAddressVisibility();
+            }
+
+            function reindexIncomeRows() {
+                const rows = incomeRowsContainer.querySelectorAll(".income-row");
+
+                rows.forEach((row, index) => {
+                    const typeSelect = row.querySelector('[data-income-input="type"]') || row.querySelector("select");
+                    const amountInput = row.querySelector('[data-income-input="amount"]') || row.querySelector("input");
+
+                    const typeValidation = row.querySelector('[data-income-validation="type"]') || row.querySelector("span.text-danger");
+                    const amountValidation = row.querySelector('[data-income-validation="amount"]') || row.querySelectorAll("span.text-danger")[1];
+
+                    const typeLabel = row.querySelector('[data-income-label="type"]') || row.querySelector("label");
+                    const amountLabel = row.querySelector('[data-income-label="amount"]') || row.querySelectorAll("label")[1];
+
+                    const typeId = `NewClient_Incomes_${index}__IncomeType`;
+                    const amountId = `NewClient_Incomes_${index}__MonthlyAmount`;
+
+                    if (typeSelect) {
+                        typeSelect.name = `NewClient.Incomes[${index}].IncomeType`;
+                        typeSelect.id = typeId;
+                    }
+
+                    if (amountInput) {
+                        amountInput.name = `NewClient.Incomes[${index}].MonthlyAmount`;
+                        amountInput.id = amountId;
+                    }
+
+                    if (typeLabel) typeLabel.setAttribute("for", typeId);
+                    if (amountLabel) amountLabel.setAttribute("for", amountId);
+
+                    if (typeValidation) {
+                        typeValidation.setAttribute("data-valmsg-for", `NewClient.Incomes[${index}].IncomeType`);
+                    }
+
+                    if (amountValidation) {
+                        amountValidation.setAttribute("data-valmsg-for", `NewClient.Incomes[${index}].MonthlyAmount`);
+                    }
+                });
+            }
+
+            function addIncomeRow() {
+                const fragment = incomeRowTemplate.content.cloneNode(true);
+                incomeRowsContainer.appendChild(fragment);
+                reindexIncomeRows();
+            }
+
+            function ensureAtLeastOneIncomeRow() {
+                const rows = incomeRowsContainer.querySelectorAll(".income-row");
+                if (rows.length === 0) {
+                    addIncomeRow();
+                }
+            }
+
+            if (addIncomeRowBtn) {
+                addIncomeRowBtn.addEventListener("click", function () {
+                    addIncomeRow();
+                });
+            }
+
+            if (incomeRowsContainer) {
+                incomeRowsContainer.addEventListener("click", function (e) {
+                    const removeButton = e.target.closest(".remove-income-row");
+                    if (!removeButton) return;
+
+                    const row = removeButton.closest(".income-row");
+                    if (row) {
+                        row.remove();
+                        reindexIncomeRows();
+                        ensureAtLeastOneIncomeRow();
+                    }
+                });
             }
 
             if (existingOption) {
@@ -297,6 +445,8 @@
                     updateAddressVisibility();
                 });
             }
+
+            reindexIncomeRows();
 
             const selectedMode = document.querySelector('input[name="ClientMode"]:checked')?.value;
             const hasExistingSelection = existingSelect && existingSelect.value !== "";

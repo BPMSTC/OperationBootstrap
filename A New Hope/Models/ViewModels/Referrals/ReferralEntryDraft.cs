@@ -46,12 +46,14 @@ namespace A_New_Hope.Models.ViewModels.Referrals
         public bool HasExistingOrganization =>
             ExistingReferringOrganizationId.HasValue && ExistingReferringOrganizationId.Value > 0;
 
-        public bool HasNewOrganization => NewOrganization.HasStarted;
+        public bool HasNewOrganization =>
+            NewOrganization != null && NewOrganization.HasStarted;
 
         public bool HasExistingClient =>
             ExistingClientUserId.HasValue && ExistingClientUserId.Value > 0;
 
-        public bool HasNewClient => NewClient.HasStarted;
+        public bool HasNewClient =>
+            NewClient != null && NewClient.HasStarted;
 
         public bool RequiresHouseholdStep => HasNewClient;
 

@@ -207,6 +207,7 @@ namespace A_New_Hope.Controllers
                 User = user,
                 ClientProfile = user.ClientProfile,
                 HouseholdMembers = new List<HouseholdMember>(),
+                ClientIncomes = new List<ClientIncome>(),
                 Referrals = new List<Referral>(),
                 HasLoginAccount = linkedApplicationUser != null,
                 IdentityUserId = linkedApplicationUser?.Id
@@ -218,6 +219,15 @@ namespace A_New_Hope.Controllers
                     .Where(h => h.ClientUserId == user.Id && h.DeletedAt == null)
                     .OrderBy(h => h.LastName)
                     .ThenBy(h => h.FirstName)
+                    .ToListAsync();
+
+                vm.ClientIncomes = await _context.ClientIncomes
+                    .Where(ci =>
+                        ci.ClientProfileUserId == user.Id &&
+                        ci.DeletedAt == null &&
+                        ci.IsActive)
+                    .OrderBy(ci => ci.IncomeType)
+                    .ThenBy(ci => ci.Id)
                     .ToListAsync();
 
                 vm.Referrals = await _context.Referrals
@@ -279,8 +289,8 @@ namespace A_New_Hope.Controllers
                         PostalCode = user.PostalCode,
                         DateOfBirth = user.DateOfBirth,
                         EmploymentStatus = null,
-                        EarnedIncomeMonthly = null,
-                        IsUnhoused = false
+                        IsUnhoused = false,
+                        Incomes = new List<ClientIncomeEntryInput>()
                     };
 
                     var clientId = await _clientCreationService.CreateClientAndReturnIdAsync(
@@ -606,8 +616,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeDomainUser(DomainUser model)
         {
-            // Normalize and trim user-entered string values.
-            model.Email = model.Email?.Trim() ?? string.Empty;
+            model.Email = NullIfWhiteSpace(model.Email);
             model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
             model.FirstName = NullIfWhiteSpace(model.FirstName);
             model.LastName = NullIfWhiteSpace(model.LastName);
@@ -623,72 +632,41 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyDomainUserValidationAsync(DomainUser model, ulong? currentId = null)
         {
-            // Require email for all domain users.
-            if (string.IsNullOrWhiteSpace(model.Email))
-            {
-                ModelState.AddModelError(nameof(DomainUser.Email), "Email is required.");
-            }
-
-            // Validate email format when provided.
             if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(DomainUser.Email), "Email format is invalid.");
             }
 
-            // Prevent duplicate active email addresses.
-            if (!string.IsNullOrWhiteSpace(model.Email))
-            {
-                var normalizedEmail = model.Email.ToLower();
-
-                var duplicateEmailExists = await _context.DomainUsers
-                    .AnyAsync(u =>
-                        u.DeletedAt == null &&
-                        u.Id != currentId &&
-                        u.Email.ToLower() == normalizedEmail);
-
-                if (duplicateEmailExists)
-                {
-                    ModelState.AddModelError(nameof(DomainUser.Email), "A user with this email already exists.");
-                }
-            }
-
-            // Validate phone number format when provided.
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
             {
                 ModelState.AddModelError(nameof(DomainUser.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
-            // Validate first name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.FirstName) && !IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First Name contains invalid characters.");
             }
 
-            // Validate last name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.LastName) && !IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last Name contains invalid characters.");
             }
 
-            // Validate city characters when provided.
             if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
             {
                 ModelState.AddModelError(nameof(DomainUser.City), "City contains invalid characters.");
             }
 
-            // Restrict state values to Wisconsin for this project.
             if (!string.IsNullOrWhiteSpace(model.State) && model.State != "WI")
             {
                 ModelState.AddModelError(nameof(DomainUser.State), "State must be WI.");
             }
 
-            // Validate ZIP code format when provided.
             if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
             {
                 ModelState.AddModelError(nameof(DomainUser.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
             }
 
-            // Validate date of birth range when provided.
             if (model.DateOfBirth.HasValue)
             {
                 var minDate = new DateOnly(1900, 1, 1);
@@ -705,13 +683,11 @@ namespace A_New_Hope.Controllers
                 }
             }
 
-            // Validate that the selected default preference is defined.
             if (!Enum.IsDefined(typeof(PreferenceOption), model.DefaultPreference))
             {
                 ModelState.AddModelError(nameof(DomainUser.DefaultPreference), "Select a valid default preference.");
             }
 
-            // Validate that the selected user type is defined.
             if (!Enum.IsDefined(typeof(UserType), model.UserType))
             {
                 ModelState.AddModelError(nameof(DomainUser.UserType), "Select a valid user type.");

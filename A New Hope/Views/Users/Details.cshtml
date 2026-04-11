@@ -29,6 +29,31 @@
 
         @if (Model.IsClient && Model.ClientProfile != null)
         {
+            <dt class="col-sm-3 mb-3">Employment Status</dt>
+            <dd class="col-sm-9 mb-3">@Model.ClientProfile.EmploymentStatus</dd>
+
+            <dt class="col-sm-3 mb-3">Monthly Income</dt>
+            <dd class="col-sm-9 mb-3">
+                @if (Model.ClientIncomes != null && Model.ClientIncomes.Any())
+                {
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var income in Model.ClientIncomes
+                                        .Where(i => i.IsActive)
+                                        .OrderBy(i => i.IncomeType))
+                        {
+                            <div class="border rounded p-2">
+                                <div><strong>Type:</strong> @income.IncomeType</div>
+                                <div><strong>Amount:</strong> @income.MonthlyAmount.ToString("C")</div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <span>No income records found.</span>
+                }
+            </dd>
+
             <dt class="col-sm-3 mb-3">Unhoused</dt>
             <dd class="col-sm-9 mb-3">@(Model.ClientProfile.IsUnhoused ? "Yes" : "No")</dd>
         }
@@ -62,19 +87,6 @@
 
         <dt class="col-sm-3 mb-3">Default Preference</dt>
         <dd class="col-sm-9 mb-3">@Model.User.DefaultPreference</dd>
-
-        @if (Model.IsClient && Model.ClientProfile != null)
-        {
-            <dt class="col-sm-3 mb-3">Employment Status</dt>
-            <dd class="col-sm-9 mb-3">@Model.ClientProfile.EmploymentStatus</dd>
-
-            <dt class="col-sm-3 mb-3">Monthly Earned Income</dt>
-            <dd class="col-sm-9 mb-3">
-                @(Model.ClientProfile.EarnedIncomeMonthly.HasValue
-                            ? Model.ClientProfile.EarnedIncomeMonthly.Value.ToString("C")
-                            : "")
-            </dd>
-        }
     </dl>
 </div>
 
@@ -162,7 +174,6 @@
                             <th>Status</th>
                             <th>Referring Organization</th>
                             <th>Valid Through</th>
-                            <th>Referred By</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -182,7 +193,6 @@
                                 <td>@referral.Status</td>
                                 <td>@(referral.ReferringOrganization?.Name ?? "")</td>
                                 <td>@(referral.ValidTo?.ToString("M/d/yyyy") ?? "")</td>
-                                <td>@(string.IsNullOrWhiteSpace(referral.ReferredByName) ? "" : referral.ReferredByName)</td>
                                 <td class="text-end">
                                     <a asp-controller="Referrals"
                                        asp-action="Details"

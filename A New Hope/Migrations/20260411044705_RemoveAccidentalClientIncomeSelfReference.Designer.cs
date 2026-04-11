@@ -3,6 +3,7 @@ using System;
 using A_New_Hope.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace A_New_Hope.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260411044705_RemoveAccidentalClientIncomeSelfReference")]
+    partial class RemoveAccidentalClientIncomeSelfReference
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -202,6 +205,9 @@ namespace A_New_Hope.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint unsigned");
 
+                    b.Property<ulong?>("ClientIncomeId")
+                        .HasColumnType("bigint unsigned");
+
                     b.Property<ulong>("ClientProfileUserId")
                         .HasColumnType("bigint unsigned");
 
@@ -237,6 +243,8 @@ namespace A_New_Hope.Migrations
                         .HasColumnType("bigint unsigned");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ClientIncomeId");
 
                     b.HasIndex("ClientProfileUserId");
 
@@ -1083,6 +1091,10 @@ namespace A_New_Hope.Migrations
 
             modelBuilder.Entity("A_New_Hope.Models.ClientIncome", b =>
                 {
+                    b.HasOne("A_New_Hope.Models.ClientIncome", null)
+                        .WithMany("ClientIncomes")
+                        .HasForeignKey("ClientIncomeId");
+
                     b.HasOne("A_New_Hope.Models.ClientProfile", "ClientProfile")
                         .WithMany("ClientIncomes")
                         .HasForeignKey("ClientProfileUserId")
@@ -1463,6 +1475,11 @@ namespace A_New_Hope.Migrations
             modelBuilder.Entity("A_New_Hope.Models.CategoryGroup", b =>
                 {
                     b.Navigation("Categories");
+                });
+
+            modelBuilder.Entity("A_New_Hope.Models.ClientIncome", b =>
+                {
+                    b.Navigation("ClientIncomes");
                 });
 
             modelBuilder.Entity("A_New_Hope.Models.ClientProfile", b =>

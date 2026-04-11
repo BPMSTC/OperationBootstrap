@@ -32,20 +32,10 @@ namespace A_New_Hope.Services
             householdInputs ??= new List<HouseholdMemberEntryInput>();
 
             NormalizeClient(clientInput);
+            NormalizeIncomes(clientInput.Incomes);
             NormalizeHousehold(householdInputs);
 
             ValidateRequiredFields(clientInput);
-
-            var duplicateExists = await _context.DomainUsers
-                .AnyAsync(u =>
-                    u.DeletedAt == null &&
-                    u.UserType == UserType.Client &&
-                    u.Email.ToLower() == clientInput.Email!.ToLower());
-
-            if (duplicateExists)
-            {
-                throw new InvalidOperationException("A client with this email address already exists.");
-            }
 
             var now = DateTime.UtcNow;
 
@@ -53,7 +43,7 @@ namespace A_New_Hope.Services
             {
                 FirstName = clientInput.FirstName,
                 LastName = clientInput.LastName,
-                Email = clientInput.Email!,
+                Email = clientInput.Email,
                 PhoneNumber = clientInput.PhoneNumber,
                 AddressLine1 = clientInput.AddressLine1,
                 AddressLine2 = clientInput.AddressLine2,
@@ -76,7 +66,6 @@ namespace A_New_Hope.Services
             {
                 UserId = client.Id,
                 EmploymentStatus = clientInput.EmploymentStatus,
-                EarnedIncomeMonthly = clientInput.EarnedIncomeMonthly,
                 IsUnhoused = clientInput.IsUnhoused,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -85,6 +74,27 @@ namespace A_New_Hope.Services
             };
 
             _context.ClientProfiles.Add(clientProfile);
+
+            if (clientInput.Incomes != null)
+            {
+                foreach (var income in clientInput.Incomes.Where(i => i.HasStarted))
+                {
+                    var clientIncome = new ClientIncome
+                    {
+                        ClientProfileUserId = client.Id,
+                        IncomeType = income.IncomeType!.Value,
+                        MonthlyAmount = income.MonthlyAmount ?? 0m,
+                        IsActive = income.IsActive,
+                        Notes = string.IsNullOrWhiteSpace(income.Notes) ? null : income.Notes.Trim(),
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                        CreatedByUserId = actingUserId,
+                        UpdatedByUserId = actingUserId
+                    };
+
+                    _context.ClientIncomes.Add(clientIncome);
+                }
+            }
 
             foreach (var member in householdInputs.Where(h => h.HasStarted))
             {
@@ -107,9 +117,10 @@ namespace A_New_Hope.Services
             await _context.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Created Client Id {ClientId} with email {ClientEmail}",
+                "Created Client Id {ClientId} for {FirstName} {LastName}",
                 client.Id,
-                client.Email);
+                client.FirstName,
+                client.LastName);
 
             return client;
         }
@@ -161,16 +172,24 @@ namespace A_New_Hope.Services
             {
                 throw new ArgumentException("Client last name is required.", nameof(input));
             }
-
-            if (string.IsNullOrWhiteSpace(input.Email))
-            {
-                throw new ArgumentException("Client email is required.", nameof(input));
-            }
         }
 
         private static string? NullIfWhiteSpace(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private static void NormalizeIncomes(List<ClientIncomeEntryInput>? incomes)
+        {
+            if (incomes == null)
+            {
+                return;
+            }
+
+            foreach (var income in incomes)
+            {
+                income.Notes = NullIfWhiteSpace(income.Notes);
+            }
         }
     }
 }
