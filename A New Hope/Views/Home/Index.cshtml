@@ -2,82 +2,6 @@
     ViewData["Title"] = "Home";
 }
 
-@* <style>
-    body {
-        background-color: #f0f2f5 !important;
-        font-family: Arial, sans-serif;
-        color: #212529;
-    }
-
-    .main-card {
-        background-color: #e9ecef !important;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        border: 2px solid #ced4da;
-    }
-
-    .section-header {
-        background-color: #495057 !important;
-        color: #ffffff !important;
-        padding: 12px 15px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 1.1rem;
-        margin-bottom: 15px;
-        border: 1px solid #343a40;
-    }
-
-    .workflow-card {
-        background-color: #f8f9fa !important;
-        border: 2px solid #ced4da;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 100%;
-    }
-
-        .workflow-card .card-body {
-            display: flex;
-            flex-direction: column;
-        }
-
-    .workflow-title {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #343a40;
-        margin-bottom: 10px;
-    }
-
-    .workflow-text {
-        color: #495057;
-        flex-grow: 1;
-    }
-
-    .neutral-btn-primary {
-        background-color: #343a40 !important;
-        border: 2px solid #212529 !important;
-        color: white !important;
-        font-weight: 600;
-    }
-
-        .neutral-btn-primary:hover {
-            background-color: #495057 !important;
-            color: white !important;
-        }
-
-    .neutral-btn-secondary {
-        background-color: #adb5bd !important;
-        border: 2px solid #868e96 !important;
-        color: black !important;
-        font-weight: 600;
-    }
-
-        .neutral-btn-secondary:hover {
-            background-color: #868e96 !important;
-            color: white !important;
-        }
-</style> *@
-
 <div class="container mt-5">
     <div class="main-card">
         <div class="section-header">Workflow Menu</div>
@@ -87,50 +11,79 @@
         </p>
 
         <div class="row g-4">
+
+            <!-- Clients / Users -->
             <div class="col-md-6 col-lg-4">
-                <div class="card workflow-card">
-                    <div class="card-body">
-                        <div class="workflow-title">Referral Wizard</div>
+                <div class="card workflow-card h-100">
+                    <div class="card-body d-flex flex-column">
+
+                        <div class="workflow-title d-flex align-items-center gap-2">
+                            <i class="bi bi-people"></i>
+                            @(User.IsInRole("Admin") ? "Users" : "Clients")
+                        </div>
+
                         <p class="workflow-text">
-                            Start a new referral workflow by selecting an existing referring organization
-                            or entering a new one.
+                            Manage and view @(User.IsInRole("Admin") ? "user accounts and roles." : "client records and information.").
                         </p>
-                        <a asp-controller="Referrals"
-                           asp-action="WizardStep1"
-                           class="btn neutral-btn-primary mt-auto">
-                            Start Referral Wizard
+
+                        <a asp-controller="Users"
+                               asp-action="Index"
+                               class="btn neutral-btn-primary mt-auto">
+                            Go to @(User.IsInRole("Admin") ? "Users" : "Clients")
                         </a>
+
                     </div>
                 </div>
             </div>
 
+            <!-- Referrals -->
             <div class="col-md-6 col-lg-4">
-                <div class="card workflow-card">
-                    <div class="card-body">
-                        <div class="workflow-title">Client Wizard</div>
+                <div class="card workflow-card h-100">
+                    <div class="card-body d-flex flex-column">
+
+                        <div class="workflow-title d-flex align-items-center gap-2">
+                            <i class="bi bi-arrow-left-right"></i>
+                            Referrals
+                        </div>
+
                         <p class="workflow-text">
-                            Create or locate a client record and guide the user through client-specific entry steps.
+                            Access referral tools and workflows to manage incoming and outgoing referrals.
                         </p>
-                        <button class="btn neutral-btn-secondary mt-auto" disabled>
-                            Coming Soon
-                        </button>
+
+                        <a asp-controller="Home"
+                               asp-action="ReferralPanel"
+                               class="btn neutral-btn-primary mt-auto">
+                            Go to Referrals
+                        </a>
+
                     </div>
                 </div>
             </div>
 
+            <!-- Inventory -->
             <div class="col-md-6 col-lg-4">
-                <div class="card workflow-card">
-                    <div class="card-body">
-                        <div class="workflow-title">Referral Details Wizard</div>
+                <div class="card workflow-card h-100">
+                    <div class="card-body d-flex flex-column">
+
+                        <div class="workflow-title d-flex align-items-center gap-2">
+                            <i class="bi bi-box-seam"></i>
+                            Inventory
+                        </div>
+
                         <p class="workflow-text">
-                            Complete referral-specific details such as dates, status, notes, and related follow-up information.
+                            Manage inventory items, categories, and stock levels within the system.
                         </p>
-                        <button class="btn neutral-btn-secondary mt-auto" disabled>
-                            Coming Soon
-                        </button>
+
+                        <a asp-controller="Home"
+                               asp-action="InventoryPanel"
+                               class="btn neutral-btn-primary mt-auto">
+                            Go to Inventory
+                        </a>
+
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

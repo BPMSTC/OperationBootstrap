@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "Referrals";
+}
+
+
+
+<div class="container mt-4">
+
+    <h2 class="text-center mb-4">Referrals</h2>
+
+    <p class="text-center mb-4">
+        Access referral workflows and manage referring organizations.
+    </p>
+
+    <div class="row g-3 justify-content-center">
+
+        <!-- Referrals -->
+        <div class="col-6 col-md-4 col-lg-3">
+            <a asp-controller="Referrals"
+                   asp-action="Index"
+                   class="text-decoration-none text-dark">
+                <div class="card text-center p-4 staff-tile h-100">
+                    <i class="bi bi-arrow-left-right staff-icon"></i>
+                    <div class="mt-2 fw-semibold">Referrals</div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Organizations -->
+        <div class="col-6 col-md-4 col-lg-3">
+            <a asp-controller="ReferringOrganizations"
+                   asp-action="Index"
+                   class="text-decoration-none text-dark">
+                <div class="card text-center p-4 staff-tile h-100">
+                    <i class="bi bi-building staff-icon"></i>
+                    <div class="mt-2 fw-semibold">Organizations</div>
+                </div>
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- FIXED BACK BUTTON -->
+<div class="fixed-bottom-right">
+    <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary shadow">
+        <i class="bi bi-arrow-left me-1"></i> Back to Home
+    </a>
+</div>
