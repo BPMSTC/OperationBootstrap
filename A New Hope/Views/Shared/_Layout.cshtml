@@ -28,7 +28,7 @@
         <nav id="mainNavbarBar" class="navbar navbar-expand-sm navbar-light border-bottom mb-3">
             <div class="container-fluid">
 
-                <!-- LEFT: Logo only -->
+                <!-- LEFT: Logo -->
                 <div class="d-flex align-items-center gap-2">
                     <a class="navbar-brand d-flex align-items-center" href="/Home/Index">
                         <img id="siteLogo"
@@ -50,28 +50,33 @@
                     {
                         <ul class="navbar-nav ms-auto align-items-center">
 
+                            <!-- Home -->
                             <li class="nav-item">
-                                <a class="nav-link" href="/Home/Index">Home</a>
+                                <a class="nav-link" asp-controller="Home" asp-action="Index">Home</a>
                             </li>
 
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="StaffPanel" asp-action="Index">Staff Panel</a>
-                            </li>
-
+                            <!-- Dashboard (Role-Based) -->
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-controller="AdminPanel" asp-action="Index">Admin Panel</a>
+                                    <a class="nav-link" asp-controller="AdminPanel" asp-action="Index">Dashboard</a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="StaffPanel" asp-action="Index">Dashboard</a>
                                 </li>
                             }
 
-                            <!-- Dark Mode Toggle (MOVED RIGHT) -->
+                            <!-- Dark Mode Toggle -->
                             <li class="nav-item me-2">
                                 <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
                                     <i id="themeIcon" class="bi bi-moon"></i>
                                 </button>
                             </li>
 
+                            <!-- Logout -->
                             <li class="nav-item">
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
@@ -88,18 +93,20 @@
                     {
                         <ul class="navbar-nav ms-auto align-items-center">
 
-                            <!-- Also show toggle when logged out -->
+                            <!-- Dark Mode Toggle -->
                             <li class="nav-item me-2">
                                 <button id="themeToggle" class="btn btn-sm btn-outline-secondary">
                                     <i id="themeIcon" class="bi bi-moon"></i>
                                 </button>
                             </li>
 
+                            <!-- Login -->
                             <li class="nav-item">
                                 <a class="btn btn-sm btn-outline-primary fw-semibold" href="/Account/Login">
                                     Sign In
                                 </a>
                             </li>
+
                         </ul>
                     }
 

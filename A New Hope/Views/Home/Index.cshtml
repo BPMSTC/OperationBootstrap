@@ -17,7 +17,8 @@
                 <div class="card workflow-card h-100">
                     <div class="card-body d-flex flex-column">
 
-                        <div class="workflow-title">
+                        <div class="workflow-title d-flex align-items-center gap-2">
+                            <i class="bi bi-people"></i>
                             @(User.IsInRole("Admin") ? "Users" : "Clients")
                         </div>
 
@@ -40,7 +41,10 @@
                 <div class="card workflow-card h-100">
                     <div class="card-body d-flex flex-column">
 
-                        <div class="workflow-title">Referrals</div>
+                        <div class="workflow-title d-flex align-items-center gap-2">
+                            <i class="bi bi-arrow-left-right"></i>
+                            Referrals
+                        </div>
 
                         <p class="workflow-text">
                             Access referral tools and workflows to manage incoming and outgoing referrals.
@@ -61,7 +65,10 @@
                 <div class="card workflow-card h-100">
                     <div class="card-body d-flex flex-column">
 
-                        <div class="workflow-title">Inventory</div>
+                        <div class="workflow-title d-flex align-items-center gap-2">
+                            <i class="bi bi-box-seam"></i>
+                            Inventory
+                        </div>
 
                         <p class="workflow-text">
                             Manage inventory items, categories, and stock levels within the system.
