@@ -106,7 +106,6 @@ namespace A_New_Hope.Controllers
         {
             try
             {
-                // Reject requests with no id.
                 if (id == null)
                 {
                     _logger.LogWarning("Details requested with null Id");
@@ -115,21 +114,44 @@ namespace A_New_Hope.Controllers
 
                 _logger.LogInformation("Fetching details for Referring Organization Id {Id}", id);
 
-                // Retrieve the requested active referring organization with service categories.
                 var referringOrganization = await _context.ReferringOrganizations
                     .Where(r => r.DeletedAt == null)
                     .Include(r => r.ReferringOrganizationServiceCategories)
                         .ThenInclude(rosc => rosc.ServiceCategory)
                     .FirstOrDefaultAsync(m => m.Id == id);
 
-                // Return not found when the organization does not exist.
                 if (referringOrganization == null)
                 {
                     _logger.LogWarning("Referring Organization Id {Id} not found", id);
                     return NotFound();
                 }
 
-                return View(referringOrganization);
+                // Map to edit VM (so Details supports edit mode)
+                var vm = new A_New_Hope.Models.ViewModels.ReferringOrganizations.ReferringOrganizationEditViewModel
+                {
+                    Id = referringOrganization.Id,
+                    Name = referringOrganization.Name,
+                    PhoneNumber = referringOrganization.PhoneNumber,
+                    Email = referringOrganization.Email,
+                    AddressLine1 = referringOrganization.AddressLine1,
+                    AddressLine2 = referringOrganization.AddressLine2,
+                    City = referringOrganization.City,
+                    State = referringOrganization.State,
+                    PostalCode = referringOrganization.PostalCode,
+                    PrimaryContactName = referringOrganization.PrimaryContactName,
+                    Notes = referringOrganization.Notes,
+                    IsActive = referringOrganization.IsActive,
+
+                    SelectedServiceCategoryIds = referringOrganization
+                        .ReferringOrganizationServiceCategories
+                        .Select(x => x.ServiceCategoryId)
+                        .ToList()
+                };
+
+                // IMPORTANT: reuse your existing helper so checkboxes populate
+                await PopulateServiceCategoriesAsync(vm);
+
+                return View(vm);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,4 @@
-@model A_New_Hope.Models.ReferringOrganization
+@model A_New_Hope.Models.ViewModels.ReferringOrganizations.ReferringOrganizationEditViewModel
 
 @{
     ViewData["Title"] = "Referring Organization Details";
@@ -6,68 +6,180 @@
 
 <h1>Referring Organization Details</h1>
 
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+    <input type="hidden" asp-for="Id" />
 
-        <dt class="col-sm-3">Service Categories</dt>
-        <dd class="col-sm-9">
-            @if (Model.ReferringOrganizationServiceCategories != null &&
-                        Model.ReferringOrganizationServiceCategories.Any())
-            {
-                @string.Join(", ",
-                Model.ReferringOrganizationServiceCategories
-                .Where(x => x.ServiceCategory != null)
-                .Select(x => x.ServiceCategory.Name)
-                .OrderBy(name => name))
+    <div>
+        <hr />
+
+        <dl class="row">
+
+            <!-- Name -->
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.Name</span>
+                <input class="form-control edit-mode d-none" asp-for="Name" />
+            </dd>
+
+            <!-- Service Categories -->
+            <dt class="col-sm-3">Service Categories</dt>
+            <dd class="col-sm-9">
+
+                <!-- VIEW MODE -->
+                <span class="view-mode">
+                    @if (Model.AvailableServiceCategories != null && Model.SelectedServiceCategoryIds != null)
+                    {
+                        var selected = Model.AvailableServiceCategories
+                            .Where(x => Model.SelectedServiceCategoryIds.Contains(
+                                ulong.Parse(x.Value)))
+                            .Select(x => x.Text)
+                            .OrderBy(x => x)
+                            .ToList();
+
+                        if (selected.Any())
+                        {
+                            @string.Join(", ", selected)
                         }
-            else
-            {
-                <span>—</span>
-            }
-        </dd>
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    }
+                    else
+                    {
+                        <span>—</span>
+                    }
+                </span>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PhoneNumber)</dd>
+                <!-- EDIT MODE -->
+                <div class="edit-mode d-none">
+                    <div class="row">
+                        @foreach (var category in Model.AvailableServiceCategories)
+                        {
+                            <div class="col-lg-6">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="SelectedServiceCategoryIds"
+                                           value="@category.Value"
+                                           id="cat_@category.Value"
+                                    @(category.Selected ? "checked" : null) />
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+                                    <label class="form-check-label" for="cat_@category.Value">
+                                        @category.Text
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine1)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine1)</dd>
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine2)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine2)</dd>
+            <!-- Phone -->
+            <dt class="col-sm-3">Phone Number</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.PhoneNumber</span>
+                <input class="form-control edit-mode d-none" asp-for="PhoneNumber" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.City)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.City)</dd>
+            <!-- Email -->
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.Email</span>
+                <input class="form-control edit-mode d-none" asp-for="Email" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.State)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.State)</dd>
+            <!-- Address -->
+            <dt class="col-sm-3">Address Line 1</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.AddressLine1</span>
+                <input class="form-control edit-mode d-none" asp-for="AddressLine1" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PostalCode)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PostalCode)</dd>
+            <dt class="col-sm-3">Address Line 2</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.AddressLine2</span>
+                <input class="form-control edit-mode d-none" asp-for="AddressLine2" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PrimaryContactName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PrimaryContactName)</dd>
+            <!-- City -->
+            <dt class="col-sm-3">City</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.City</span>
+                <input class="form-control edit-mode d-none" asp-for="City" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Notes)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>
+            <!-- State -->
+            <dt class="col-sm-3">State</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.State</span>
+                <input class="form-control edit-mode d-none" asp-for="State" maxlength="2" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
+            <!-- Postal -->
+            <dt class="col-sm-3">Postal Code</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.PostalCode</span>
+                <input class="form-control edit-mode d-none" asp-for="PostalCode" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+            <!-- Contact -->
+            <dt class="col-sm-3">Primary Contact</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.PrimaryContactName</span>
+                <input class="form-control edit-mode d-none" asp-for="PrimaryContactName" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
-    </dl>
-</div>
+            <!-- Notes -->
+            <dt class="col-sm-3">Notes</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.Notes</span>
+                <textarea class="form-control edit-mode d-none" asp-for="Notes"></textarea>
+            </dd>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
-    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
-</div>
+            <!-- Active -->
+            <dt class="col-sm-3">Active</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Model.IsActive</span>
+                <input type="checkbox" class="form-check-input edit-mode d-none" asp-for="IsActive" />
+            </dd>
+
+        </dl>
+    </div>
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" id="editBtn" class="btn btn-primary">Edit</button>
+
+        <button type="submit" id="saveBtn" class="btn btn-success d-none">Save</button>
+
+        <button type="button" id="cancelBtn" class="btn btn-secondary d-none">Cancel</button>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        const editBtn = document.getElementById("editBtn");
+        const saveBtn = document.getElementById("saveBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+
+        const viewMode = document.querySelectorAll(".view-mode");
+        const editMode = document.querySelectorAll(".edit-mode");
+
+        editBtn.addEventListener("click", () => {
+            viewMode.forEach(el => el.classList.add("d-none"));
+            editMode.forEach(el => el.classList.remove("d-none"));
+
+            editBtn.classList.add("d-none");
+            saveBtn.classList.remove("d-none");
+            cancelBtn.classList.remove("d-none");
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            location.reload();
+        });
+    </script>
+}

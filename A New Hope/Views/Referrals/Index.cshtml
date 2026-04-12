@@ -31,9 +31,7 @@
                 <th>Client</th>
                 <th>Referring Organization</th>
                 <th>@Html.DisplayNameFor(model => model.ReferredOn)</th>
-                <th>@Html.DisplayNameFor(model => model.Status)</th>
-                <th>@Html.DisplayNameFor(model => model.ValidTo)</th>
-                <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
+                <th>@Html.DisplayNameFor(model => model.Status)</th>                
                 <th class="text-end text-nowrap">Actions</th>
             </tr>
         </thead>
@@ -61,7 +59,6 @@
                         <td>@item.ValidTo</td>
 
                         <td class="text-end text-nowrap">
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
                             <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
                         </td>

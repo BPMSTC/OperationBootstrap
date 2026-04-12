@@ -131,19 +131,37 @@ namespace A_New_Hope.Controllers
 
                 _logger.LogInformation("Fetching details for Referral Id {Id}", id);
 
-                // Retrieve the requested active referral with related client and organization data.
+                // Retrieve referral with related data
                 var referral = await _context.Referrals
                     .Where(r => r.DeletedAt == null)
                     .Include(r => r.ClientUser)
                     .Include(r => r.ReferringOrganization)
                     .FirstOrDefaultAsync(m => m.Id == id);
 
-                // Return not found when the referral does not exist.
+                // Not found
                 if (referral == null)
                 {
                     _logger.LogWarning("Referral Id {Id} not found", id);
                     return NotFound();
                 }
+
+                // ✅ Clients dropdown
+                ViewBag.Clients = await _context.DomainUsers
+                    .Select(u => new SelectListItem
+                    {
+                        Value = u.Id.ToString(),
+                        Text = u.LastName + ", " + u.FirstName + " (" + u.Email + ")"
+                    })
+                    .ToListAsync();
+
+                // ✅ Organizations dropdown
+                ViewBag.Organizations = await _context.ReferringOrganizations
+                    .Select(o => new SelectListItem
+                    {
+                        Value = o.Id.ToString(),
+                        Text = o.Name
+                    })
+                    .ToListAsync();
 
                 return View(referral);
             }

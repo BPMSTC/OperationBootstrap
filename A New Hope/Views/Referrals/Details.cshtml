@@ -6,60 +6,136 @@
 
 <h1>Referral Details</h1>
 
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-3">Client</dt>
-        <dd class="col-sm-9">
-            @(
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div>
+        <hr />
+        <dl class="row">
+
+            <!-- Client -->
+            <dt class="col-sm-3">Client</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">
+                    @(
                         Model.ClientUser != null
                         ? $"{Model.ClientUser.LastName}, {Model.ClientUser.FirstName} ({Model.ClientUser.Email})"
                         : ""
-                        )
-        </dd>
+                    )
+                </span>
 
-        <dt class="col-sm-3">Referring Organization</dt>
-        <dd class="col-sm-9">
-            @(
-                        Model.ReferringOrganization != null
-                        ? Model.ReferringOrganization.Name
-                        : ""
-                        )
-        </dd>
+                <select class="form-control edit-mode d-none"
+                        asp-for="ClientUserId"
+                        asp-items="ViewBag.Clients">
+                </select>
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredOn)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ReferredOn)</dd>
+            <!-- Referring Organization -->
+            <dt class="col-sm-3">Referring Organization</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">
+                    @Model.ReferringOrganization?.Name
+                </span>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Status)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Status)</dd>
+                <select class="form-control edit-mode d-none"
+                        asp-for="ReferringOrganizationId"
+                        asp-items="ViewBag.Organizations">
+                </select>
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidFrom)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ValidFrom)</dd>
+            <!-- Referred On -->
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredOn)</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Html.DisplayFor(model => model.ReferredOn)</span>
+                <input class="form-control edit-mode d-none" asp-for="ReferredOn" />
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidTo)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ValidTo)</dd>
+            <!-- Status -->
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Status)</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Html.DisplayFor(model => model.Status)</span>
+                <input class="form-control edit-mode d-none" asp-for="Status" />
+            </dd>
 
-        <dt class="col-sm-3">Referrer Name</dt>
-        <dd class="col-sm-9">@Model.ReferringOrganization?.PrimaryContactName</dd>
+            <!-- Valid From -->
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidFrom)</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Html.DisplayFor(model => model.ValidFrom)</span>
+                <input class="form-control edit-mode d-none" asp-for="ValidFrom" />
+            </dd>
 
-        <dt class="col-sm-3">Referrer Phone</dt>
-        <dd class="col-sm-9">@Model.ReferringOrganization?.PhoneNumber</dd>
+            <!-- Valid To -->
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidTo)</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Html.DisplayFor(model => model.ValidTo)</span>
+                <input class="form-control edit-mode d-none" asp-for="ValidTo" />
+            </dd>
 
-        <dt class="col-sm-3">Referrer Email</dt>
-        <dd class="col-sm-9">@Model.ReferringOrganization?.Email</dd>
+            <!-- Referrer Info (still display-only)  we said these will likely be changed-->
+            <dt class="col-sm-3">Referrer Name</dt>
+            <dd class="col-sm-9">@Model.ReferringOrganization?.PrimaryContactName</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Notes)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>
+            <dt class="col-sm-3">Referrer Phone</dt>
+            <dd class="col-sm-9">@Model.ReferringOrganization?.PhoneNumber</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+            <dt class="col-sm-3">Referrer Email</dt>
+            <dd class="col-sm-9">@Model.ReferringOrganization?.Email</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
-    </dl>
-</div>
+            <!-- Notes -->
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Notes)</dt>
+            <dd class="col-sm-9">
+                <span class="view-mode">@Html.DisplayFor(model => model.Notes)</span>
+                <textarea class="form-control edit-mode d-none" asp-for="Notes"></textarea>
+            </dd>
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
-    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
-</div>
+            <!-- Created / Updated -->
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
+
+        </dl>
+    </div>
+
+    <!-- Buttons -->
+    <div class="d-flex justify-content-end gap-2">
+        <button type="button" id="editBtn" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Edit
+        </button>
+
+        <button type="submit" id="saveBtn" class="btn btn-success d-none">
+            <i class="bi bi-save"></i> Save
+        </button>
+
+        <button type="button" id="cancelBtn" class="btn btn-secondary d-none">
+            Cancel
+        </button>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        const editBtn = document.getElementById("editBtn");
+        const saveBtn = document.getElementById("saveBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+
+        const viewMode = document.querySelectorAll(".view-mode");
+        const editMode = document.querySelectorAll(".edit-mode");
+
+        editBtn.addEventListener("click", () => {
+            viewMode.forEach(el => el.classList.add("d-none"));
+            editMode.forEach(el => el.classList.remove("d-none"));
+
+            editBtn.classList.add("d-none");
+            saveBtn.classList.remove("d-none");
+            cancelBtn.classList.remove("d-none");
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            location.reload();
+        });
+    </script>
+}
