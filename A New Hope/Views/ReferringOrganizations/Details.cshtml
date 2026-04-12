@@ -12,8 +12,22 @@
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Type)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Type)</dd>
+        <dt class="col-sm-3">Service Categories</dt>
+        <dd class="col-sm-9">
+            @if (Model.ReferringOrganizationServiceCategories != null &&
+                        Model.ReferringOrganizationServiceCategories.Any())
+            {
+                @string.Join(", ",
+                Model.ReferringOrganizationServiceCategories
+                .Where(x => x.ServiceCategory != null)
+                .Select(x => x.ServiceCategory.Name)
+                .OrderBy(name => name))
+                        }
+            else
+            {
+                <span>—</span>
+            }
+        </dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.PhoneNumber)</dd>

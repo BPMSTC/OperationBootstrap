@@ -21,6 +21,7 @@
 
 using A_New_Hope.Models;
 using Microsoft.EntityFrameworkCore;
+using A_New_Hope.Models.Enums;
 
 namespace A_New_Hope.Data
 {
@@ -151,7 +152,7 @@ namespace A_New_Hope.Data
                     new ClientProfile
                     {
                         UserId = clientUser1.Id,
-                        EmploymentStatus = "Part-time",
+                        EmploymentStatus = EmploymentStatus.PartTime,
                         IsUnhoused = false,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -161,7 +162,7 @@ namespace A_New_Hope.Data
                     new ClientProfile
                     {
                         UserId = clientUser2.Id,
-                        EmploymentStatus = "Unemployed",
+                        EmploymentStatus = EmploymentStatus.Unemployed,
                         IsUnhoused = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -196,7 +197,7 @@ namespace A_New_Hope.Data
                     {
                         ClientProfileUserId = clientUser2.Id,
                         IncomeType = IncomeType.Unemployment,
-                        MonthlyAmount = 0m,
+                        MonthlyAmount = 300.00m,
                         IsActive = true,
                         Notes = null,
                         CreatedByUserId = adminUser.Id,
@@ -255,7 +256,6 @@ namespace A_New_Hope.Data
                     new CategoryGroup
                     {
                         Name = "Food",
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -265,7 +265,6 @@ namespace A_New_Hope.Data
                     new CategoryGroup
                     {
                         Name = "Non-Food",
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -295,7 +294,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Canned Goods",
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -306,7 +304,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Pasta / Grains",
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -317,7 +314,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Breakfast / Pantry",
-                        SortOrder = 3,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -328,7 +324,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Produce",
-                        SortOrder = 4,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -339,7 +334,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Refrigerated",
-                        SortOrder = 5,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -350,7 +344,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Frozen Protein",
-                        SortOrder = 6,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -361,7 +354,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = foodGroup.Id,
                         Name = "Condiments / Baking Staples",
-                        SortOrder = 7,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -376,7 +368,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = nonFoodGroup.Id,
                         Name = "Paper Goods",
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -387,7 +378,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = nonFoodGroup.Id,
                         Name = "Personal Care",
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -398,7 +388,6 @@ namespace A_New_Hope.Data
                     {
                         CategoryGroupId = nonFoodGroup.Id,
                         Name = "Cleaning Supplies",
-                        SortOrder = 3,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -445,39 +434,60 @@ namespace A_New_Hope.Data
 
 
             // ============================================================
-            // REFERRING ORGANIZATIONS
+            // SERVICE CATEGORIES
             // ============================================================
-            // ReferringOrganizations represent external agencies/organizations that refer clients.
-            // Referrals will link a client to a ReferringOrganization.
-            if (!await context.ReferringOrganizations.AnyAsync())
+
+            if (!await context.ServiceCategories.AnyAsync())
             {
-                context.ReferringOrganizations.AddRange(
-                    new ReferringOrganization
+                context.ServiceCategories.AddRange(
+                    new ServiceCategory
                     {
-                        Name = "Portage County Social Services",
-                        Type = "County Agency",
-                        PhoneNumber = "555-100-2000",
-                        Email = "referrals@portagecounty.local",
-                        City = "Stevens Point",
-                        State = "WI",
-                        PostalCode = "54481",
-                        PrimaryContactName = "Alex Rivera",
+                        Name = "Food",
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
                         CreatedAt = now,
                         UpdatedAt = now
                     },
-                    new ReferringOrganization
+                    new ServiceCategory
                     {
-                        Name = "Hope Community Clinic",
-                        Type = "Clinic",
-                        PhoneNumber = "555-300-4000",
-                        Email = "intake@hopeclinic.local",
-                        City = "Plover",
-                        State = "WI",
-                        PostalCode = "54467",
-                        PrimaryContactName = "Jordan Lee",
+                        Name = "Medical",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ServiceCategory
+                    {
+                        Name = "Transportation",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ServiceCategory
+                    {
+                        Name = "Clothing",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ServiceCategory
+                    {
+                        Name = "Hygiene",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ServiceCategory
+                    {
+                        Name = "Baby Supplies",
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -489,8 +499,80 @@ namespace A_New_Hope.Data
                 await context.SaveChangesAsync();
             }
 
-            // Pull a specific organization for FK use in Referrals seeding.
+            // ============================================================
+            // REFERRING ORGANIZATIONS
+            // ============================================================
+            // ReferringOrganizations represent external agencies/organizations that refer clients.
+            // Referrals will link a client to a ReferringOrganization.
+            if (!await context.ReferringOrganizations.AnyAsync())
+            {
+                context.ReferringOrganizations.AddRange(
+                new ReferringOrganization
+                {
+                    Name = "Portage County Social Services",
+                    PhoneNumber = "555-100-2000",
+                    Email = "referrals@portagecounty.local",
+                    AddressLine1 = "1462 Main Street",
+                    City = "Stevens Point",
+                    State = "WI",
+                    PostalCode = "54481",
+                    PrimaryContactName = "Alex Rivera",
+                    IsActive = true,
+                    CreatedByUserId = adminUser.Id,
+                    UpdatedByUserId = adminUser.Id,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                },
+                new ReferringOrganization
+                {
+                    Name = "Hope Community Clinic",
+                    PhoneNumber = "555-300-4000",
+                    Email = "intake@hopeclinic.local",
+                    AddressLine1 = "825 Clinic Avenue",
+                    City = "Plover",
+                    State = "WI",
+                    PostalCode = "54467",
+                    PrimaryContactName = "Jordan Lee",
+                    IsActive = true,
+                    CreatedByUserId = adminUser.Id,
+                    UpdatedByUserId = adminUser.Id,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                }
+                );
+
+                await context.SaveChangesAsync();
+            }
+
             var org1 = await context.ReferringOrganizations.FirstAsync(o => o.Name == "Portage County Social Services");
+            var org2 = await context.ReferringOrganizations.FirstAsync(o => o.Name == "Hope Community Clinic");
+
+            var foodServiceCategory = await context.ServiceCategories.FirstAsync(c => c.Name == "Food");
+            var medicalServiceCategory = await context.ServiceCategories.FirstAsync(c => c.Name == "Medical");
+            var transportationServiceCategory = await context.ServiceCategories.FirstAsync(c => c.Name == "Transportation");
+
+            if (!await context.ReferringOrganizationServiceCategories.AnyAsync())
+            {
+                context.ReferringOrganizationServiceCategories.AddRange(
+                    new ReferringOrganizationServiceCategory
+                    {
+                        ReferringOrganizationId = org1.Id,
+                        ServiceCategoryId = foodServiceCategory.Id
+                    },
+                    new ReferringOrganizationServiceCategory
+                    {
+                        ReferringOrganizationId = org1.Id,
+                        ServiceCategoryId = transportationServiceCategory.Id
+                    },
+                    new ReferringOrganizationServiceCategory
+                    {
+                        ReferringOrganizationId = org2.Id,
+                        ServiceCategoryId = medicalServiceCategory.Id
+                    }
+                );
+
+                await context.SaveChangesAsync();
+            }
 
 
             // ============================================================
@@ -1279,7 +1361,6 @@ namespace A_New_Hope.Data
                         Name = "OilOrMayo",
                         DisplayLabel = "Vegetable Oil or Mayo",
                         MaxSelections = 1,
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1291,7 +1372,6 @@ namespace A_New_Hope.Data
                         Name = "KetchupOrMustard",
                         DisplayLabel = "Ketchup or Mustard",
                         MaxSelections = 1,
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1303,7 +1383,6 @@ namespace A_New_Hope.Data
                         Name = "SugarOrFlour",
                         DisplayLabel = "Sugar or Flour",
                         MaxSelections = 1,
-                        SortOrder = 3,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1315,7 +1394,6 @@ namespace A_New_Hope.Data
                         Name = "PancakeSyrupOrJelly",
                         DisplayLabel = "Pancake Syrup or Jelly",
                         MaxSelections = 1,
-                        SortOrder = 4,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1356,7 +1434,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = oilOrMayoGroup.Id,
                         InventoryItemId = vegetableOil.Id,
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1367,7 +1444,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = oilOrMayoGroup.Id,
                         InventoryItemId = mayo.Id,
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1380,7 +1456,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = ketchupOrMustardGroup.Id,
                         InventoryItemId = ketchup.Id,
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1391,7 +1466,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = ketchupOrMustardGroup.Id,
                         InventoryItemId = mustard.Id,
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1404,7 +1478,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = sugarOrFlourGroup.Id,
                         InventoryItemId = sugar.Id,
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1415,7 +1488,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = sugarOrFlourGroup.Id,
                         InventoryItemId = flour.Id,
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1428,7 +1500,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = pancakeSyrupOrJellyGroup.Id,
                         InventoryItemId = pancakeSyrup.Id,
-                        SortOrder = 1,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
@@ -1439,7 +1510,6 @@ namespace A_New_Hope.Data
                     {
                         InventoryChoiceGroupId = pancakeSyrupOrJellyGroup.Id,
                         InventoryItemId = jelly.Id,
-                        SortOrder = 2,
                         IsActive = true,
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,

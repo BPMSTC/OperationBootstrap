@@ -3,32 +3,31 @@
 namespace A_New_Hope.Models
 {
     /// <summary>
-    /// Stores one monthly income source for a client profile.
+    /// Broad service category used to classify referring organizations
+    /// and, later, potentially referrals.
+    /// Examples: Food, Medical, Transportation, Clothing.
     /// </summary>
-    public class ClientIncome
+    public class ServiceCategory
     {
         public ulong Id { get; set; }
 
-        public ulong ClientProfileUserId { get; set; }
-
-        public IncomeType IncomeType { get; set; }
-
-        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "Monthly amount must be greater than 0.")]
-        public decimal MonthlyAmount { get; set; }
+        [Required]
+        [MaxLength(100)]
+        public string Name { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
 
-        [MaxLength(250)]
-        public string? Notes { get; set; }
-
         public ulong? CreatedByUserId { get; set; }
         public ulong? UpdatedByUserId { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime? DeletedAt { get; set; }
 
-        public ClientProfile ClientProfile { get; set; } = null!;
         public DomainUser? CreatedByUser { get; set; }
         public DomainUser? UpdatedByUser { get; set; }
+
+        public ICollection<ReferringOrganizationServiceCategory> ReferringOrganizationServiceCategories { get; set; }
+            = new List<ReferringOrganizationServiceCategory>();
     }
 }

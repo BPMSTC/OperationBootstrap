@@ -48,8 +48,8 @@
                                     <dt class="col-sm-4">Organization Name</dt>
                                     <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.Name)</dd>
 
-                                    <dt class="col-sm-4">Primary Type of Service</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.Type)</dd>
+                                    <dt class="col-sm-4">Service Categories</dt>
+                                    <dd class="col-sm-8">@DisplayOrDash(Model.NewOrganizationServiceCategoriesDisplay)</dd>
 
                                     <dt class="col-sm-4">Contact Person Name</dt>
                                     <dd class="col-sm-8">@DisplayOrDash(draft.NewOrganization.PrimaryContactName)</dd>
@@ -120,7 +120,9 @@
                                     <dd class="col-sm-8">@DisplayDateOnlyOrDash(newClient.DateOfBirth)</dd>
 
                                     <dt class="col-sm-4">Employment Status</dt>
-                                    <dd class="col-sm-8">@DisplayOrDash(newClient.EmploymentStatus)</dd>
+                                    <dd class="col-sm-8">
+                                        @DisplayOrDash(newClient.EmploymentStatus?.ToString())
+                                    </dd>
 
                                     <dt class="col-sm-4">Currently Unhoused</dt>
                                     <dd class="col-sm-8">@(newClient.IsUnhoused ? "Yes" : "No")</dd>
@@ -215,8 +217,8 @@
                                                 <dt class="col-sm-4">Date of Birth</dt>
                                                 <dd class="col-sm-8">@DisplayDateTimeOrDash(member.DateOfBirth)</dd>
 
-                                                <dt class="col-sm-4">Age As Of Date</dt>
-                                                <dd class="col-sm-8">@DisplayDateTimeOrDash(member.AgeAsOfDate)</dd>
+                                                <dt class="col-sm-4">Approximate Age</dt>
+                                                <dd class="col-sm-8">@DisplayOrDash(member.ApproximateAge?.ToString())</dd>
                                             </dl>
                                         </div>
                                     }

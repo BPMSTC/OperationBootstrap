@@ -376,7 +376,6 @@ namespace A_New_Hope.Controllers
                 .Where(c => c.DeletedAt == null && c.CategoryGroup.DeletedAt == null)
                 .Include(c => c.CategoryGroup)
                 .OrderBy(c => c.CategoryGroup.Name)
-                .ThenBy(c => c.SortOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
 

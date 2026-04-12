@@ -18,27 +18,22 @@ namespace A_New_Hope.Models
         [Display(Name = "Inventory Item")]
         public ulong InventoryItemId { get; set; }
 
+        /*
         [Display(Name = "Sort Order")]
+        [Range(0, int.MaxValue, ErrorMessage = "Sort order must be 0 or greater.")]
         public int SortOrder { get; set; } = 0;
+        */
 
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
-
         public ulong? CreatedByUserId { get; set; }
         public ulong? UpdatedByUserId { get; set; }
-
-        [Display(Name = "Created At")]
         public DateTime CreatedAt { get; set; }
-
-        [Display(Name = "Updated At")]
         public DateTime UpdatedAt { get; set; }
-
-        [Display(Name = "Deleted At")]
         public DateTime? DeletedAt { get; set; }
 
         public InventoryChoiceGroup InventoryChoiceGroup { get; set; } = null!;
         public InventoryItem InventoryItem { get; set; } = null!;
-
         public DomainUser? CreatedByUser { get; set; }
         public DomainUser? UpdatedByUser { get; set; }
     }

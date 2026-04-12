@@ -37,92 +37,85 @@ namespace A_New_Hope.Models
         /// MaxLength prevents LONGTEXT in MySQL and keeps the column index-friendly.
         /// </summary>
         [Required(ErrorMessage = "Organization name is required.")]
-        [MaxLength(200)] // Prevents LONGTEXT in MySQL; keeps org names index-friendly if you add a unique/search index later
-        [RegularExpression(@"^[A-Za-z0-9\s&().,'\-]+$", ErrorMessage = "Organization name contains invalid characters.")]
-        public string Name { get; set; } = null!;
+        [MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional organization type/category (e.g., "Clinic", "County Agency").
         /// </summary>
-        [MaxLength(100)] // Keeps this as VARCHAR and prevents oversized values
-        [RegularExpression(@"^[A-Za-z0-9\s&().,'\-]*$", ErrorMessage = "Organization type contains invalid characters.")]
+        [MaxLength(100)]
         public string? Type { get; set; }
 
         /// <summary>
-        /// Optional main phone number.
-        /// [Phone] provides MVC-level validation for cleaner form input.
+        /// Main phone number.
         /// </summary>
-        [MaxLength(25)] // Prevents LONGTEXT; allows punctuation/extensions
-        [Phone(ErrorMessage = "Please enter a valid phone number.")] // MVC validation for cleaner input
-        [RegularExpression(@"^\+?[0-9()\-\s]+$", ErrorMessage = "Phone number contains invalid characters.")]
-        public string? PhoneNumber { get; set; }
+        [Required(ErrorMessage = "Phone number is required.")]
+        [MaxLength(25)]
+        [RegularExpression(@"^(\+1\s?)?(\([0-9]{3}\)|[0-9]{3})[\s.-]?[0-9]{3}[\s.-]?[0-9]{4}$",
+            ErrorMessage = "Please enter a valid phone number.")]
+        public string PhoneNumber { get; set; } = string.Empty;
 
         /// <summary>
-        /// Optional main email address.
-        /// [EmailAddress] provides MVC-level validation for cleaner form input.
+        /// Email address.
         /// </summary>
-        [MaxLength(254)] // Practical max for email addresses
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")] // MVC validation
-        [RegularExpression(@"^[A-Za-z0-9._+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$",
-            ErrorMessage = "Email format is invalid.")]
-        public string? Email { get; set; }
+        [Required(ErrorMessage = "Email address is required.")]
+        [MaxLength(254)]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+        public string Email { get; set; } = string.Empty;
 
         // -----------------------------------------------------------------
-        // Address fields (optional)
+        // Address fields
         // -----------------------------------------------------------------
 
         /// <summary>
-        /// Optional address line 1.
+        /// Address line 1.
         /// </summary>
+        [Required(ErrorMessage = "Address line 1 is required.")]
         [MaxLength(200)]
-        [RegularExpression(@"^[A-Za-z0-9\s#.,'\-]*$", ErrorMessage = "Address contains invalid characters.")]
-        public string? AddressLine1 { get; set; } // Avoid LONGTEXT
+        public string AddressLine1 { get; set; } = string.Empty;
 
         /// <summary>
-        /// Optional address line 2.
+        /// Address line 2.
         /// </summary>
         [MaxLength(200)]
-        [RegularExpression(@"^[A-Za-z0-9\s#.,'\-]*$", ErrorMessage = "Address contains invalid characters.")]
-        public string? AddressLine2 { get; set; } // Avoid LONGTEXT
+        public string? AddressLine2 { get; set; }
 
         /// <summary>
-        /// Optional city.
+        /// City.
         /// </summary>
+        [Required(ErrorMessage = "City is required.")]
         [MaxLength(100)]
-        [RegularExpression(@"^[A-Za-z\s.\-']*$", ErrorMessage = "City contains invalid characters.")]
-        public string? City { get; set; } // Avoid LONGTEXT
+        public string City { get; set; } = string.Empty;
 
         /// <summary>
-        /// Optional state/region.
+        /// State.
         /// </summary>
-        [MaxLength(50)]
-        [RegularExpression(@"^[A-Za-z\s.\-']*$", ErrorMessage = "State contains invalid characters.")]
-        public string? State { get; set; } // Use 2 if strictly US-only
+        [Required(ErrorMessage = "State is required.")]
+        [StringLength(2, ErrorMessage = "State must be a 2-letter abbreviation.")]
+        [RegularExpression(@"^[A-Za-z]{2}$", ErrorMessage = "State must be a valid 2-letter abbreviation.")]
+        public string State { get; set; } = string.Empty;
 
         /// <summary>
-        /// Optional postal/zip code.
+        /// Postal/zip code.
+        /// Supports US ZIP or ZIP+4
         /// </summary>
-        /// <summary>
-        /// Optional postal/zip code.
-        /// Accepts 5-digit ZIP, ZIP+4 (US), or alphanumeric for non-US postal codes.
-        /// </summary>
-        [MaxLength(20)]
+        [Required(ErrorMessage = "ZIP code is required.")]
+        [MaxLength(10)]
         [RegularExpression(@"^\d{5}(-\d{4})?$",
             ErrorMessage = "Enter a valid US ZIP code.")]
-        public string? PostalCode { get; set; } // Supports ZIP/ZIP+4 and non-US formats if needed
+        public string PostalCode { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional primary contact name at the organization.
         /// </summary>
-        [MaxLength(200)] // Keeps contact names reasonable and indexable if needed
-        [RegularExpression(@"^[A-Za-z][A-Za-z\s'.-]*$", ErrorMessage = "Contact name contains invalid characters.")]
+        [MaxLength(200)]
         public string? PrimaryContactName { get; set; }
 
         /// <summary>
         /// Optional free-form notes about the organization.
-        /// Left uncapped to allow longer descriptions if needed.
         /// </summary>
-        public string? Notes { get; set; } // Leave uncapped if you want free-form notes (TEXT/LONGTEXT is okay here)
+        [MaxLength(2000)]
+        public string? Notes { get; set; }
 
         /// <summary>
         /// Business toggle to enable/disable the organization in selection lists and workflows.
@@ -134,29 +127,32 @@ namespace A_New_Hope.Models
         // -----------------------------------------------------------------
 
         /// <summary>
-        /// Audit: DomainUser who created this record (nullable until auth is wired).
+        /// Audit: DomainUser who created this record.
+        /// Nullable until authentication/auditing is fully wired.
         /// </summary>
         public ulong? CreatedByUserId { get; set; }
 
         /// <summary>
-        /// Audit: DomainUser who last updated this record (nullable until auth is wired).
+        /// Audit: DomainUser who last updated this record.
+        /// Nullable until authentication/auditing is fully wired.
         /// </summary>
         public ulong? UpdatedByUserId { get; set; }
 
         /// <summary>
-        /// Timestamp when the record was created (typically set server-side in UTC).
+        /// UTC timestamp when the record was created.
+        /// Set server-side when the entity is first saved.
         /// </summary>
         public DateTime CreatedAt { get; set; }
 
         /// <summary>
-        /// Timestamp when the record was last updated (typically set server-side in UTC).
+        /// UTC timestamp when the record was last updated.
+        /// Set server-side whenever the entity is modified.
         /// </summary>
         public DateTime UpdatedAt { get; set; }
 
         /// <summary>
-        /// Soft delete marker:
-        /// - null = not deleted
-        /// - non-null = deleted (excluded by global query filters in ApplicationDbContext)
+        /// UTC timestamp for soft deletion.
+        /// Null means the record is active; non-null means it is soft deleted.
         /// </summary>
         public DateTime? DeletedAt { get; set; }
 
@@ -165,20 +161,23 @@ namespace A_New_Hope.Models
         // -----------------------------------------------------------------
 
         /// <summary>
-        /// Navigation collection of referrals created by / associated with this organization.
-        /// Initialized to an empty list to avoid null checks.
+        /// Referrals associated with this organization.
+        /// Initialized to an empty collection to avoid null checks.
         /// </summary>
         public ICollection<Referral> Referrals { get; set; } = new List<Referral>();
 
-        /// <summary>
-        /// Navigation to the DomainUser who created this record (useful for Include() and admin audit views).
-        /// </summary>
-        public DomainUser? CreatedByUser { get; set; } // Added to match CreatedByUserId and support Include() in admin/audit views
+        public ICollection<ReferringOrganizationServiceCategory> ReferringOrganizationServiceCategories { get; set; }
+            = new List<ReferringOrganizationServiceCategory>();
 
         /// <summary>
-        /// Navigation to the DomainUser who last updated this record.
+        /// DomainUser who created this record.
         /// </summary>
-        public DomainUser? UpdatedByUser { get; set; } // Added to match UpdatedByUserId and support Include()
+        public DomainUser? CreatedByUser { get; set; }
+
+        /// <summary>
+        /// DomainUser who last updated this record.
+        /// </summary>
+        public DomainUser? UpdatedByUser { get; set; }
     }
 }
 

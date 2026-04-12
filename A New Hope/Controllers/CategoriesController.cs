@@ -37,7 +37,6 @@ namespace A_New_Hope.Controllers
                 .Include(c => c.CategoryGroup)
                 .Include(c => c.Parent)
                 .OrderBy(c => c.CategoryGroup.Name)
-                .ThenBy(c => c.SortOrder)
                 .ThenBy(c => c.Name)
                 .ToListAsync();
 
@@ -97,7 +96,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("CategoryGroupId,ParentId,Name,SortOrder,IsActive")] Category category)
+        public async Task<IActionResult> Create([Bind("CategoryGroupId,ParentId,Name,IsActive")] Category category)
         {
             _logger.LogInformation(
                 "Attempting to create category {Name} in CategoryGroupId {GroupId}",
@@ -188,7 +187,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,CategoryGroupId,ParentId,Name,SortOrder,IsActive")] Category formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,CategoryGroupId,ParentId,Name,IsActive")] Category formModel)
         {
             _logger.LogInformation("Attempting to edit CategoryId {Id}", id);
 
@@ -233,7 +232,6 @@ namespace A_New_Hope.Controllers
             existing.CategoryGroupId = formModel.CategoryGroupId;
             existing.ParentId = formModel.ParentId;
             existing.Name = formModel.Name;
-            existing.SortOrder = formModel.SortOrder;
             existing.IsActive = formModel.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedByUserId = null;
@@ -343,8 +341,7 @@ namespace A_New_Hope.Controllers
             // Retrieve active category groups for the category group dropdown.
             var categoryGroups = await _context.CategoryGroups
                 .Where(g => g.DeletedAt == null)
-                .OrderBy(g => g.SortOrder)
-                .ThenBy(g => g.Name)
+                .OrderBy(g => g.Name)
                 .ToListAsync();
 
             // Build the base query for active categories used in the parent dropdown.
@@ -409,12 +406,6 @@ namespace A_New_Hope.Controllers
             if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
             {
                 ModelState.AddModelError(nameof(Category.Name), "Category name must contain letters or numbers.");
-            }
-
-            // Prevent negative sort order values.
-            if (model.SortOrder < 0)
-            {
-                ModelState.AddModelError(nameof(Category.SortOrder), "Sort Order cannot be less than 0.");
             }
 
             // Validate parent category rules when a parent is selected.

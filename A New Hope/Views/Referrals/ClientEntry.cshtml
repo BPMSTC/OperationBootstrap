@@ -1,6 +1,8 @@
 ﻿@model A_New_Hope.Models.ViewModels.Referrals.ClientEntryViewModel
 @using A_New_Hope.Models
 @using A_New_Hope.Models.Inputs
+@using A_New_Hope.Models.Enums
+
 
 @{
     ViewData["Title"] = "Client";
@@ -156,7 +158,11 @@
 
                                     <div class="col-md-4">
                                         <label asp-for="NewClient.EmploymentStatus" class="form-label"></label>
-                                        <input asp-for="NewClient.EmploymentStatus" class="form-control new-client-field" />
+                                        <select asp-for="NewClient.EmploymentStatus"
+                                                asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
+                                                class="form-select new-client-field">
+                                            <option value="">-- Select employment status --</option>
+                                        </select>
                                         <span asp-validation-for="NewClient.EmploymentStatus" class="text-danger"></span>
                                     </div>
                                 </div>

@@ -95,7 +95,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ClientUserId,FirstName,LastName,DateOfBirth,AgeAsOfDate")] HouseholdMember householdMember)
+        public async Task<IActionResult> Create([Bind("ClientUserId,FirstName,LastName,DateOfBirth,ApproximateAge")] HouseholdMember householdMember)
         {
             _logger.LogInformation("Attempting to create HouseholdMember for ClientUserId {ClientUserId}", householdMember.ClientUserId);
 
@@ -181,7 +181,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,FirstName,LastName,DateOfBirth,AgeAsOfDate")] HouseholdMember formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,FirstName,LastName,DateOfBirth,ApproximateAge")] HouseholdMember formModel)
         {
             _logger.LogInformation("Attempting to edit HouseholdMember Id {Id}", id);
 
@@ -225,7 +225,7 @@ namespace A_New_Hope.Controllers
             existing.FirstName = formModel.FirstName;
             existing.LastName = formModel.LastName;
             existing.DateOfBirth = formModel.DateOfBirth;
-            existing.AgeAsOfDate = formModel.AgeAsOfDate;
+            existing.ApproximateAge = formModel.ApproximateAge;
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedByUserId = null; // Placeholder until auth integration.
 
@@ -435,11 +435,18 @@ namespace A_New_Hope.Controllers
                 }
             }
 
-            // Ensure Age As Of Date is not earlier than Date of Birth.
-            if (model.AgeAsOfDate.HasValue && model.DateOfBirth.HasValue &&
-                model.AgeAsOfDate.Value.Date < model.DateOfBirth.Value.Date)
+            // Require either Date of Birth or Approximate Age.
+            if (!model.DateOfBirth.HasValue && !model.ApproximateAge.HasValue)
             {
-                ModelState.AddModelError(nameof(HouseholdMember.AgeAsOfDate), "Age As Of Date cannot be earlier than Date of Birth.");
+                ModelState.AddModelError(nameof(HouseholdMember.DateOfBirth), "Enter either Date of Birth or Approximate Age.");
+                ModelState.AddModelError(nameof(HouseholdMember.ApproximateAge), "Enter either Date of Birth or Approximate Age.");
+            }
+
+            // Optional: block both being entered at once.
+            if (model.DateOfBirth.HasValue && model.ApproximateAge.HasValue)
+            {
+                ModelState.AddModelError(nameof(HouseholdMember.DateOfBirth), "Enter either Date of Birth or Approximate Age, not both.");
+                ModelState.AddModelError(nameof(HouseholdMember.ApproximateAge), "Enter either Date of Birth or Approximate Age, not both.");
             }
         }
 

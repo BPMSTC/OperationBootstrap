@@ -18,9 +18,6 @@
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.MaxSelections)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.MaxSelections)</dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SortOrder)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.SortOrder)</dd>
-
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
         <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
 
@@ -30,8 +27,7 @@
             {
                 <ul class="mb-3">
                     @foreach (var item in Model.InventoryChoiceGroupItems
-                        .OrderBy(i => i.SortOrder)
-                        .ThenBy(i => i.InventoryItem.Name))
+                        .OrderBy(i => i.InventoryItem.Name))
                     {
                         <li>
                             @item.InventoryItem.Name

@@ -29,7 +29,6 @@ namespace A_New_Hope.Services
             }
 
             Normalize(input);
-
             ValidateRequiredFields(input);
 
             var duplicateExists = await _context.ReferringOrganizations
@@ -42,20 +41,42 @@ namespace A_New_Hope.Services
                 throw new InvalidOperationException("An organization with this name already exists.");
             }
 
+            var distinctCategoryIds = input.SelectedServiceCategoryIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            if (!distinctCategoryIds.Any())
+            {
+                throw new ArgumentException("At least one service category is required.", nameof(input));
+            }
+
+            var validCategoryIds = await _context.ServiceCategories
+                .Where(c =>
+                    c.DeletedAt == null &&
+                    c.IsActive &&
+                    distinctCategoryIds.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            if (validCategoryIds.Count != distinctCategoryIds.Count)
+            {
+                throw new ArgumentException("One or more selected service categories are invalid.", nameof(input));
+            }
+
             var now = DateTime.UtcNow;
 
             var entity = new ReferringOrganization
             {
                 Name = input.Name!,
-                Type = input.Type,
                 PrimaryContactName = input.PrimaryContactName,
-                Email = input.Email,
-                PhoneNumber = input.PhoneNumber,
-                AddressLine1 = input.AddressLine1,
+                Email = input.Email!,
+                PhoneNumber = input.PhoneNumber!,
+                AddressLine1 = input.AddressLine1!,
                 AddressLine2 = input.AddressLine2,
-                City = input.City,
-                State = input.State,
-                PostalCode = input.PostalCode,
+                City = input.City!,
+                State = input.State!,
+                PostalCode = input.PostalCode!,
                 Notes = input.Notes,
                 IsActive = true,
                 CreatedAt = now,
@@ -65,6 +86,18 @@ namespace A_New_Hope.Services
             };
 
             _context.ReferringOrganizations.Add(entity);
+            await _context.SaveChangesAsync();
+
+            foreach (var categoryId in validCategoryIds)
+            {
+                _context.ReferringOrganizationServiceCategories.Add(
+                    new ReferringOrganizationServiceCategory
+                    {
+                        ReferringOrganizationId = entity.Id,
+                        ServiceCategoryId = categoryId
+                    });
+            }
+
             await _context.SaveChangesAsync();
 
             _logger.LogInformation(
@@ -86,7 +119,6 @@ namespace A_New_Hope.Services
         private static void Normalize(ReferringOrganizationEntryInput input)
         {
             input.Name = NullIfWhiteSpace(input.Name);
-            input.Type = NullIfWhiteSpace(input.Type);
             input.PrimaryContactName = NullIfWhiteSpace(input.PrimaryContactName);
             input.Email = NullIfWhiteSpace(input.Email);
             input.PhoneNumber = NullIfWhiteSpace(input.PhoneNumber);
@@ -96,6 +128,8 @@ namespace A_New_Hope.Services
             input.State = NullIfWhiteSpace(input.State)?.ToUpperInvariant();
             input.PostalCode = NullIfWhiteSpace(input.PostalCode);
             input.Notes = NullIfWhiteSpace(input.Notes);
+
+            input.SelectedServiceCategoryIds ??= new List<ulong>();
         }
 
         private static void ValidateRequiredFields(ReferringOrganizationEntryInput input)
@@ -103,6 +137,36 @@ namespace A_New_Hope.Services
             if (string.IsNullOrWhiteSpace(input.Name))
             {
                 throw new ArgumentException("Organization name is required.", nameof(input));
+            }
+
+            if (string.IsNullOrWhiteSpace(input.PhoneNumber))
+            {
+                throw new ArgumentException("Phone number is required.", nameof(input));
+            }
+
+            if (string.IsNullOrWhiteSpace(input.Email))
+            {
+                throw new ArgumentException("Email address is required.", nameof(input));
+            }
+
+            if (string.IsNullOrWhiteSpace(input.AddressLine1))
+            {
+                throw new ArgumentException("Address line 1 is required.", nameof(input));
+            }
+
+            if (string.IsNullOrWhiteSpace(input.City))
+            {
+                throw new ArgumentException("City is required.", nameof(input));
+            }
+
+            if (string.IsNullOrWhiteSpace(input.State))
+            {
+                throw new ArgumentException("State is required.", nameof(input));
+            }
+
+            if (string.IsNullOrWhiteSpace(input.PostalCode))
+            {
+                throw new ArgumentException("Postal code is required.", nameof(input));
             }
         }
 

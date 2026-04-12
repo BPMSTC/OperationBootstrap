@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength], [Required]
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace A_New_Hope.Models
 {
@@ -35,27 +35,27 @@ namespace A_New_Hope.Models
         /// Item name (required).
         /// MaxLength prevents EF/MySQL from defaulting to LONGTEXT and keeps the column as VARCHAR for indexing/search.
         /// </summary>
-        [Required(ErrorMessage = "Item name is required")] // Front-end validation to prevent empty submissions
-        [MaxLength(200, ErrorMessage = "Item name cannot exceed 200 characters")] // Prevents EF/MySQL from defaulting to LONGTEXT; keeps the column as VARCHAR and supports future indexing/searching
-        public string Name { get; set; } = null!;
+        [Required(ErrorMessage = "Item name is required.")]
+        [MaxLength(200, ErrorMessage = "Item name cannot exceed 200 characters.")]
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// Foreign key to the Category this item belongs to.
         /// </summary>
-        [Required(ErrorMessage = "A category must be selected")] // Prevents submitting items without a category
+        [Display(Name = "Category")]
         public ulong CategoryId { get; set; }
 
         /// <summary>
         /// True if this item is considered part of a baseline/default catalog.
         /// Useful for initial setup or for differentiating "standard" items from ad-hoc ones.
         /// </summary>
-        public bool IsBaseline { get; set; } = false; // Keep if you need a "default catalog" flag; otherwise consider removing later
+        public bool IsBaseline { get; set; } = false;
 
         /// <summary>
         /// Indicates whether this item is currently available (stock/availability state).
         /// This can change frequently without removing or disabling the item from the catalog.
         /// </summary>
-        public bool IsAvailable { get; set; } = true; // Availability can change day-to-day without removing the item from the catalog
+        public bool IsAvailable { get; set; } = true;
 
         /// <summary>
         /// Indicates whether this item is enabled in the catalog (admin/business toggle).
@@ -63,63 +63,19 @@ namespace A_New_Hope.Models
         /// - IsActive=false means "do not use this item at all" (hidden/disabled)
         /// - IsAvailable=false means "item exists but isn't available right now"
         /// </summary>
-        public bool IsActive { get; set; } = true; // "Catalog enabled/disabled" flag; different meaning than IsAvailable
+        public bool IsActive { get; set; } = true;
 
-        /// <summary>
-        /// Audit: DomainUser who created this record (nullable until auth is wired).
-        /// </summary>
         public ulong? CreatedByUserId { get; set; }
-
-        /// <summary>
-        /// Audit: DomainUser who last updated this record (nullable until auth is wired).
-        /// </summary>
         public ulong? UpdatedByUserId { get; set; }
-
-        /// <summary>
-        /// Timestamp when the record was created (typically set server-side in UTC).
-        /// </summary>
         public DateTime CreatedAt { get; set; }
-
-        /// <summary>
-        /// Timestamp when the record was last updated (typically set server-side in UTC).
-        /// </summary>
         public DateTime UpdatedAt { get; set; }
-
-        /// <summary>
-        /// Soft delete marker:
-        /// - null = not deleted
-        /// - non-null = deleted (excluded by global query filters in ApplicationDbContext)
-        /// </summary>
         public DateTime? DeletedAt { get; set; }
 
-        // -----------------------------------------------------------------
-        // Navigation properties (EF Core relationships)
-        // -----------------------------------------------------------------
-
-        /// <summary>
-        /// Required navigation to the Category this item belongs to.
-        /// </summary>
         public Category Category { get; set; } = null!;
+        public DomainUser? CreatedByUser { get; set; }
+        public DomainUser? UpdatedByUser { get; set; }
 
-        /// <summary>
-        /// Navigation to the DomainUser who created this record.
-        /// Useful for Include() and admin audit display.
-        /// </summary>
-        public DomainUser? CreatedByUser { get; set; } // Lets you Include() audit users and avoids relying on FK IDs only
-
-        /// <summary>
-        /// Navigation to the DomainUser who last updated this record.
-        /// </summary>
-        public DomainUser? UpdatedByUser { get; set; } // Same; makes admin auditing/UX much easier
-
-        /// <summary>
-        /// An item can have multiple options (e.g. Milk, 1% or 2%).
-        /// </summary>
         public ICollection<InventoryItemOption> InventoryItemOptions { get; set; } = new List<InventoryItemOption>();
-
-        /// <summary>
-        /// An item can participate in multiple InventoryChoiceGroups (e.g. "Vegetable Oil or Mayo" and "Ketchup or Mustard").
-        /// </summary>
         public ICollection<InventoryChoiceGroupItem> InventoryChoiceGroupItems { get; set; } = new List<InventoryChoiceGroupItem>();
     }
 }

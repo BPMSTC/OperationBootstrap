@@ -59,7 +59,6 @@ namespace A_New_Hope.Controllers
 
             var inventoryChoiceGroupItems = await query
                 .OrderBy(i => i.InventoryChoiceGroup.Name)
-                .ThenBy(i => i.SortOrder)
                 .ThenBy(i => i.InventoryItem.Name)
                 .ToListAsync();
 
@@ -125,7 +124,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("InventoryChoiceGroupId,InventoryItemId,SortOrder,IsActive")] InventoryChoiceGroupItem inventoryChoiceGroupItem)
+        public async Task<IActionResult> Create([Bind("InventoryChoiceGroupId,InventoryItemId,IsActive")] InventoryChoiceGroupItem inventoryChoiceGroupItem)
         {
             _logger.LogInformation("Attempting to create InventoryChoiceGroupItem");
 
@@ -201,7 +200,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,InventoryChoiceGroupId,InventoryItemId,SortOrder,IsActive")] InventoryChoiceGroupItem formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,InventoryChoiceGroupId,InventoryItemId,IsActive")] InventoryChoiceGroupItem formModel)
         {
             _logger.LogInformation("Attempting to edit InventoryChoiceGroupItem Id {Id}", id);
 
@@ -236,7 +235,6 @@ namespace A_New_Hope.Controllers
 
             existing.InventoryChoiceGroupId = formModel.InventoryChoiceGroupId;
             existing.InventoryItemId = formModel.InventoryItemId;
-            existing.SortOrder = formModel.SortOrder;
             existing.IsActive = formModel.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedByUserId = null; // Replace when auth integration is added.
@@ -347,8 +345,7 @@ namespace A_New_Hope.Controllers
 
             var choiceGroups = await _context.InventoryChoiceGroups
                 .Where(g => g.DeletedAt == null)
-                .OrderBy(g => g.SortOrder)
-                .ThenBy(g => g.Name)
+                .OrderBy(g => g.Name)
                 .ToListAsync();
 
             var inventoryItems = await _context.InventoryItems

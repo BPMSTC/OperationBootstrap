@@ -6,5 +6,7 @@
 
         public string? SelectedOrganizationDisplayName { get; set; }
         public string? SelectedClientDisplayName { get; set; }
+
+        public string? NewOrganizationServiceCategoriesDisplay { get; set; }
     }
 }

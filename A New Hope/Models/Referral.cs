@@ -22,21 +22,18 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Foreign key for the client being referred.
         /// </summary>
-        [Required]
         [Display(Name = "Client")]
         public ulong ClientUserId { get; set; }
 
         /// <summary>
         /// Foreign key for the referring organization.
         /// </summary>
-        [Required]
         [Display(Name = "Referring Organization")]
         public ulong ReferringOrganizationId { get; set; }
 
         /// <summary>
         /// Date the referral was made.
         /// </summary>
-        [Required]
         [Display(Name = "Referral Date")]
         [DataType(DataType.Date)]
         public DateTime ReferredOn { get; set; }
@@ -44,7 +41,6 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Current status of the referral.
         /// </summary>
-        [Required]
         [Display(Name = "Status")]
         public ReferralStatus Status { get; set; } = ReferralStatus.Pending;
 
@@ -66,22 +62,14 @@ namespace A_New_Hope.Models
         /// Optional notes regarding the referral.
         /// </summary>
         [Display(Name = "Notes")]
-        [StringLength(2000, ErrorMessage = "Notes cannot exceed 2000 characters.")]
+        [MaxLength(2000)]
         public string? Notes { get; set; }
 
         public ulong? CreatedByUserId { get; set; }
         public ulong? UpdatedByUserId { get; set; }
 
-        [Display(Name = "Created At")]
-        [DataType(DataType.DateTime)]
         public DateTime CreatedAt { get; set; }
-
-        [Display(Name = "Updated At")]
-        [DataType(DataType.DateTime)]
         public DateTime UpdatedAt { get; set; }
-
-        [Display(Name = "Deleted At")]
-        [DataType(DataType.DateTime)]
         public DateTime? DeletedAt { get; set; }
 
         public DomainUser ClientUser { get; set; } = null!;
