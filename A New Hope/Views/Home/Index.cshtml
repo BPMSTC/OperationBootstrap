@@ -18,7 +18,7 @@
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            <i class="bi bi-people"></i>
+                            
                             @(User.IsInRole("Admin") ? "Users" : "Clients")
                         </div>
 
@@ -29,7 +29,8 @@
                         <a asp-controller="Users"
                                asp-action="Index"
                                class="btn neutral-btn-primary mt-auto">
-                            Go to @(User.IsInRole("Admin") ? "Users" : "Clients")
+                             @(User.IsInRole("Admin") ? "Users" : "Clients")
+                            <i class="bi bi-people"></i>
                         </a>
 
                     </div>
@@ -42,7 +43,7 @@
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            <i class="bi bi-arrow-left-right"></i>
+                            
                             Referrals
                         </div>
 
@@ -53,7 +54,8 @@
                         <a asp-controller="Home"
                                asp-action="ReferralPanel"
                                class="btn neutral-btn-primary mt-auto">
-                            Go to Referrals
+                            
+                            <i class="bi bi-arrow-left-right"></i>
                         </a>
 
                     </div>
@@ -66,7 +68,7 @@
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            <i class="bi bi-box-seam"></i>
+                            
                             Inventory
                         </div>
 
@@ -77,7 +79,8 @@
                         <a asp-controller="Home"
                                asp-action="InventoryPanel"
                                class="btn neutral-btn-primary mt-auto">
-                            Go to Inventory
+                            
+                            <i class="bi bi-box-seam"></i>
                         </a>
 
                     </div>
