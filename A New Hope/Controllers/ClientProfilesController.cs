@@ -30,19 +30,28 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            _logger.LogInformation("Fetching client profiles list");
+            try
+            {
+                _logger.LogInformation("Fetching client profiles list");
 
-            // Retrieve active client profiles with related user display data.
-            var clientProfiles = await _context.ClientProfiles
-                .Where(c => c.DeletedAt == null)
-                .Include(c => c.User)
-                .OrderBy(c => c.User.LastName)
-                .ThenBy(c => c.User.FirstName)
-                .ToListAsync();
+                // Retrieve active client profiles with related user display data.
+                var clientProfiles = await _context.ClientProfiles
+                    .Where(c => c.DeletedAt == null)
+                    .Include(c => c.User)
+                    .OrderBy(c => c.User.LastName)
+                    .ThenBy(c => c.User.FirstName)
+                    .ToListAsync();
 
-            _logger.LogInformation("Fetched {Count} client profiles", clientProfiles.Count);
+                _logger.LogInformation("Fetched {Count} client profiles", clientProfiles.Count);
 
-            return View(clientProfiles);
+                return View(clientProfiles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading client profiles list");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading client profiles.";
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // GET: ClientProfiles/Details/5
@@ -51,30 +60,39 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("ClientProfile Details requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("ClientProfile Details requested with null id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Fetching details for ClientProfile UserId {Id}", id);
+
+                // Retrieve the requested active client profile with related user data.
+                var clientProfile = await _context.ClientProfiles
+                    .Where(c => c.DeletedAt == null)
+                    .Include(c => c.User)
+                    .Include(c => c.ClientIncomes)
+                    .FirstOrDefaultAsync(m => m.UserId == id);
+
+                // Return not found when the client profile does not exist.
+                if (clientProfile == null)
+                {
+                    _logger.LogWarning("ClientProfile UserId {Id} not found", id);
+                    return NotFound();
+                }
+
+                return View(clientProfile);
             }
-
-            _logger.LogInformation("Fetching details for ClientProfile UserId {Id}", id);
-
-            // Retrieve the requested active client profile with related user data.
-            var clientProfile = await _context.ClientProfiles
-                .Where(c => c.DeletedAt == null)
-                .Include(c => c.User)
-                .Include(c => c.ClientIncomes)
-                .FirstOrDefaultAsync(m => m.UserId == id);
-
-            // Return not found when the client profile does not exist.
-            if (clientProfile == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("ClientProfile UserId {Id} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading details for ClientProfile UserId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading client profile details.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(clientProfile);
         }
 
         // GET: ClientProfiles/Create
@@ -83,11 +101,20 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Create()
         {
-            _logger.LogInformation("Loading Create ClientProfile page");
+            try
+            {
+                _logger.LogInformation("Loading Create ClientProfile page");
 
-            // Populate dropdown values for the create form.
-            await PopulateDropdowns();
-            return View();
+                // Populate dropdown values for the create form.
+                await PopulateDropdowns();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Create ClientProfile page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: ClientProfiles/Create
@@ -98,47 +125,59 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("UserId,EmploymentStatus,IsUnhoused")] ClientProfile clientProfile)
         {
-            _logger.LogInformation("Attempting to create ClientProfile for UserId {UserId}", clientProfile.UserId);
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(ClientProfile.User));
-            ModelState.Remove(nameof(ClientProfile.CreatedByUser));
-            ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
-
-            await ApplyClientProfileValidationAsync(clientProfile);
-
-            // Return the form with dropdowns restored when validation fails.
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Create ClientProfile failed validation for UserId {UserId}", clientProfile.UserId);
-                await PopulateDropdowns(clientProfile.UserId);
-                return View(clientProfile);
-            }
-
-            // Set audit fields for the new client profile record.
-            var now = DateTime.UtcNow;
-            clientProfile.CreatedAt = now;
-            clientProfile.UpdatedAt = now;
-            clientProfile.CreatedByUserId = null;
-            clientProfile.UpdatedByUserId = null;
-
-            // Queue the new client profile for insert.
-            _context.Add(clientProfile);
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to create ClientProfile for UserId {UserId}", clientProfile.UserId);
 
-                _logger.LogInformation("ClientProfile created successfully for UserId {UserId}", clientProfile.UserId);
-                return RedirectToAction(nameof(Index));
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(ClientProfile.User));
+                ModelState.Remove(nameof(ClientProfile.CreatedByUser));
+                ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
+
+                // Apply business-rule validation before saving.
+                await ApplyClientProfileValidationAsync(clientProfile);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Create ClientProfile failed validation for UserId {UserId}", clientProfile.UserId);
+                    await PopulateDropdowns(clientProfile.UserId);
+                    return View(clientProfile);
+                }
+
+                // Set audit fields for the new client profile record.
+                var now = DateTime.UtcNow;
+                clientProfile.CreatedAt = now;
+                clientProfile.UpdatedAt = now;
+                clientProfile.CreatedByUserId = null;
+                clientProfile.UpdatedByUserId = null;
+
+                // Queue the new client profile for insert.
+                _context.Add(clientProfile);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("ClientProfile created successfully for UserId {UserId}", clientProfile.UserId);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error creating ClientProfile for UserId {UserId}", clientProfile.UserId);
+
+                    ModelState.AddModelError("", "Unable to save client profile.");
+                    await PopulateDropdowns(clientProfile.UserId);
+                    return View(clientProfile);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating ClientProfile for UserId {UserId}", clientProfile.UserId);
+                _logger.LogError(ex, "Unexpected error creating ClientProfile for UserId {UserId}", clientProfile?.UserId);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the client profile.");
 
-                ModelState.AddModelError("", "Unable to save client profile.");
-                await PopulateDropdowns(clientProfile.UserId);
-                return View(clientProfile);
+                await PopulateDropdowns(clientProfile?.UserId);
+                return View(clientProfile ?? new ClientProfile());
             }
         }
 
@@ -148,28 +187,37 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Edit requested with null UserId");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Edit requested with null UserId");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Edit page for ClientProfile UserId {UserId}", id);
+
+                // Retrieve the requested active client profile for editing.
+                var clientProfile = await _context.ClientProfiles
+                    .Include(c => c.User)
+                    .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
+
+                // Return not found when the client profile does not exist.
+                if (clientProfile == null)
+                {
+                    _logger.LogWarning("ClientProfile UserId {UserId} not found for edit", id);
+                    return NotFound();
+                }
+
+                return View(clientProfile);
             }
-
-            _logger.LogInformation("Loading Edit page for ClientProfile UserId {UserId}", id);
-
-            // Retrieve the requested active client profile for editing.
-            var clientProfile = await _context.ClientProfiles
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
-
-            // Return not found when the client profile does not exist.
-            if (clientProfile == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("ClientProfile UserId {UserId} not found for edit", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading edit page for ClientProfile UserId {UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(clientProfile);
         }
 
         // POST: ClientProfiles/Edit/5
@@ -180,69 +228,80 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("UserId,EmploymentStatus,IsUnhoused")] ClientProfile formModel)
         {
-            _logger.LogInformation("Attempting to edit ClientProfile UserId {UserId}", id);
-
-            // Ensure the route id matches the posted model user id.
-            if (id != formModel.UserId)
-            {
-                _logger.LogWarning("Edit mismatch: route UserId {RouteId} vs model UserId {ModelId}", id, formModel.UserId);
-                return NotFound();
-            }
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(ClientProfile.User));
-            ModelState.Remove(nameof(ClientProfile.CreatedByUser));
-            ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
-
-            await ApplyClientProfileValidationAsync(formModel, formModel.UserId);
-
-            // Return the form when validation fails.
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Edit ClientProfile failed validation for UserId {UserId}", id);
-                return View(formModel);
-            }
-
-            // Retrieve the existing active client profile record.
-            var existing = await _context.ClientProfiles
-                .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
-
-            // Return not found when the target record no longer exists.
-            if (existing == null)
-            {
-                _logger.LogWarning("ClientProfile UserId {UserId} not found during edit save", id);
-                return NotFound();
-            }
-
-            // Copy validated form values into the tracked entity.
-            existing.EmploymentStatus = formModel.EmploymentStatus;
-            existing.IsUnhoused = formModel.IsUnhoused;
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to edit ClientProfile UserId {UserId}", id);
 
-                _logger.LogInformation("ClientProfile UserId {UserId} updated successfully", id);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Check whether the record was deleted during the edit attempt.
-                if (!await ClientProfileExists(formModel.UserId))
+                // Ensure the route id matches the posted model user id.
+                if (id != formModel.UserId)
                 {
-                    _logger.LogWarning("ClientProfile UserId {UserId} no longer exists during concurrency check", id);
+                    _logger.LogWarning("Edit mismatch: route UserId {RouteId} vs model UserId {ModelId}", id, formModel.UserId);
                     return NotFound();
                 }
 
-                throw;
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error updating ClientProfile UserId {UserId}", id);
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(ClientProfile.User));
+                ModelState.Remove(nameof(ClientProfile.CreatedByUser));
+                ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
 
-                ModelState.AddModelError("", "Unable to save changes.");
+                // Apply business-rule validation before saving.
+                await ApplyClientProfileValidationAsync(formModel, formModel.UserId);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Edit ClientProfile failed validation for UserId {UserId}", id);
+                    return View(formModel);
+                }
+
+                // Retrieve the existing active client profile record.
+                var existing = await _context.ClientProfiles
+                    .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    _logger.LogWarning("ClientProfile UserId {UserId} not found during edit save", id);
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.EmploymentStatus = formModel.EmploymentStatus;
+                existing.IsUnhoused = formModel.IsUnhoused;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("ClientProfile UserId {UserId} updated successfully", id);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    // Check whether the record was deleted during the edit attempt.
+                    if (!await ClientProfileExists(formModel.UserId))
+                    {
+                        _logger.LogWarning("ClientProfile UserId {UserId} no longer exists during concurrency check", id);
+                        return NotFound();
+                    }
+
+                    _logger.LogError(ex, "Concurrency error updating ClientProfile UserId {UserId}", id);
+                    throw;
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error updating ClientProfile UserId {UserId}", id);
+
+                    ModelState.AddModelError("", "Unable to save changes.");
+                    return View(formModel);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error editing ClientProfile UserId {UserId}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the client profile.");
                 return View(formModel);
             }
         }
@@ -253,29 +312,38 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Delete requested with null UserId");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Delete requested with null UserId");
+                    return NotFound();
+                }
+
+                _logger.LogWarning("Loading Delete confirmation for ClientProfile UserId {UserId}", id);
+
+                // Retrieve the requested active client profile with related user data.
+                var clientProfile = await _context.ClientProfiles
+                    .Where(c => c.DeletedAt == null)
+                    .Include(c => c.User)
+                    .FirstOrDefaultAsync(m => m.UserId == id);
+
+                // Return not found when the client profile does not exist.
+                if (clientProfile == null)
+                {
+                    _logger.LogWarning("ClientProfile UserId {UserId} not found for delete", id);
+                    return NotFound();
+                }
+
+                return View(clientProfile);
             }
-
-            _logger.LogWarning("Loading Delete confirmation for ClientProfile UserId {UserId}", id);
-
-            // Retrieve the requested active client profile with related user data.
-            var clientProfile = await _context.ClientProfiles
-                .Where(c => c.DeletedAt == null)
-                .Include(c => c.User)
-                .FirstOrDefaultAsync(m => m.UserId == id);
-
-            // Return not found when the client profile does not exist.
-            if (clientProfile == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("ClientProfile UserId {UserId} not found for delete", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading delete page for ClientProfile UserId {UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(clientProfile);
         }
 
         // POST: ClientProfiles/Delete/5
@@ -286,39 +354,48 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            _logger.LogWarning("Soft deleting ClientProfile UserId {UserId}", id);
-
-            // Retrieve the active client profile targeted for soft delete.
-            var clientProfile = await _context.ClientProfiles
-                .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
-
-            // Return not found when the client profile does not exist.
-            if (clientProfile == null)
-            {
-                _logger.LogWarning("ClientProfile UserId {UserId} not found during delete", id);
-                return NotFound();
-            }
-
-            // Apply soft-delete and audit values.
-            clientProfile.DeletedAt = DateTime.UtcNow;
-            clientProfile.UpdatedAt = DateTime.UtcNow;
-            clientProfile.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogWarning("Soft deleting ClientProfile UserId {UserId}", id);
 
-                _logger.LogInformation("ClientProfile UserId {UserId} soft deleted", id);
+                // Retrieve the active client profile targeted for soft delete.
+                var clientProfile = await _context.ClientProfiles
+                    .FirstOrDefaultAsync(c => c.UserId == id && c.DeletedAt == null);
+
+                // Return not found when the client profile does not exist.
+                if (clientProfile == null)
+                {
+                    _logger.LogWarning("ClientProfile UserId {UserId} not found during delete", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                clientProfile.DeletedAt = DateTime.UtcNow;
+                clientProfile.UpdatedAt = DateTime.UtcNow;
+                clientProfile.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("ClientProfile UserId {UserId} soft deleted", id);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error soft deleting ClientProfile UserId {UserId}", id);
+
+                    TempData["ErrorMessage"] = "Unable to delete client profile.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error soft deleting ClientProfile UserId {UserId}", id);
-
-                TempData["ErrorMessage"] = "Unable to delete client profile.";
+                _logger.LogError(ex, "Unexpected error deleting ClientProfile UserId {UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the client profile.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>

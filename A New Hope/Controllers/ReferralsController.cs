@@ -63,15 +63,17 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index(string? searchTerm)
         {
-            _logger.LogInformation("Loading Referrals Index page");
-
             try
             {
+                _logger.LogInformation("Loading Referrals Index page");
+
+                // Build the base query for active referrals.
                 IQueryable<Referral> query = _context.Referrals
                     .Where(r => r.DeletedAt == null)
                     .Include(r => r.ClientUser)
                     .Include(r => r.ReferringOrganization);
 
+                // Apply the search filter when one is provided.
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     searchTerm = searchTerm.Trim();
@@ -93,6 +95,7 @@ namespace A_New_Hope.Controllers
                     );
                 }
 
+                // Retrieve the ordered referrals for display.
                 var referrals = await query
                     .OrderByDescending(r => r.ReferredOn)
                     .ThenBy(r => r.Id)
@@ -112,105 +115,152 @@ namespace A_New_Hope.Controllers
         }
 
         // GET: Referrals/Details/5
+        /// <summary>
+        /// Displays details for a single non-deleted referral.
+        /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Details requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Details requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Fetching details for Referral Id {Id}", id);
+
+                // Retrieve the requested active referral with related client and organization data.
+                var referral = await _context.Referrals
+                    .Where(r => r.DeletedAt == null)
+                    .Include(r => r.ClientUser)
+                    .Include(r => r.ReferringOrganization)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the referral does not exist.
+                if (referral == null)
+                {
+                    _logger.LogWarning("Referral Id {Id} not found", id);
+                    return NotFound();
+                }
+
+                return View(referral);
             }
-
-            _logger.LogInformation("Fetching details for Referral Id {Id}", id);
-
-            var referral = await _context.Referrals
-                .Where(r => r.DeletedAt == null)
-                .Include(r => r.ClientUser)
-                .Include(r => r.ReferringOrganization)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (referral == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Referral Id {Id} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading details for Referral Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading referral details.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(referral);
         }
 
         // GET: Referrals/Create
+        /// <summary>
+        /// Shows the create form.
+        /// </summary>
         public async Task<IActionResult> Create()
         {
-            _logger.LogInformation("Loading Create Referral page");
+            try
+            {
+                _logger.LogInformation("Loading Create Referral page");
 
-            await PopulateDropdowns();
-            return View();
+                // Populate dropdown values for the create form.
+                await PopulateDropdowns();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Create Referral page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Referrals/Create
+        /// <summary>
+        /// Creates a new referral after server-side validation.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,Notes")] Referral referral)
         {
-            _logger.LogInformation("Attempting to create Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
-
-            ModelState.Remove(nameof(Referral.ClientUser));
-            ModelState.Remove(nameof(Referral.ReferringOrganization));
-            ModelState.Remove(nameof(Referral.CreatedByUser));
-            ModelState.Remove(nameof(Referral.UpdatedByUser));
-
-            NormalizeReferral(referral);
-            await ApplyReferralValidationAsync(referral);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Create Referral failed validation for ClientUserId {ClientUserId}", referral.ClientUserId);
-                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-                return View(referral);
-            }
-
             try
             {
-                var referralInput = new ReferralDetailsInput
+                _logger.LogInformation("Attempting to create Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(Referral.ClientUser));
+                ModelState.Remove(nameof(Referral.ReferringOrganization));
+                ModelState.Remove(nameof(Referral.CreatedByUser));
+                ModelState.Remove(nameof(Referral.UpdatedByUser));
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeReferral(referral);
+                await ApplyReferralValidationAsync(referral);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
                 {
-                    ReferredOn = referral.ReferredOn,
-                    Status = referral.Status,
-                    ValidFrom = referral.ValidFrom,
-                    ValidTo = referral.ValidTo,
-                    Notes = referral.Notes
-                };
+                    _logger.LogWarning("Create Referral failed validation for ClientUserId {ClientUserId}", referral.ClientUserId);
+                    await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                    return View(referral);
+                }
 
-                var referralId = await _referralService.CreateAndReturnIdAsync(
-                    referralInput,
-                    referral.ClientUserId,
-                    referral.ReferringOrganizationId,
-                    actingUserId: null);
+                try
+                {
+                    // Build the referral input for the referral service.
+                    var referralInput = new ReferralDetailsInput
+                    {
+                        ReferredOn = referral.ReferredOn,
+                        Status = referral.Status,
+                        ValidFrom = referral.ValidFrom,
+                        ValidTo = referral.ValidTo,
+                        Notes = referral.Notes
+                    };
 
-                _logger.LogInformation("Referral Id {Id} created successfully", referralId);
-                return RedirectToAction(nameof(Details), new { id = referralId });
+                    // Create the referral and capture the new id.
+                    var referralId = await _referralService.CreateAndReturnIdAsync(
+                        referralInput,
+                        referral.ClientUserId,
+                        referral.ReferringOrganizationId,
+                        actingUserId: null);
+
+                    _logger.LogInformation("Referral Id {Id} created successfully", referralId);
+                    return RedirectToAction(nameof(Details), new { id = referralId });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(ex, "Business validation failed while creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                    await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                    return View(referral);
+                }
+                catch (ArgumentException ex)
+                {
+                    _logger.LogWarning(ex, "Argument validation failed while creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                    await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                    return View(referral);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+
+                    ModelState.AddModelError("", "Unable to save referral.");
+                    await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                    return View(referral);
+                }
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Business validation failed while creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
+                _logger.LogError(ex, "Unexpected error creating Referral for ClientUserId {ClientUserId}", referral?.ClientUserId);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the referral.");
 
-                ModelState.AddModelError(string.Empty, ex.Message);
-                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-                return View(referral);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Argument validation failed while creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
-
-                ModelState.AddModelError(string.Empty, ex.Message);
-                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-                return View(referral);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error creating Referral for ClientUserId {ClientUserId}", referral.ClientUserId);
-
-                ModelState.AddModelError("", "Unable to save referral.");
-                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-                return View(referral);
+                await PopulateDropdowns(referral?.ClientUserId, referral?.ReferringOrganizationId);
+                return View(referral ?? new Referral());
             }
         }
 
@@ -219,178 +269,305 @@ namespace A_New_Hope.Controllers
         // =========================================================
 
         // GET: Referrals/StartReferralEntry
+        /// <summary>
+        /// Starts a new Referral Entry flow and initializes a fresh draft.
+        /// </summary>
         public IActionResult StartReferralEntry()
         {
-            _logger.LogInformation("Starting Referral Entry flow");
-
-            ClearReferralEntryDraft();
-
-            var draft = new ReferralEntryDraft();
-
-            if (!draft.HouseholdMembers.Any())
+            try
             {
-                draft.HouseholdMembers.Add(new HouseholdMemberEntryInput());
+                _logger.LogInformation("Starting Referral Entry flow");
+
+                // Clear any existing referral entry draft.
+                ClearReferralEntryDraft();
+
+                // Create a fresh draft for the flow.
+                var draft = new ReferralEntryDraft();
+
+                if (!draft.HouseholdMembers.Any())
+                {
+                    draft.HouseholdMembers.Add(new HouseholdMemberEntryInput());
+                }
+
+                // Persist the new draft to session.
+                SaveReferralEntryDraft(draft);
+
+                return RedirectToAction(nameof(OrganizationEntry));
             }
-
-            SaveReferralEntryDraft(draft);
-
-            return RedirectToAction(nameof(OrganizationEntry));
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting Referral Entry flow");
+                TempData["ErrorMessage"] = "An unexpected error occurred while starting the referral entry flow.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: Referrals/StartReferralEntryForClient
+        /// <summary>
+        /// Starts a new Referral Entry flow for an existing client.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> StartReferralEntryForClient(ulong id)
         {
-            _logger.LogInformation("Starting Referral Entry flow for existing ClientUserId {ClientUserId}", id);
-
-            var clientExists = await _context.DomainUsers.AnyAsync(u =>
-                u.Id == id &&
-                u.DeletedAt == null &&
-                u.UserType == UserType.Client &&
-                u.IsActive);
-
-            if (!clientExists)
+            try
             {
-                _logger.LogWarning("Cannot start Referral Entry. ClientUserId {ClientUserId} was not found or is not an active client.", id);
-                TempData["ErrorMessage"] = "The selected client could not be found.";
-                return RedirectToAction("Index", "Users");
+                _logger.LogInformation("Starting Referral Entry flow for existing ClientUserId {ClientUserId}", id);
+
+                // Validate that the selected client exists and is active.
+                var clientExists = await _context.DomainUsers.AnyAsync(u =>
+                    u.Id == id &&
+                    u.DeletedAt == null &&
+                    u.UserType == UserType.Client &&
+                    u.IsActive);
+
+                if (!clientExists)
+                {
+                    _logger.LogWarning("Cannot start Referral Entry. ClientUserId {ClientUserId} was not found or is not an active client.", id);
+                    TempData["ErrorMessage"] = "The selected client could not be found.";
+                    return RedirectToAction("Index", "Users");
+                }
+
+                // Clear any existing referral entry draft.
+                ClearReferralEntryDraft();
+
+                // Create a fresh draft preloaded with the selected client.
+                var draft = new ReferralEntryDraft
+                {
+                    ExistingClientUserId = id
+                };
+
+                if (!draft.HouseholdMembers.Any())
+                {
+                    draft.HouseholdMembers.Add(new HouseholdMemberEntryInput());
+                }
+
+                // Persist the new draft to session.
+                SaveReferralEntryDraft(draft);
+
+                return RedirectToAction(nameof(OrganizationEntry));
             }
-
-            ClearReferralEntryDraft();
-
-            var draft = new ReferralEntryDraft
+            catch (Exception ex)
             {
-                ExistingClientUserId = id
-            };
-
-            if (!draft.HouseholdMembers.Any())
-            {
-                draft.HouseholdMembers.Add(new HouseholdMemberEntryInput());
+                _logger.LogError(ex, "Error starting Referral Entry flow for ClientUserId {ClientUserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while starting the referral entry flow.";
+                return RedirectToAction(nameof(Index));
             }
-
-            SaveReferralEntryDraft(draft);
-
-            return RedirectToAction(nameof(OrganizationEntry));
         }
 
         // GET: Referrals/OrganizationEntry
+        /// <summary>
+        /// Shows the organization step of the Referral Entry flow.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> OrganizationEntry()
         {
-            _logger.LogInformation("Loading Organization Entry page");
-
-            var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
-
-            var vm = new OrganizationEntryViewModel
+            try
             {
-                SelectedReferringOrganizationId = draft.ExistingReferringOrganizationId,
-                NewOrganization = draft.NewOrganization ?? new ReferringOrganizationEntryInput(),
-                OrganizationMode = draft.HasExistingOrganization ? "existing"
-                    : draft.HasNewOrganization ? "new"
-                    : null
-            };
+                _logger.LogInformation("Loading Organization Entry page");
 
-            await PopulateOrganizationEntryDropdowns(vm);
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
 
-            return View(vm);
+                // Build the view model from the draft.
+                var vm = new OrganizationEntryViewModel
+                {
+                    SelectedReferringOrganizationId = draft.ExistingReferringOrganizationId,
+                    NewOrganization = draft.NewOrganization ?? new ReferringOrganizationEntryInput(),
+                    OrganizationMode = draft.HasExistingOrganization ? "existing"
+                        : draft.HasNewOrganization ? "new"
+                        : null
+                };
+
+                // Populate dropdown values for the step.
+                await PopulateOrganizationEntryDropdowns(vm);
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Organization Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the organization step.";
+                return RedirectToAction(nameof(StartReferralEntry));
+            }
         }
 
         // POST: Referrals/OrganizationEntry
+        /// <summary>
+        /// Saves the organization step of the Referral Entry flow.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> OrganizationEntry(OrganizationEntryViewModel vm)
         {
-            _logger.LogInformation("Submitting Organization Entry page");
-
-            NormalizeOrganizationEntry(vm);
-            await ApplyOrganizationEntryValidationAsync(vm);
-
-            if (!ModelState.IsValid)
+            try
             {
-                _logger.LogWarning("Organization Entry failed validation");
+                _logger.LogInformation("Submitting Organization Entry page");
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeOrganizationEntry(vm);
+                await ApplyOrganizationEntryValidationAsync(vm);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Organization Entry failed validation");
+                    await PopulateOrganizationEntryDropdowns(vm);
+                    return View(vm);
+                }
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
+
+                if (string.Equals(vm.OrganizationMode, "existing", StringComparison.OrdinalIgnoreCase))
+                {
+                    draft.ExistingReferringOrganizationId = vm.SelectedReferringOrganizationId;
+                    draft.NewOrganization = new ReferringOrganizationEntryInput();
+                }
+                else
+                {
+                    draft.ExistingReferringOrganizationId = null;
+                    draft.NewOrganization = vm.NewOrganization ?? new ReferringOrganizationEntryInput();
+                }
+
+                if (draft.HasExistingClient)
+                {
+                    draft.NewClient = null;
+                    draft.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+                }
+
+                // Persist the updated draft to session.
+                SaveReferralEntryDraft(draft);
+
+                if (draft.HasExistingClient)
+                {
+                    return RedirectToAction(nameof(ReferralDetails));
+                }
+
+                return RedirectToAction(nameof(ClientEntry));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting Organization Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while saving the organization step.";
                 await PopulateOrganizationEntryDropdowns(vm);
                 return View(vm);
             }
-
-            var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
-
-            if (string.Equals(vm.OrganizationMode, "existing", StringComparison.OrdinalIgnoreCase))
-            {
-                draft.ExistingReferringOrganizationId = vm.SelectedReferringOrganizationId;
-                draft.NewOrganization = new ReferringOrganizationEntryInput();
-            }
-            else
-            {
-                draft.ExistingReferringOrganizationId = null;
-                draft.NewOrganization = vm.NewOrganization ?? new ReferringOrganizationEntryInput();
-            }
-
-            if (draft.HasExistingClient)
-            {
-                draft.NewClient = null;
-                draft.HouseholdMembers = new List<HouseholdMemberEntryInput>();
-            }
-
-            SaveReferralEntryDraft(draft);
-
-            if (draft.HasExistingClient)
-            {
-                return RedirectToAction(nameof(ReferralDetails));
-            }
-
-            return RedirectToAction(nameof(ClientEntry));
         }
 
         // GET: Referrals/ClientEntry
+        /// <summary>
+        /// Shows the client step of the Referral Entry flow.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ClientEntry()
         {
-            _logger.LogInformation("Loading Client Entry page");
-
-            var draft = LoadReferralEntryDraft();
-
-            if (draft == null)
+            try
             {
-                _logger.LogWarning("Client Entry requested without Referral Entry draft");
-                TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                _logger.LogInformation("Loading Client Entry page");
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft();
+
+                if (draft == null)
+                {
+                    _logger.LogWarning("Client Entry requested without Referral Entry draft");
+                    TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                    return RedirectToAction(nameof(StartReferralEntry));
+                }
+
+                draft.NewClient ??= new ClientEntryInput();
+                draft.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+                if (!draft.NewClient.Incomes.Any())
+                {
+                    draft.NewClient.Incomes.Add(new ClientIncomeEntryInput());
+                }
+
+                // Build the view model from the draft.
+                var vm = new ClientEntryViewModel
+                {
+                    SelectedClientUserId = draft.ExistingClientUserId,
+                    NewClient = draft.NewClient,
+                    ClientMode = draft.HasExistingClient ? "existing"
+                        : draft.HasNewClient ? "new"
+                        : null
+                };
+
+                // Populate dropdown values for the step.
+                await PopulateClientEntryDropdowns(vm);
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Client Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the client step.";
                 return RedirectToAction(nameof(StartReferralEntry));
             }
-
-            draft.NewClient ??= new ClientEntryInput();
-            draft.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
-
-            if (!draft.NewClient.Incomes.Any())
-            {
-                draft.NewClient.Incomes.Add(new ClientIncomeEntryInput());
-            }
-
-            var vm = new ClientEntryViewModel
-            {
-                SelectedClientUserId = draft.ExistingClientUserId,
-                NewClient = draft.NewClient,
-                ClientMode = draft.HasExistingClient ? "existing"
-                    : draft.HasNewClient ? "new"
-                    : null
-            };
-
-            await PopulateClientEntryDropdowns(vm);
-
-            return View(vm);
         }
 
         // POST: Referrals/ClientEntry
+        /// <summary>
+        /// Saves the client step of the Referral Entry flow.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ClientEntry(ClientEntryViewModel vm)
         {
-            _logger.LogInformation("Submitting Client Entry page");
-
-            NormalizeClientEntry(vm);
-            await ApplyClientEntryValidationAsync(vm);
-
-            if (!ModelState.IsValid)
+            try
             {
-                _logger.LogWarning("Client Entry failed validation");
+                _logger.LogInformation("Submitting Client Entry page");
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeClientEntry(vm);
+                await ApplyClientEntryValidationAsync(vm);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Client Entry failed validation");
+
+                    vm.NewClient ??= new ClientEntryInput();
+                    vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
+
+                    if (!vm.NewClient.Incomes.Any())
+                    {
+                        vm.NewClient.Incomes.Add(new ClientIncomeEntryInput());
+                    }
+
+                    await PopulateClientEntryDropdowns(vm);
+                    return View(vm);
+                }
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
+
+                if (string.Equals(vm.ClientMode, "existing", StringComparison.OrdinalIgnoreCase))
+                {
+                    draft.ExistingClientUserId = vm.SelectedClientUserId;
+                    draft.NewClient = new ClientEntryInput();
+                    draft.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+                }
+                else
+                {
+                    draft.ExistingClientUserId = null;
+                    draft.NewClient = vm.NewClient ?? new ClientEntryInput();
+                }
+
+                // Persist the updated draft to session.
+                SaveReferralEntryDraft(draft);
+
+                if (draft.HasNewClient)
+                {
+                    return RedirectToAction(nameof(HouseholdEntry));
+                }
+
+                return RedirectToAction(nameof(ReferralDetails));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting Client Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while saving the client step.";
 
                 vm.NewClient ??= new ClientEntryInput();
                 vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
@@ -403,84 +580,104 @@ namespace A_New_Hope.Controllers
                 await PopulateClientEntryDropdowns(vm);
                 return View(vm);
             }
-
-            var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
-
-            if (string.Equals(vm.ClientMode, "existing", StringComparison.OrdinalIgnoreCase))
-            {
-                draft.ExistingClientUserId = vm.SelectedClientUserId;
-                draft.NewClient = new ClientEntryInput();
-                draft.HouseholdMembers = new List<HouseholdMemberEntryInput>();
-            }
-            else
-            {
-                draft.ExistingClientUserId = null;
-                draft.NewClient = vm.NewClient ?? new ClientEntryInput();
-            }
-
-            SaveReferralEntryDraft(draft);
-
-            if (draft.HasNewClient)
-            {
-                return RedirectToAction(nameof(HouseholdEntry));
-            }
-
-            return RedirectToAction(nameof(ReferralDetails));
         }
 
         // GET: Referrals/HouseholdEntry
+        /// <summary>
+        /// Shows the household step of the Referral Entry flow.
+        /// </summary>
         [HttpGet]
         public IActionResult HouseholdEntry()
         {
-            _logger.LogInformation("Loading Household Entry page");
-
-            var draft = LoadReferralEntryDraft();
-
-            if (draft == null)
+            try
             {
-                _logger.LogWarning("Household Entry requested without Referral Entry draft");
-                TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                _logger.LogInformation("Loading Household Entry page");
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft();
+
+                if (draft == null)
+                {
+                    _logger.LogWarning("Household Entry requested without Referral Entry draft");
+                    TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                    return RedirectToAction(nameof(StartReferralEntry));
+                }
+
+                if (!draft.RequiresHouseholdStep)
+                {
+                    return RedirectToAction(nameof(ReferralDetails));
+                }
+
+                // Build the view model from the draft.
+                var vm = new HouseholdEntryViewModel
+                {
+                    HouseholdMembers = draft.HouseholdMembers.Any()
+                        ? draft.HouseholdMembers
+                        : new List<HouseholdMemberEntryInput> { new HouseholdMemberEntryInput() },
+                    HasHouseholdMembers = draft.HouseholdMembers.Any(h => h.HasStarted)
+                };
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Household Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the household step.";
                 return RedirectToAction(nameof(StartReferralEntry));
             }
-
-            if (!draft.RequiresHouseholdStep)
-            {
-                return RedirectToAction(nameof(ReferralDetails));
-            }
-
-            var vm = new HouseholdEntryViewModel
-            {
-                HouseholdMembers = draft.HouseholdMembers.Any()
-                    ? draft.HouseholdMembers
-                    : new List<HouseholdMemberEntryInput> { new HouseholdMemberEntryInput() },
-                HasHouseholdMembers = draft.HouseholdMembers.Any(h => h.HasStarted)
-            };
-
-            return View(vm);
         }
 
         // POST: Referrals/HouseholdEntry
+        /// <summary>
+        /// Saves the household step of the Referral Entry flow.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult HouseholdEntry(HouseholdEntryViewModel vm)
         {
-            _logger.LogInformation("Submitting Household Entry page");
-
-            vm.HouseholdMembers ??= new List<HouseholdMemberEntryInput>();
-
-            if (!vm.HasHouseholdMembers)
+            try
             {
-                vm.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+                _logger.LogInformation("Submitting Household Entry page");
+
+                vm.HouseholdMembers ??= new List<HouseholdMemberEntryInput>();
+
+                if (!vm.HasHouseholdMembers)
+                {
+                    vm.HouseholdMembers = new List<HouseholdMemberEntryInput>();
+                }
+                else
+                {
+                    // Normalize incoming values before business-rule validation.
+                    NormalizeHouseholdEntry(vm);
+                    ApplyHouseholdEntryValidation(vm);
+                }
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Household Entry failed validation");
+
+                    if (!vm.HouseholdMembers.Any())
+                    {
+                        vm.HouseholdMembers.Add(new HouseholdMemberEntryInput());
+                    }
+
+                    return View(vm);
+                }
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
+                draft.HouseholdMembers = vm.HouseholdMembers;
+
+                // Persist the updated draft to session.
+                SaveReferralEntryDraft(draft);
+
+                return RedirectToAction(nameof(ReferralDetails));
             }
-            else
+            catch (Exception ex)
             {
-                NormalizeHouseholdEntry(vm);
-                ApplyHouseholdEntryValidation(vm);
-            }
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Household Entry failed validation");
+                _logger.LogError(ex, "Error submitting Household Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while saving the household step.";
 
                 if (!vm.HouseholdMembers.Any())
                 {
@@ -489,200 +686,262 @@ namespace A_New_Hope.Controllers
 
                 return View(vm);
             }
-
-            var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
-            draft.HouseholdMembers = vm.HouseholdMembers;
-
-            SaveReferralEntryDraft(draft);
-
-            return RedirectToAction(nameof(ReferralDetails));
         }
 
         // GET: Referrals/ReferralDetails
+        /// <summary>
+        /// Shows the referral details step of the Referral Entry flow.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ReferralDetails()
         {
-            _logger.LogInformation("Loading Referral Details page");
-
-            var draft = LoadReferralEntryDraft();
-
-            if (draft == null)
+            try
             {
-                _logger.LogWarning("Referral Details requested without Referral Entry draft");
-                TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                _logger.LogInformation("Loading Referral Details page");
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft();
+
+                if (draft == null)
+                {
+                    _logger.LogWarning("Referral Details requested without Referral Entry draft");
+                    TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                    return RedirectToAction(nameof(StartReferralEntry));
+                }
+
+                // Build the view model from the draft.
+                var vm = new ReferralDetailsViewModel
+                {
+                    Referral = draft.Referral ?? new ReferralDetailsInput(),
+                    BackAction = draft.RequiresHouseholdStep ? nameof(HouseholdEntry) : nameof(ClientEntry)
+                };
+
+                // Populate dropdown values for the step.
+                await PopulateReferralDetailsDropdowns(vm);
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Referral Details page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the referral details step.";
                 return RedirectToAction(nameof(StartReferralEntry));
             }
-
-            var vm = new ReferralDetailsViewModel
-            {
-                Referral = draft.Referral ?? new ReferralDetailsInput(),
-                BackAction = draft.RequiresHouseholdStep ? nameof(HouseholdEntry) : nameof(ClientEntry)
-            };
-
-            await PopulateReferralDetailsDropdowns(vm);
-
-            return View(vm);
         }
 
         // POST: Referrals/ReferralDetails
+        /// <summary>
+        /// Saves the referral details step of the Referral Entry flow.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReferralDetails(ReferralDetailsViewModel vm)
         {
-            _logger.LogInformation("Submitting Referral Details page");
-
-            NormalizeReferralDetails(vm);
-            await ApplyReferralDetailsValidationAsync(vm);
-
-            if (!ModelState.IsValid)
+            try
             {
-                _logger.LogWarning("Referral Details failed validation");
+                _logger.LogInformation("Submitting Referral Details page");
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeReferralDetails(vm);
+                await ApplyReferralDetailsValidationAsync(vm);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Referral Details failed validation");
+                    await PopulateReferralDetailsDropdowns(vm);
+                    return View(vm);
+                }
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
+                draft.Referral = vm.Referral ?? new ReferralDetailsInput();
+
+                // Persist the updated draft to session.
+                SaveReferralEntryDraft(draft);
+
+                return RedirectToAction(nameof(ReviewReferralEntry));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error submitting Referral Details page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while saving the referral details step.";
                 await PopulateReferralDetailsDropdowns(vm);
                 return View(vm);
             }
-
-            var draft = LoadReferralEntryDraft() ?? new ReferralEntryDraft();
-            draft.Referral = vm.Referral ?? new ReferralDetailsInput();
-
-            SaveReferralEntryDraft(draft);
-
-            return RedirectToAction(nameof(ReviewReferralEntry));
         }
 
         // GET: Referrals/ReviewReferralEntry
+        /// <summary>
+        /// Shows the review step of the Referral Entry flow.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> ReviewReferralEntry()
         {
-            _logger.LogInformation("Loading Review Referral Entry page");
-
-            var draft = LoadReferralEntryDraft();
-
-            if (draft == null)
+            try
             {
-                _logger.LogWarning("Review Referral Entry requested without Referral Entry draft");
-                TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                _logger.LogInformation("Loading Review Referral Entry page");
+
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft();
+
+                if (draft == null)
+                {
+                    _logger.LogWarning("Review Referral Entry requested without Referral Entry draft");
+                    TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                    return RedirectToAction(nameof(StartReferralEntry));
+                }
+
+                // Build the review view model from the draft.
+                var vm = await BuildReferralEntryReviewViewModelAsync(draft);
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Review Referral Entry page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the review step.";
                 return RedirectToAction(nameof(StartReferralEntry));
             }
-
-            var vm = await BuildReferralEntryReviewViewModelAsync(draft);
-
-            return View(vm);
         }
 
         // POST: Referrals/ConfirmReferralEntry
+        /// <summary>
+        /// Confirms the Referral Entry flow and saves all required records.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmReferralEntry()
         {
-            _logger.LogInformation("Submitting Confirm Referral Entry");
-
-            var draft = LoadReferralEntryDraft();
-
-            if (draft == null)
-            {
-                _logger.LogWarning("Confirm Referral Entry requested without Referral Entry draft");
-                TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
-                return RedirectToAction(nameof(StartReferralEntry));
-            }
-
-            await ApplyReferralEntryDraftValidationAsync(draft);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Confirm Referral Entry failed final validation");
-
-                var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
-                return View(nameof(ReviewReferralEntry), reviewVm);
-            }
-
-            await using var transaction = await _context.Database.BeginTransactionAsync();
-
             try
             {
-                var now = DateTime.UtcNow;
+                _logger.LogInformation("Submitting Confirm Referral Entry");
 
-                ulong referringOrganizationId;
-                ulong clientUserId;
+                // Load the current referral entry draft.
+                var draft = LoadReferralEntryDraft();
 
-                // -------------------------------------------------
-                // ORGANIZATION
-                // -------------------------------------------------
-                if (draft.HasExistingOrganization)
+                if (draft == null)
                 {
-                    referringOrganizationId = draft.ExistingReferringOrganizationId!.Value;
-                }
-                else
-                {
-                    referringOrganizationId = await _referringOrganizationService.CreateAndReturnIdAsync(
-                        draft.NewOrganization,
-                        actingUserId: null);
+                    _logger.LogWarning("Confirm Referral Entry requested without Referral Entry draft");
+                    TempData["ErrorMessage"] = "Your referral entry draft was not found. Please start again.";
+                    return RedirectToAction(nameof(StartReferralEntry));
                 }
 
-                // -------------------------------------------------
-                // CLIENT / PROFILE / HOUSEHOLD
-                // -------------------------------------------------
-                if (draft.HasExistingClient)
+                // Apply final draft validation before saving.
+                await ApplyReferralEntryDraftValidationAsync(draft);
+
+                if (!ModelState.IsValid)
                 {
-                    clientUserId = draft.ExistingClientUserId!.Value;
+                    _logger.LogWarning("Confirm Referral Entry failed final validation");
+
+                    var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
+                    return View(nameof(ReviewReferralEntry), reviewVm);
                 }
-                else
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
                 {
-                    if (draft.NewClient == null)
+                    ulong referringOrganizationId;
+                    ulong clientUserId;
+
+                    // -------------------------------------------------
+                    // ORGANIZATION
+                    // -------------------------------------------------
+                    if (draft.HasExistingOrganization)
                     {
-                        throw new InvalidOperationException("Referral Entry is missing new client information.");
+                        referringOrganizationId = draft.ExistingReferringOrganizationId!.Value;
+                    }
+                    else
+                    {
+                        referringOrganizationId = await _referringOrganizationService.CreateAndReturnIdAsync(
+                            draft.NewOrganization,
+                            actingUserId: null);
                     }
 
-                    clientUserId = await _clientEntryService.CreateClientAndReturnIdAsync(
-                        draft.NewClient,
-                        draft.HouseholdMembers,
+                    // -------------------------------------------------
+                    // CLIENT / PROFILE / HOUSEHOLD
+                    // -------------------------------------------------
+                    if (draft.HasExistingClient)
+                    {
+                        clientUserId = draft.ExistingClientUserId!.Value;
+                    }
+                    else
+                    {
+                        if (draft.NewClient == null)
+                        {
+                            throw new InvalidOperationException("Referral Entry is missing new client information.");
+                        }
+
+                        clientUserId = await _clientEntryService.CreateClientAndReturnIdAsync(
+                            draft.NewClient,
+                            draft.HouseholdMembers,
+                            actingUserId: null);
+                    }
+
+                    // -------------------------------------------------
+                    // REFERRAL
+                    // -------------------------------------------------
+                    var referralId = await _referralService.CreateAndReturnIdAsync(
+                        draft.Referral,
+                        clientUserId,
+                        referringOrganizationId,
                         actingUserId: null);
+
+                    await transaction.CommitAsync();
+
+                    ClearReferralEntryDraft();
+
+                    TempData["SuccessMessage"] = "Referral confirmed successfully.";
+
+                    return RedirectToAction(nameof(Details), new { id = referralId });
                 }
-                // -------------------------------------------------
-                // REFERRAL
-                // -------------------------------------------------
-                var referralId = await _referralService.CreateAndReturnIdAsync(
-                    draft.Referral,
-                    clientUserId,
-                    referringOrganizationId,
-                    actingUserId: null);
+                catch (DbUpdateException ex)
+                {
+                    await transaction.RollbackAsync();
 
-                await transaction.CommitAsync();
+                    _logger.LogError(ex, "Error confirming Referral Entry");
 
-                ClearReferralEntryDraft();
+                    ModelState.AddModelError(string.Empty, "Unable to save the referral.");
 
-                TempData["SuccessMessage"] = "Referral confirmed successfully.";
+                    var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
+                    return View(nameof(ReviewReferralEntry), reviewVm);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    await transaction.RollbackAsync();
 
-                return RedirectToAction(nameof(Details), new { id = referralId });
+                    _logger.LogWarning(ex, "Business validation failed during Confirm Referral Entry");
+
+                    ModelState.AddModelError(string.Empty, ex.Message);
+
+                    var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
+                    return View(nameof(ReviewReferralEntry), reviewVm);
+                }
+                catch (ArgumentException ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    _logger.LogWarning(ex, "Argument validation failed during Confirm Referral Entry");
+
+                    ModelState.AddModelError(string.Empty, ex.Message);
+
+                    var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
+                    return View(nameof(ReviewReferralEntry), reviewVm);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Unexpected error confirming Referral Entry");
 
-                _logger.LogError(ex, "Error confirming Referral Entry");
+                var draft = LoadReferralEntryDraft();
+                if (draft == null)
+                {
+                    TempData["ErrorMessage"] = "An unexpected error occurred while confirming the referral entry.";
+                    return RedirectToAction(nameof(StartReferralEntry));
+                }
 
-                ModelState.AddModelError(string.Empty, "Unable to save the referral.");
-
-                var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
-                return View(nameof(ReviewReferralEntry), reviewVm);
-            }
-            catch (InvalidOperationException ex)
-            {
-                await transaction.RollbackAsync();
-
-                _logger.LogWarning(ex, "Business validation failed during Confirm Referral Entry");
-
-                ModelState.AddModelError(string.Empty, ex.Message);
-
-                var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
-                return View(nameof(ReviewReferralEntry), reviewVm);
-            }
-            catch (ArgumentException ex)
-            {
-                await transaction.RollbackAsync();
-
-                _logger.LogWarning(ex, "Argument validation failed during Confirm Referral Entry");
-
-                ModelState.AddModelError(string.Empty, ex.Message);
+                ModelState.AddModelError(string.Empty, "An unexpected error occurred while confirming the referral entry.");
 
                 var reviewVm = await BuildReferralEntryReviewViewModelAsync(draft);
                 return View(nameof(ReviewReferralEntry), reviewVm);
@@ -694,177 +953,250 @@ namespace A_New_Hope.Controllers
         // =========================================================
 
         // GET: Referrals/Edit/5
+        /// <summary>
+        /// Shows the edit form for a single non-deleted referral.
+        /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Edit requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Edit requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Edit page for Referral Id {Id}", id);
+
+                // Retrieve the requested active referral for editing.
+                var referral = await _context.Referrals
+                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+
+                // Return not found when the referral does not exist.
+                if (referral == null)
+                {
+                    _logger.LogWarning("Referral Id {Id} not found for edit", id);
+                    return NotFound();
+                }
+
+                // Populate dropdown values using the current record selections.
+                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
+                return View(referral);
             }
-
-            _logger.LogInformation("Loading Edit page for Referral Id {Id}", id);
-
-            var referral = await _context.Referrals
-                .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-            if (referral == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Referral Id {Id} not found for edit", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading edit page for Referral Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-            return View(referral);
         }
 
         // POST: Referrals/Edit/5
+        /// <summary>
+        /// Updates an existing referral after server-side validation.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,Notes")] Referral formModel)
         {
-            _logger.LogInformation("Attempting to edit Referral Id {Id}", id);
-
-            if (id != formModel.Id)
-            {
-                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
-                return NotFound();
-            }
-
-            ModelState.Remove(nameof(Referral.ClientUser));
-            ModelState.Remove(nameof(Referral.ReferringOrganization));
-            ModelState.Remove(nameof(Referral.CreatedByUser));
-            ModelState.Remove(nameof(Referral.UpdatedByUser));
-
-            NormalizeReferral(formModel);
-            await ApplyReferralValidationAsync(formModel, formModel.Id);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Edit Referral failed validation for Id {Id}", id);
-                await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
-                return View(formModel);
-            }
-
-            var existing = await _context.Referrals
-                .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-            if (existing == null)
-            {
-                _logger.LogWarning("Referral Id {Id} not found during edit save", id);
-                return NotFound();
-            }
-
-            existing.ClientUserId = formModel.ClientUserId;
-            existing.ReferringOrganizationId = formModel.ReferringOrganizationId;
-            existing.ReferredOn = formModel.ReferredOn;
-            existing.Status = formModel.Status;
-            existing.ValidFrom = formModel.ValidFrom;
-            existing.ValidTo = formModel.ValidTo;
-            existing.Notes = formModel.Notes;
-
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to edit Referral Id {Id}", id);
 
-                _logger.LogInformation("Referral Id {Id} updated successfully", id);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await ReferralExists(formModel.Id))
+                // Ensure the route id matches the posted model id.
+                if (id != formModel.Id)
                 {
-                    _logger.LogWarning("Referral Id {Id} no longer exists during concurrency check", id);
+                    _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                     return NotFound();
                 }
 
-                throw;
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error updating Referral Id {Id}", id);
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(Referral.ClientUser));
+                ModelState.Remove(nameof(Referral.ReferringOrganization));
+                ModelState.Remove(nameof(Referral.CreatedByUser));
+                ModelState.Remove(nameof(Referral.UpdatedByUser));
 
-                ModelState.AddModelError("", "Unable to save changes.");
+                // Normalize incoming values before business-rule validation.
+                NormalizeReferral(formModel);
+                await ApplyReferralValidationAsync(formModel, formModel.Id);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Edit Referral failed validation for Id {Id}", id);
+                    await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
+                    return View(formModel);
+                }
+
+                // Retrieve the existing active referral record.
+                var existing = await _context.Referrals
+                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    _logger.LogWarning("Referral Id {Id} not found during edit save", id);
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.ClientUserId = formModel.ClientUserId;
+                existing.ReferringOrganizationId = formModel.ReferringOrganizationId;
+                existing.ReferredOn = formModel.ReferredOn;
+                existing.Status = formModel.Status;
+                existing.ValidFrom = formModel.ValidFrom;
+                existing.ValidTo = formModel.ValidTo;
+                existing.Notes = formModel.Notes;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Referral Id {Id} updated successfully", id);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    // Check whether the record was deleted during the edit attempt.
+                    if (!await ReferralExists(formModel.Id))
+                    {
+                        _logger.LogWarning("Referral Id {Id} no longer exists during concurrency check", id);
+                        return NotFound();
+                    }
+
+                    _logger.LogError(ex, "Concurrency error updating Referral Id {Id}", id);
+                    throw;
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error updating Referral Id {Id}", id);
+
+                    ModelState.AddModelError("", "Unable to save changes.");
+                    await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
+                    return View(formModel);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error editing Referral Id {Id}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the referral.");
                 await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
                 return View(formModel);
             }
         }
 
         // GET: Referrals/Delete/5
+        /// <summary>
+        /// Shows the delete confirmation page for a single non-deleted referral.
+        /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Delete requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Delete requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Delete confirmation for Referral Id {Id}", id);
+
+                // Retrieve the requested active referral with related client and organization data.
+                var referral = await _context.Referrals
+                    .Where(r => r.DeletedAt == null)
+                    .Include(r => r.ClientUser)
+                    .Include(r => r.ReferringOrganization)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the referral does not exist.
+                if (referral == null)
+                {
+                    _logger.LogWarning("Referral Id {Id} not found for delete", id);
+                    return NotFound();
+                }
+
+                return View(referral);
             }
-
-            _logger.LogInformation("Loading Delete confirmation for Referral Id {Id}", id);
-
-            var referral = await _context.Referrals
-                .Where(r => r.DeletedAt == null)
-                .Include(r => r.ClientUser)
-                .Include(r => r.ReferringOrganization)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (referral == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Referral Id {Id} not found for delete", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading delete page for Referral Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(referral);
         }
 
         // POST: Referrals/Delete/5
+        /// <summary>
+        /// Soft deletes a referral.
+        /// </summary>
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            _logger.LogWarning("Soft deleting Referral Id {Id}", id);
-
-            var referral = await _context.Referrals
-                .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-            if (referral == null)
-            {
-                _logger.LogWarning("Referral Id {Id} not found during delete", id);
-                return NotFound();
-            }
-
-            referral.DeletedAt = DateTime.UtcNow;
-            referral.UpdatedAt = DateTime.UtcNow;
-            referral.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogWarning("Soft deleting Referral Id {Id}", id);
 
-                _logger.LogInformation("Referral Id {Id} soft deleted", id);
+                // Retrieve the active referral targeted for soft delete.
+                var referral = await _context.Referrals
+                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+
+                // Return not found when the referral does not exist.
+                if (referral == null)
+                {
+                    _logger.LogWarning("Referral Id {Id} not found during delete", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                referral.DeletedAt = DateTime.UtcNow;
+                referral.UpdatedAt = DateTime.UtcNow;
+                referral.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Referral Id {Id} soft deleted", id);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error soft deleting Referral Id {Id}", id);
+
+                    TempData["ErrorMessage"] = "Unable to delete referral.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error soft deleting Referral Id {Id}", id);
-
-                TempData["ErrorMessage"] = "Unable to delete referral.";
+                _logger.LogError(ex, "Unexpected error deleting Referral Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the referral.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         // =========================================================
         // SESSION HELPERS - NEW REFERRAL ENTRY FLOW
         // =========================================================
 
+        /// <summary>
+        /// Saves the current Referral Entry draft to session.
+        /// </summary>
         private void SaveReferralEntryDraft(ReferralEntryDraft draft)
         {
             var json = System.Text.Json.JsonSerializer.Serialize(draft);
             HttpContext.Session.SetString(ReferralEntrySessionKey, json);
         }
 
+        /// <summary>
+        /// Loads the current Referral Entry draft from session.
+        /// </summary>
         private ReferralEntryDraft? LoadReferralEntryDraft()
         {
             var json = HttpContext.Session.GetString(ReferralEntrySessionKey);
@@ -874,6 +1206,9 @@ namespace A_New_Hope.Controllers
                 : System.Text.Json.JsonSerializer.Deserialize<ReferralEntryDraft>(json);
         }
 
+        /// <summary>
+        /// Clears the current Referral Entry draft from session.
+        /// </summary>
         private void ClearReferralEntryDraft()
         {
             HttpContext.Session.Remove(ReferralEntrySessionKey);
@@ -883,10 +1218,14 @@ namespace A_New_Hope.Controllers
         // DROPDOWNS - STANDARD CRUD
         // =========================================================
 
+        /// <summary>
+        /// Populates the standard CRUD dropdowns for clients and referring organizations.
+        /// </summary>
         private async Task PopulateDropdowns(ulong? selectedClientUserId = null, ulong? selectedReferringOrganizationId = null)
         {
             _logger.LogDebug("Populating dropdowns for Referrals");
 
+            // Retrieve active users for the client dropdown list.
             var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null)
                 .OrderBy(u => u.LastName)
@@ -894,6 +1233,7 @@ namespace A_New_Hope.Controllers
                 .ThenBy(u => u.Email)
                 .ToListAsync();
 
+            // Build display-friendly client dropdown options.
             var userOptions = users
                 .Select(u => new
                 {
@@ -902,11 +1242,13 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
+            // Retrieve active referring organizations for the dropdown list.
             var organizations = await _context.ReferringOrganizations
                 .Where(o => o.DeletedAt == null)
                 .OrderBy(o => o.Name)
                 .ToListAsync();
 
+            // Store the dropdown options in ViewData.
             ViewData["ClientUserId"] = new SelectList(userOptions, "Id", "DisplayName", selectedClientUserId);
             ViewData["ReferringOrganizationId"] = new SelectList(organizations, "Id", "Name", selectedReferringOrganizationId);
         }
@@ -915,11 +1257,15 @@ namespace A_New_Hope.Controllers
         // DROPDOWNS - REFERRAL ENTRY FLOW
         // =========================================================
 
+        /// <summary>
+        /// Populates the organization step dropdowns for the Referral Entry flow.
+        /// </summary>
         private async Task PopulateOrganizationEntryDropdowns(OrganizationEntryViewModel vm)
         {
             vm.NewOrganization ??= new ReferringOrganizationEntryInput();
             vm.NewOrganization.SelectedServiceCategoryIds ??= new List<ulong>();
 
+            // Retrieve active referring organizations for the existing organization dropdown.
             vm.ExistingOrganizations = await _context.ReferringOrganizations
                 .Where(o => o.DeletedAt == null && o.IsActive)
                 .OrderBy(o => o.Name)
@@ -930,6 +1276,7 @@ namespace A_New_Hope.Controllers
                 })
                 .ToListAsync();
 
+            // Retrieve active service categories for the service categories list.
             vm.AvailableServiceCategories = await _context.ServiceCategories
                 .Where(c => c.DeletedAt == null && c.IsActive)
                 .OrderBy(c => c.Name)
@@ -942,8 +1289,12 @@ namespace A_New_Hope.Controllers
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Populates the client step dropdowns for the Referral Entry flow.
+        /// </summary>
         private async Task PopulateClientEntryDropdowns(ClientEntryViewModel vm)
         {
+            // Retrieve active clients for the existing client dropdown.
             vm.ExistingClients = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null && u.UserType == UserType.Client && u.IsActive)
                 .OrderBy(u => u.LastName)
@@ -959,8 +1310,12 @@ namespace A_New_Hope.Controllers
                 .ToListAsync();
         }
 
+        /// <summary>
+        /// Populates the referral details step dropdowns for the Referral Entry flow.
+        /// </summary>
         private Task PopulateReferralDetailsDropdowns(ReferralDetailsViewModel vm)
         {
+            // Build the referral status dropdown options.
             vm.ReferralStatusOptions = Enum.GetValues(typeof(ReferralStatus))
                 .Cast<ReferralStatus>()
                 .Select(status => new SelectListItem
@@ -974,6 +1329,9 @@ namespace A_New_Hope.Controllers
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Builds the review view model for the Referral Entry flow.
+        /// </summary>
         private async Task<ReferralEntryReviewViewModel> BuildReferralEntryReviewViewModelAsync(ReferralEntryDraft draft)
         {
             var vm = new ReferralEntryReviewViewModel
@@ -1040,6 +1398,9 @@ namespace A_New_Hope.Controllers
         // PLACEHOLDERS FOR NEXT PHASE
         // =========================================================
 
+        /// <summary>
+        /// Normalizes the organization step view model.
+        /// </summary>
         private void NormalizeOrganizationEntry(OrganizationEntryViewModel vm)
         {
             vm.NewOrganization ??= new ReferringOrganizationEntryInput();
@@ -1057,6 +1418,9 @@ namespace A_New_Hope.Controllers
             vm.NewOrganization.Notes = NullIfWhiteSpace(vm.NewOrganization.Notes);
         }
 
+        /// <summary>
+        /// Applies business-rule validation for the organization step.
+        /// </summary>
         private async Task ApplyOrganizationEntryValidationAsync(OrganizationEntryViewModel vm)
         {
             bool selectedExisting = string.Equals(vm.OrganizationMode, "existing", StringComparison.OrdinalIgnoreCase);
@@ -1186,6 +1550,9 @@ namespace A_New_Hope.Controllers
             }
         }
 
+        /// <summary>
+        /// Normalizes the client step view model.
+        /// </summary>
         private void NormalizeClientEntry(ClientEntryViewModel vm)
         {
             vm.NewClient ??= new ClientEntryInput();
@@ -1208,6 +1575,9 @@ namespace A_New_Hope.Controllers
             }
         }
 
+        /// <summary>
+        /// Applies business-rule validation for the client step.
+        /// </summary>
         private async Task ApplyClientEntryValidationAsync(ClientEntryViewModel vm)
         {
             bool usingExisting = string.Equals(vm.ClientMode, "existing", StringComparison.OrdinalIgnoreCase);
@@ -1363,6 +1733,10 @@ namespace A_New_Hope.Controllers
                 }
             }
         }
+
+        /// <summary>
+        /// Normalizes the household step view model.
+        /// </summary>
         private void NormalizeHouseholdEntry(HouseholdEntryViewModel vm)
         {
             vm.HouseholdMembers ??= new List<HouseholdMemberEntryInput>();
@@ -1374,6 +1748,9 @@ namespace A_New_Hope.Controllers
             }
         }
 
+        /// <summary>
+        /// Applies business-rule validation for the household step.
+        /// </summary>
         private void ApplyHouseholdEntryValidation(HouseholdEntryViewModel vm)
         {
             if (vm.HouseholdMembers == null)
@@ -1428,12 +1805,18 @@ namespace A_New_Hope.Controllers
             }
         }
 
+        /// <summary>
+        /// Normalizes the referral details step view model.
+        /// </summary>
         private void NormalizeReferralDetails(ReferralDetailsViewModel vm)
         {
             vm.Referral ??= new ReferralDetailsInput();
             vm.Referral.Notes = NullIfWhiteSpace(vm.Referral.Notes);
         }
 
+        /// <summary>
+        /// Applies business-rule validation for the referral details step.
+        /// </summary>
         private async Task ApplyReferralDetailsValidationAsync(ReferralDetailsViewModel vm)
         {
             await Task.CompletedTask;
@@ -1482,6 +1865,9 @@ namespace A_New_Hope.Controllers
             }
         }
 
+        /// <summary>
+        /// Applies final validation to the Referral Entry draft before confirmation.
+        /// </summary>
         private async Task ApplyReferralEntryDraftValidationAsync(ReferralEntryDraft draft)
         {
             // -------------------------------------------------
@@ -1603,16 +1989,25 @@ namespace A_New_Hope.Controllers
         // EXISTING HELPERS
         // =========================================================
 
+        /// <summary>
+        /// Returns true if the non-deleted referral exists.
+        /// </summary>
         private async Task<bool> ReferralExists(ulong id)
         {
             return await _context.Referrals.AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
 
+        /// <summary>
+        /// Trims strings and normalizes required values.
+        /// </summary>
         private static void NormalizeReferral(Referral model)
         {
             model.Notes = NullIfWhiteSpace(model.Notes);
         }
 
+        /// <summary>
+        /// Applies business-rule validation beyond data annotations.
+        /// </summary>
         private async Task ApplyReferralValidationAsync(Referral model, ulong? currentId = null)
         {
             var clientExists = await _context.DomainUsers
@@ -1668,11 +2063,17 @@ namespace A_New_Hope.Controllers
             }
         }
 
+        /// <summary>
+        /// Returns null when the value is blank; otherwise returns the trimmed value.
+        /// </summary>
         private static string? NullIfWhiteSpace(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
+        /// <summary>
+        /// Returns true when the phone number matches the allowed US format rules.
+        /// </summary>
         private static bool IsValidPhoneNumber(string phoneNumber)
         {
             if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
@@ -1695,26 +2096,41 @@ namespace A_New_Hope.Controllers
             return false;
         }
 
+        /// <summary>
+        /// Returns true when the value contains at least one letter or digit.
+        /// </summary>
         private static bool ContainsLetterOrDigit(string value)
         {
             return value.Any(char.IsLetterOrDigit);
         }
 
+        /// <summary>
+        /// Returns true when the city value matches the allowed character rules.
+        /// </summary>
         private static bool IsValidCity(string city)
         {
             return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
 
+        /// <summary>
+        /// Returns true when the state value is a valid 2-letter US state code.
+        /// </summary>
         private static bool IsValidUsStateCode(string state)
         {
             return state.Length == 2 && ValidUsStateCodes.Contains(state);
         }
 
+        /// <summary>
+        /// Returns true when the postal code matches US ZIP or ZIP+4 format.
+        /// </summary>
         private static bool IsValidUsPostalCode(string postalCode)
         {
             return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
 
+        /// <summary>
+        /// Returns true when the email matches the allowed format rules.
+        /// </summary>
         private static bool IsValidEmail(string email)
         {
             if (email.Contains(' '))
@@ -1771,6 +2187,9 @@ namespace A_New_Hope.Controllers
                 && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
         }
 
+        /// <summary>
+        /// Returns true when the person name matches the allowed character rules.
+        /// </summary>
         private static bool IsValidPersonName(string name)
         {
             return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
