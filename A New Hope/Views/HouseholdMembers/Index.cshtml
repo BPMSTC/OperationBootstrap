@@ -20,7 +20,7 @@
                 <th>@Html.DisplayNameFor(model => model.FirstName)</th>
                 <th>@Html.DisplayNameFor(model => model.LastName)</th>
                 <th>@Html.DisplayNameFor(model => model.DateOfBirth)</th>
-                <th>@Html.DisplayNameFor(model => model.AgeAsOfDate)</th>
+                <th>@Html.DisplayNameFor(model => model.ApproximateAge)</th>
                 <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
                 <th class="text-end">Actions</th>
             </tr>
@@ -39,7 +39,7 @@
                     <td>@Html.DisplayFor(modelItem => item.FirstName)</td>
                     <td>@Html.DisplayFor(modelItem => item.LastName)</td>
                     <td>@Html.DisplayFor(modelItem => item.DateOfBirth)</td>
-                    <td>@Html.DisplayFor(modelItem => item.AgeAsOfDate)</td>
+                    <td>@Html.DisplayFor(modelItem => item.ApproximateAge)</td>
                     <td>@Html.DisplayFor(modelItem => item.UpdatedAt)</td>
                     <td class="text-end text-nowrap">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>

@@ -78,10 +78,30 @@
                                         <span asp-validation-for="NewOrganization.Name" class="text-danger"></span>
                                     </div>
 
-                                    <div class="col-md-6">
-                                        <label asp-for="NewOrganization.Type" class="form-label"></label>
-                                        <input asp-for="NewOrganization.Type" class="form-control new-org-field" />
-                                        <span asp-validation-for="NewOrganization.Type" class="text-danger"></span>
+                                    <div class="col-md-12">
+                                        <label class="form-label">Service Categories</label>
+
+                                        <div class="row">
+                                            @foreach (var category in Model.AvailableServiceCategories)
+                                            {
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input new-org-field"
+                                                               type="checkbox"
+                                                               name="NewOrganization.SelectedServiceCategoryIds"
+                                                               value="@category.Value"
+                                                               id="serviceCategory_@category.Value"
+                                                               @(category.Selected ? "checked" : null) />
+
+                                                        <label class="form-check-label" for="serviceCategory_@category.Value">
+                                                            @category.Text
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <span asp-validation-for="NewOrganization.SelectedServiceCategoryIds" class="text-danger"></span>
                                     </div>
 
                                     <div class="col-md-6">

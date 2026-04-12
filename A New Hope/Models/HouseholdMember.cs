@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations; // Added for [MaxLength], [Required], [DataType]
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace A_New_Hope.Models
 {
@@ -30,30 +30,30 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Household member first name (required).
         /// </summary>
-        [Required(ErrorMessage = "First Name is required")] // Front-end MVC validation
-        [MaxLength(100, ErrorMessage = "First Name cannot exceed 100 characters")]
-        public string FirstName { get; set; } = null!;
+        [Required(ErrorMessage = "First name is required.")]
+        [MaxLength(100, ErrorMessage = "First name cannot exceed 100 characters.")]
+        public string FirstName { get; set; } = string.Empty;
 
         /// <summary>
         /// Household member last name (required).
         /// </summary>
-        [Required(ErrorMessage = "Last Name is required")] // Front-end MVC validation
-        [MaxLength(100, ErrorMessage = "Last Name cannot exceed 100 characters")]
-        public string LastName { get; set; } = null!;
+        [Required(ErrorMessage = "Last name is required.")]
+        [MaxLength(100, ErrorMessage = "Last name cannot exceed 100 characters.")]
+        public string LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional date of birth.
         /// Using DateTime keeps provider compatibility (DateOnly support varies by provider).
         /// </summary>
-        [DataType(DataType.Date)] // Helps render date pickers in MVC forms
+        [DataType(DataType.Date)]
         public DateTime? DateOfBirth { get; set; }
 
         /// <summary>
         /// Optional snapshot date for "age as of" calculations.
         /// Keep only if you truly need to store historical age snapshots; otherwise age can be derived from DOB.
         /// </summary>
-        [DataType(DataType.Date)]
-        public DateTime? AgeAsOfDate { get; set; }
+        [Range(0, 120, ErrorMessage = "Approximate age must be between 0 and 120.")]
+        public int? ApproximateAge { get; set; }
 
         /// <summary>
         /// Audit: DomainUser who created this record (nullable until auth is wired).

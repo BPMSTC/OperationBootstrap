@@ -25,7 +25,7 @@ namespace A_New_Hope.Models.ViewModels.Referrals
 
         public ulong? ExistingClientUserId { get; set; }
 
-        public ClientEntryInput NewClient { get; set; } = new();
+        public ClientEntryInput? NewClient { get; set; }
 
         // =========================================================
         // HOUSEHOLD MEMBERS

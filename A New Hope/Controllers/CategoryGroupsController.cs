@@ -34,8 +34,7 @@ namespace A_New_Hope.Controllers
             // Retrieve active category groups for display.
             var categoryGroups = await _context.CategoryGroups
                 .Where(cg => cg.DeletedAt == null)
-                .OrderBy(cg => cg.SortOrder)
-                .ThenBy(cg => cg.Name)
+                .OrderBy(cg => cg.Name)
                 .ToListAsync();
 
             _logger.LogInformation("Fetched {Count} category groups", categoryGroups.Count);
@@ -88,7 +87,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,SortOrder,IsActive")] CategoryGroup categoryGroup)
+        public async Task<IActionResult> Create([Bind("Name,IsActive")] CategoryGroup categoryGroup)
         {
             _logger.LogInformation("Attempting to create CategoryGroup {Name}", categoryGroup.Name);
 
@@ -173,7 +172,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Name,SortOrder,IsActive")] CategoryGroup formModel)
+        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Name,IsActive")] CategoryGroup formModel)
         {
             _logger.LogInformation("Attempting to edit CategoryGroupId {Id}", id);
 
@@ -217,7 +216,6 @@ namespace A_New_Hope.Controllers
 
             // Copy validated form values into the tracked entity.
             existing.Name = formModel.Name;
-            existing.SortOrder = formModel.SortOrder;
             existing.IsActive = formModel.IsActive;
 
             existing.UpdatedAt = DateTime.UtcNow;
@@ -361,12 +359,6 @@ namespace A_New_Hope.Controllers
                 {
                     ModelState.AddModelError(nameof(CategoryGroup.Name), "A category group with this name already exists.");
                 }
-            }
-
-            // Prevent negative sort order values.
-            if (model.SortOrder < 0)
-            {
-                ModelState.AddModelError(nameof(CategoryGroup.SortOrder), "Sort Order cannot be less than 0.");
             }
         }
 

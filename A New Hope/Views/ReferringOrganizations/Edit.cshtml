@@ -1,5 +1,4 @@
-@model A_New_Hope.Models.ReferringOrganization
-
+@model A_New_Hope.Models.ViewModels.ReferringOrganizations.ReferringOrganizationEditViewModel
 @{
     ViewData["Title"] = "Edit Referring Organization";
 }
@@ -9,7 +8,7 @@
 <hr />
 <div class="row">
     <div class="col-md-6 col-lg-5">
-        <form asp-action="Edit">
+        <form asp-action="Edit" asp-route-id="@Model.Id">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
 
@@ -20,9 +19,28 @@
             </div>
 
             <div class="mb-3">
-                <label asp-for="Type" class="form-label"></label>
-                <input asp-for="Type" class="form-control" />
-                <span asp-validation-for="Type" class="text-danger"></span>
+                <label class="form-label">Service Categories</label>
+
+                <div class="row">
+                    @foreach (var category in Model.AvailableServiceCategories)
+                    {
+                        <div class="col-lg-6">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="SelectedServiceCategoryIds"
+                                       value="@category.Value"
+                                       id="serviceCategory_@category.Value"
+                                       @(category.Selected ? "checked" : null) />
+                                <label class="form-check-label" for="serviceCategory_@category.Value">
+                                    @category.Text
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <span asp-validation-for="SelectedServiceCategoryIds" class="text-danger"></span>
             </div>
 
             <div class="mb-3">
@@ -57,7 +75,7 @@
 
             <div class="mb-3">
                 <label asp-for="State" class="form-label"></label>
-                <input asp-for="State" class="form-control" />
+                <input asp-for="State" class="form-control" maxlength="2" />
                 <span asp-validation-for="State" class="text-danger"></span>
             </div>
 

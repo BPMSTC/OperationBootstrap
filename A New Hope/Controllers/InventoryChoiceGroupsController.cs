@@ -32,8 +32,7 @@ namespace A_New_Hope.Controllers
 
             var inventoryChoiceGroups = await _context.InventoryChoiceGroups
                 .Where(g => g.DeletedAt == null)
-                .OrderBy(g => g.SortOrder)
-                .ThenBy(g => g.Name)
+                .OrderBy(g => g.Name)
                 .ToListAsync();
 
             _logger.LogInformation("Loaded {Count} inventory choice groups", inventoryChoiceGroups.Count);
@@ -197,7 +196,6 @@ namespace A_New_Hope.Controllers
             existing.Name = formModel.Name;
             existing.MaxSelections = formModel.MaxSelections;
             existing.DisplayLabel = formModel.DisplayLabel;
-            existing.SortOrder = formModel.SortOrder;
             existing.IsActive = formModel.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedByUserId = null; // Replace when auth integration is added.

@@ -1,12 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 
-namespace A_New_Hope.Models.Inputs
+namespace A_New_Hope.Models.ViewModels.ReferringOrganizations
 {
     /// <summary>
-    /// Organization entry data captured during Referral Entry.
+    /// View model used by ReferringOrganizations Create/Edit screens.
+    /// Supports selecting multiple service categories.
     /// </summary>
-    public class ReferringOrganizationEntryInput
+    public class ReferringOrganizationEditViewModel
     {
+        public ulong? Id { get; set; }
+
         [Display(Name = "Organization Name")]
         [MaxLength(200)]
         public string? Name { get; set; }
@@ -14,17 +18,15 @@ namespace A_New_Hope.Models.Inputs
         [Display(Name = "Service Categories")]
         public List<ulong> SelectedServiceCategoryIds { get; set; } = new();
 
-        [Display(Name = "Contact Person Name")]
-        [MaxLength(200)]
-        public string? PrimaryContactName { get; set; }
-
-        [Display(Name = "Email Address")]
-        [MaxLength(254)]
-        public string? Email { get; set; }
+        public List<SelectListItem> AvailableServiceCategories { get; set; } = new();
 
         [Display(Name = "Phone Number")]
         [MaxLength(25)]
         public string? PhoneNumber { get; set; }
+
+        [Display(Name = "Email Address")]
+        [MaxLength(254)]
+        public string? Email { get; set; }
 
         [Display(Name = "Address Line 1")]
         [MaxLength(200)]
@@ -46,21 +48,15 @@ namespace A_New_Hope.Models.Inputs
         [MaxLength(20)]
         public string? PostalCode { get; set; }
 
+        [Display(Name = "Contact Person Name")]
+        [MaxLength(200)]
+        public string? PrimaryContactName { get; set; }
+
         [Display(Name = "Notes")]
         [MaxLength(2000)]
         public string? Notes { get; set; }
 
-        public bool HasStarted =>
-            !string.IsNullOrWhiteSpace(Name) ||
-            SelectedServiceCategoryIds.Any() ||
-            !string.IsNullOrWhiteSpace(PrimaryContactName) ||
-            !string.IsNullOrWhiteSpace(Email) ||
-            !string.IsNullOrWhiteSpace(PhoneNumber) ||
-            !string.IsNullOrWhiteSpace(AddressLine1) ||
-            !string.IsNullOrWhiteSpace(AddressLine2) ||
-            !string.IsNullOrWhiteSpace(City) ||
-            !string.IsNullOrWhiteSpace(State) ||
-            !string.IsNullOrWhiteSpace(PostalCode) ||
-            !string.IsNullOrWhiteSpace(Notes);
+        [Display(Name = "Active")]
+        public bool IsActive { get; set; } = true;
     }
 }

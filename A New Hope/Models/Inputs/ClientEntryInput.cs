@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using A_New_Hope.Models.Enums;
 
 namespace A_New_Hope.Models.Inputs
 {
@@ -48,8 +49,7 @@ namespace A_New_Hope.Models.Inputs
         public DateOnly? DateOfBirth { get; set; }
 
         [Display(Name = "Employment Status")]
-        [MaxLength(50)]
-        public string? EmploymentStatus { get; set; }
+        public EmploymentStatus? EmploymentStatus { get; set; }
 
         [Display(Name = "Currently Unhoused")]
         public bool IsUnhoused { get; set; }
@@ -70,7 +70,7 @@ namespace A_New_Hope.Models.Inputs
             !string.IsNullOrWhiteSpace(State) ||
             !string.IsNullOrWhiteSpace(PostalCode) ||
             DateOfBirth.HasValue ||
-            !string.IsNullOrWhiteSpace(EmploymentStatus) ||
+            EmploymentStatus.HasValue ||
             Incomes.Any(i => i.HasStarted) ||
             IsUnhoused;
     }

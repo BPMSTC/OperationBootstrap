@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace A_New_Hope.Controllers
 {
-    [AllowAnonymous]
+    [Authorize]
     public class AccountController : Controller
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
@@ -25,6 +25,7 @@ namespace A_New_Hope.Controllers
         // GET: /Account/Login
         // --------------------
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)
         {
             if (User.Identity?.IsAuthenticated == true)
@@ -51,6 +52,7 @@ namespace A_New_Hope.Controllers
         // --------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [AllowAnonymous]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -98,7 +100,6 @@ namespace A_New_Hope.Controllers
         // --------------------
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
@@ -109,6 +110,7 @@ namespace A_New_Hope.Controllers
         // GET: /Account/AccessDenied
         // --------------------
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();

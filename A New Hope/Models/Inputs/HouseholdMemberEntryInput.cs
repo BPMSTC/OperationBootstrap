@@ -19,14 +19,14 @@ namespace A_New_Hope.Models.Inputs
         [DataType(DataType.Date)]
         public DateTime? DateOfBirth { get; set; }
 
-        [Display(Name = "Age As Of Date")]
-        [DataType(DataType.Date)]
-        public DateTime? AgeAsOfDate { get; set; }
+        [Display(Name = "Approximate Age")]
+        [Range(0, 120)]
+        public int? ApproximateAge { get; set; }
 
         public bool HasStarted =>
             !string.IsNullOrWhiteSpace(FirstName) ||
             !string.IsNullOrWhiteSpace(LastName) ||
             DateOfBirth.HasValue ||
-            AgeAsOfDate.HasValue;
+            ApproximateAge.HasValue;
     }
 }

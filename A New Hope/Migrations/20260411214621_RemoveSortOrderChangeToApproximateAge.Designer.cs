@@ -3,6 +3,7 @@ using System;
 using A_New_Hope.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace A_New_Hope.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260411214621_RemoveSortOrderChangeToApproximateAge")]
+    partial class RemoveSortOrderChangeToApproximateAge
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -789,66 +792,6 @@ namespace A_New_Hope.Migrations
                     b.ToTable("ReferringOrganizations");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.ReferringOrganizationServiceCategory", b =>
-                {
-                    b.Property<ulong>("ReferringOrganizationId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<ulong>("ServiceCategoryId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("ReferringOrganizationId", "ServiceCategoryId");
-
-                    b.HasIndex("ServiceCategoryId");
-
-                    b.ToTable("ReferringOrganizationServiceCategories");
-                });
-
-            modelBuilder.Entity("A_New_Hope.Models.ServiceCategory", b =>
-                {
-                    b.Property<ulong>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("CreatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<ulong?>("UpdatedByUserId")
-                        .HasColumnType("bigint unsigned");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedByUserId");
-
-                    b.HasIndex("DeletedAt");
-
-                    b.HasIndex("IsActive");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.HasIndex("UpdatedByUserId");
-
-                    b.ToTable("ServiceCategories");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.UserChoiceGroupPreference", b =>
                 {
                     b.Property<ulong>("Id")
@@ -1379,42 +1322,6 @@ namespace A_New_Hope.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("A_New_Hope.Models.ReferringOrganizationServiceCategory", b =>
-                {
-                    b.HasOne("A_New_Hope.Models.ReferringOrganization", "ReferringOrganization")
-                        .WithMany("ReferringOrganizationServiceCategories")
-                        .HasForeignKey("ReferringOrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("A_New_Hope.Models.ServiceCategory", "ServiceCategory")
-                        .WithMany("ReferringOrganizationServiceCategories")
-                        .HasForeignKey("ServiceCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ReferringOrganization");
-
-                    b.Navigation("ServiceCategory");
-                });
-
-            modelBuilder.Entity("A_New_Hope.Models.ServiceCategory", b =>
-                {
-                    b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("A_New_Hope.Models.DomainUser", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
             modelBuilder.Entity("A_New_Hope.Models.UserChoiceGroupPreference", b =>
                 {
                     b.HasOne("A_New_Hope.Models.DomainUser", "CreatedByUser")
@@ -1582,13 +1489,6 @@ namespace A_New_Hope.Migrations
             modelBuilder.Entity("A_New_Hope.Models.ReferringOrganization", b =>
                 {
                     b.Navigation("Referrals");
-
-                    b.Navigation("ReferringOrganizationServiceCategories");
-                });
-
-            modelBuilder.Entity("A_New_Hope.Models.ServiceCategory", b =>
-                {
-                    b.Navigation("ReferringOrganizationServiceCategories");
                 });
 #pragma warning restore 612, 618
         }

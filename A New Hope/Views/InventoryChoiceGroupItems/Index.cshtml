@@ -41,7 +41,6 @@ else
                 <th>Choice Group</th>
                 <th>Inventory Item</th>
                 <th>Category</th>
-                <th>@Html.DisplayNameFor(model => model.SortOrder)</th>
                 <th>@Html.DisplayNameFor(model => model.IsActive)</th>
                 <th class="text-end">Actions</th>
             </tr>
@@ -69,7 +68,6 @@ else
                             : ""
                         )
                     </td>
-                    <td>@Html.DisplayFor(modelItem => item.SortOrder)</td>
                     <td>@Html.DisplayFor(modelItem => item.IsActive)</td>
                     <td class="text-end text-nowrap">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>

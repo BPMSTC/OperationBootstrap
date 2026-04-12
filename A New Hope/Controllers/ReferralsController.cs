@@ -627,12 +627,16 @@ namespace A_New_Hope.Controllers
                 }
                 else
                 {
+                    if (draft.NewClient == null)
+                    {
+                        throw new InvalidOperationException("Referral Entry is missing new client information.");
+                    }
+
                     clientUserId = await _clientEntryService.CreateClientAndReturnIdAsync(
                         draft.NewClient,
                         draft.HouseholdMembers,
                         actingUserId: null);
                 }
-
                 // -------------------------------------------------
                 // REFERRAL
                 // -------------------------------------------------
@@ -913,6 +917,9 @@ namespace A_New_Hope.Controllers
 
         private async Task PopulateOrganizationEntryDropdowns(OrganizationEntryViewModel vm)
         {
+            vm.NewOrganization ??= new ReferringOrganizationEntryInput();
+            vm.NewOrganization.SelectedServiceCategoryIds ??= new List<ulong>();
+
             vm.ExistingOrganizations = await _context.ReferringOrganizations
                 .Where(o => o.DeletedAt == null && o.IsActive)
                 .OrderBy(o => o.Name)
@@ -920,6 +927,17 @@ namespace A_New_Hope.Controllers
                 {
                     Value = o.Id.ToString(),
                     Text = o.Name
+                })
+                .ToListAsync();
+
+            vm.AvailableServiceCategories = await _context.ServiceCategories
+                .Where(c => c.DeletedAt == null && c.IsActive)
+                .OrderBy(c => c.Name)
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Name,
+                    Selected = vm.NewOrganization.SelectedServiceCategoryIds.Contains(c.Id)
                 })
                 .ToListAsync();
         }
@@ -973,6 +991,21 @@ namespace A_New_Hope.Controllers
             else if (draft.HasNewOrganization)
             {
                 vm.SelectedOrganizationDisplayName = draft.NewOrganization.Name;
+
+                var selectedCategoryIds = draft.NewOrganization.SelectedServiceCategoryIds ?? new List<ulong>();
+
+                if (selectedCategoryIds.Any())
+                {
+                    var categoryNames = await _context.ServiceCategories
+                        .Where(c => c.DeletedAt == null && selectedCategoryIds.Contains(c.Id))
+                        .OrderBy(c => c.Name)
+                        .Select(c => c.Name)
+                        .ToListAsync();
+
+                    vm.NewOrganizationServiceCategoriesDisplay = categoryNames.Any()
+                        ? string.Join(", ", categoryNames)
+                        : null;
+                }
             }
 
             if (draft.HasExistingClient)
@@ -986,10 +1019,17 @@ namespace A_New_Hope.Controllers
             }
             else if (draft.HasNewClient)
             {
+                var newClient = draft.NewClient;
+
+                if (newClient == null)
+                {
+                    throw new InvalidOperationException("Referral Entry draft is missing new client information.");
+                }
+
                 vm.SelectedClientDisplayName =
-                    string.IsNullOrWhiteSpace($"{draft.NewClient.LastName}{draft.NewClient.FirstName}".Trim())
-                        ? draft.NewClient.Email
-                        : $"{draft.NewClient.LastName}, {draft.NewClient.FirstName} ({draft.NewClient.Email})";
+                    string.IsNullOrWhiteSpace($"{newClient.LastName}{newClient.FirstName}".Trim())
+                        ? newClient.Email
+                        : $"{newClient.LastName}, {newClient.FirstName} ({newClient.Email})";
             }
 
             return vm;
@@ -1003,9 +1043,9 @@ namespace A_New_Hope.Controllers
         private void NormalizeOrganizationEntry(OrganizationEntryViewModel vm)
         {
             vm.NewOrganization ??= new ReferringOrganizationEntryInput();
+            vm.NewOrganization.SelectedServiceCategoryIds ??= new List<ulong>();
 
             vm.NewOrganization.Name = NullIfWhiteSpace(vm.NewOrganization.Name);
-            vm.NewOrganization.Type = NullIfWhiteSpace(vm.NewOrganization.Type);
             vm.NewOrganization.PrimaryContactName = NullIfWhiteSpace(vm.NewOrganization.PrimaryContactName);
             vm.NewOrganization.Email = NullIfWhiteSpace(vm.NewOrganization.Email);
             vm.NewOrganization.PhoneNumber = NullIfWhiteSpace(vm.NewOrganization.PhoneNumber);
@@ -1043,6 +1083,9 @@ namespace A_New_Hope.Controllers
                 return;
             }
 
+            vm.NewOrganization ??= new ReferringOrganizationEntryInput();
+            vm.NewOrganization.SelectedServiceCategoryIds ??= new List<ulong>();
+
             // New organization validation
             if (string.IsNullOrWhiteSpace(vm.NewOrganization.Name))
             {
@@ -1067,10 +1110,25 @@ namespace A_New_Hope.Controllers
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(vm.NewOrganization.Type) &&
-                !ContainsLetterOrDigit(vm.NewOrganization.Type))
+            if (!vm.NewOrganization.SelectedServiceCategoryIds.Any())
             {
-                ModelState.AddModelError("NewOrganization.Type", "Primary type of service must contain letters or numbers.");
+                ModelState.AddModelError("NewOrganization.SelectedServiceCategoryIds", "Select at least one service category.");
+            }
+            else
+            {
+                var validCategoryIds = await _context.ServiceCategories
+                    .Where(c => c.DeletedAt == null && c.IsActive)
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                var invalidIds = vm.NewOrganization.SelectedServiceCategoryIds
+                    .Except(validCategoryIds)
+                    .ToList();
+
+                if (invalidIds.Any())
+                {
+                    ModelState.AddModelError("NewOrganization.SelectedServiceCategoryIds", "One or more selected service categories are invalid.");
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.PrimaryContactName) &&
@@ -1141,7 +1199,6 @@ namespace A_New_Hope.Controllers
             vm.NewClient.City = NullIfWhiteSpace(vm.NewClient.City);
             vm.NewClient.State = NullIfWhiteSpace(vm.NewClient.State)?.ToUpperInvariant();
             vm.NewClient.PostalCode = NullIfWhiteSpace(vm.NewClient.PostalCode);
-            vm.NewClient.EmploymentStatus = NullIfWhiteSpace(vm.NewClient.EmploymentStatus);
 
             vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
 
@@ -1209,21 +1266,6 @@ namespace A_New_Hope.Controllers
                 {
                     ModelState.AddModelError("NewClient.Email", "Email format is invalid.");
                 }
-                else
-                {
-                    var normalizedEmail = vm.NewClient.Email.ToLower();
-
-                    var duplicateExists = await _context.DomainUsers.AnyAsync(u =>
-                        u.DeletedAt == null &&
-                        u.UserType == UserType.Client &&
-                        u.Email != null &&
-                        u.Email.ToLower() == normalizedEmail);
-
-                    if (duplicateExists)
-                    {
-                        ModelState.AddModelError("NewClient.Email", "A client with this email address already exists.");
-                    }
-                }
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.PhoneNumber) &&
@@ -1268,10 +1310,13 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError("NewClient.DateOfBirth", "Date of Birth cannot be in the future.");
             }
 
-            if (!string.IsNullOrWhiteSpace(vm.NewClient.EmploymentStatus) &&
-                !Regex.IsMatch(vm.NewClient.EmploymentStatus, @"^[A-Za-z0-9\s'.-]*$"))
+            if (!vm.NewClient.EmploymentStatus.HasValue)
             {
-                ModelState.AddModelError("NewClient.EmploymentStatus", "Employment status contains invalid characters.");
+                ModelState.AddModelError("NewClient.EmploymentStatus", "Employment status is required.");
+            }
+            else if (!Enum.IsDefined(vm.NewClient.EmploymentStatus.Value))
+            {
+                ModelState.AddModelError("NewClient.EmploymentStatus", "Select a valid employment status.");
             }
 
             vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
@@ -1369,17 +1414,16 @@ namespace A_New_Hope.Controllers
                     ModelState.AddModelError($"HouseholdMembers[{i}].DateOfBirth", "Date of Birth cannot be in the future.");
                 }
 
-                if (member.AgeAsOfDate.HasValue &&
-                    member.AgeAsOfDate.Value.Date > DateTime.UtcNow.Date)
+                if (member.ApproximateAge.HasValue)
                 {
-                    ModelState.AddModelError($"HouseholdMembers[{i}].AgeAsOfDate", "Age As Of Date cannot be in the future.");
-                }
-
-                if (member.DateOfBirth.HasValue &&
-                    member.AgeAsOfDate.HasValue &&
-                    member.AgeAsOfDate.Value.Date < member.DateOfBirth.Value.Date)
-                {
-                    ModelState.AddModelError($"HouseholdMembers[{i}].AgeAsOfDate", "Age As Of Date cannot be earlier than Date of Birth.");
+                    if (member.ApproximateAge.Value < 0)
+                    {
+                        ModelState.AddModelError($"HouseholdMembers[{i}].ApproximateAge", "Approximate Age cannot be negative.");
+                    }
+                    else if (member.ApproximateAge.Value > 130)
+                    {
+                        ModelState.AddModelError($"HouseholdMembers[{i}].ApproximateAge", "Approximate Age cannot be greater than 130.");
+                    }
                 }
             }
         }

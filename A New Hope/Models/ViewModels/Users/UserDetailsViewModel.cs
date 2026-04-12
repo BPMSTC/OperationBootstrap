@@ -58,8 +58,5 @@ namespace A_New_Hope.Models.ViewModels.Users
         public bool IsClient => User.UserType == UserType.Client;
 
         public List<Referral> Referrals { get; set; } = new();
-        //public bool ShowAllReferrals { get; set; }
-        //public string ReferralSectionHeading => ShowAllReferrals ? "All Referrals" : "Open Referrals";
-
     }
 }

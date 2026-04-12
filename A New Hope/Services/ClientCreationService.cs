@@ -41,8 +41,8 @@ namespace A_New_Hope.Services
 
             var client = new DomainUser
             {
-                FirstName = clientInput.FirstName,
-                LastName = clientInput.LastName,
+                FirstName = clientInput.FirstName!,
+                LastName = clientInput.LastName!,
                 Email = clientInput.Email,
                 PhoneNumber = clientInput.PhoneNumber,
                 AddressLine1 = clientInput.AddressLine1,
@@ -65,7 +65,7 @@ namespace A_New_Hope.Services
             var clientProfile = new ClientProfile
             {
                 UserId = client.Id,
-                EmploymentStatus = clientInput.EmploymentStatus,
+                EmploymentStatus = clientInput.EmploymentStatus!.Value,
                 IsUnhoused = clientInput.IsUnhoused,
                 CreatedAt = now,
                 UpdatedAt = now,
@@ -104,7 +104,7 @@ namespace A_New_Hope.Services
                     FirstName = member.FirstName!,
                     LastName = member.LastName!,
                     DateOfBirth = member.DateOfBirth,
-                    AgeAsOfDate = member.AgeAsOfDate,
+                    ApproximateAge = member.ApproximateAge,
                     CreatedAt = now,
                     UpdatedAt = now,
                     CreatedByUserId = actingUserId,
@@ -149,7 +149,6 @@ namespace A_New_Hope.Services
             input.City = NullIfWhiteSpace(input.City);
             input.State = NullIfWhiteSpace(input.State)?.ToUpperInvariant();
             input.PostalCode = NullIfWhiteSpace(input.PostalCode);
-            input.EmploymentStatus = NullIfWhiteSpace(input.EmploymentStatus);
         }
 
         private static void NormalizeHousehold(List<HouseholdMemberEntryInput> householdInputs)
@@ -171,6 +170,11 @@ namespace A_New_Hope.Services
             if (string.IsNullOrWhiteSpace(input.LastName))
             {
                 throw new ArgumentException("Client last name is required.", nameof(input));
+            }
+
+            if (!input.EmploymentStatus.HasValue)
+            {
+                throw new ArgumentException("Employment status is required.", nameof(input));
             }
         }
 

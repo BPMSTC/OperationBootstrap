@@ -20,10 +20,8 @@ namespace A_New_Hope.Models
         /// Front-end validation ensures proper email format and length.
         /// Added Regex for stricter validation of allowed email characters.
         /// </summary>
-        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
         [MaxLength(254)]
-        [RegularExpression(@"^[A-Za-z0-9._+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$",
-            ErrorMessage = "Email format is invalid.")]
+        [EmailAddress(ErrorMessage = "Enter a valid email address.")]
         public string? Email { get; set; }
 
         // -----------------------------------------------------------------
@@ -34,49 +32,47 @@ namespace A_New_Hope.Models
         /// Optional phone number for the user.
         /// Added Regex for common characters: digits, spaces, parentheses, hyphens, plus sign.
         /// </summary>
-        [Phone(ErrorMessage = "Enter a valid phone number.")]
         [MaxLength(25)]
-        [RegularExpression(@"^\+?[0-9()\-\s]+$", ErrorMessage = "Phone number contains invalid characters.")]
+        [RegularExpression(@"^(\+1\s?)?(\([0-9]{3}\)|[0-9]{3})[\s.-]?[0-9]{3}[\s.-]?[0-9]{4}$",
+            ErrorMessage = "Enter a valid phone number.")]
         public string? PhoneNumber { get; set; }
 
         /// <summary>
         /// Optional first name.
         /// </summary>
+        [Required(ErrorMessage = "First name is required.")]
         [MaxLength(100)]
-        public string? FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional last name.
         /// </summary>
+        [Required(ErrorMessage = "Last name is required.")]
         [MaxLength(100)]
-        public string? LastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional address line 1.
         /// </summary>
         [MaxLength(200)]
-        [RegularExpression(@"^[A-Za-z0-9\s#.,'\-]*$", ErrorMessage = "Address contains invalid characters.")]
-        public string? AddressLine1 { get; set; } // Avoid LONGTEXT
-
+        public string? AddressLine1 { get; set; }
         /// <summary>
         /// Optional address line 2.
         /// </summary>
         [MaxLength(200)]
-        [RegularExpression(@"^[A-Za-z0-9\s#.,'\-]*$", ErrorMessage = "Address contains invalid characters.")]
-        public string? AddressLine2 { get; set; } // Avoid LONGTEXT
+        public string? AddressLine2 { get; set; }
 
         /// <summary>
         /// Optional city.
         /// </summary>
         [MaxLength(100)]
-        [RegularExpression(@"^[A-Za-z\s.\-']*$", ErrorMessage = "City contains invalid characters.")]
-        public string? City { get; set; } // Avoid LONGTEXT
+        public string? City { get; set; }
 
         /// <summary>
         /// Optional state/region portion of address.
         /// </summary>
-        [MaxLength(50)]
-        [RegularExpression(@"^[A-Za-z\s.\-']*$", ErrorMessage = "State contains invalid characters.")]
+        [StringLength(2, ErrorMessage = "State must be a 2-letter abbreviation.")]
+        [RegularExpression(@"^[A-Za-z]{2}$", ErrorMessage = "State must be a valid 2-letter abbreviation.")]
         public string? State { get; set; }
 
         /// <summary>

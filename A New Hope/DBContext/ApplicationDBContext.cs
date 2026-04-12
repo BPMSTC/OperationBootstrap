@@ -94,7 +94,8 @@ namespace A_New_Hope.Data
         public DbSet<InventoryChoiceGroup> InventoryChoiceGroups => Set<InventoryChoiceGroup>();
         public DbSet<InventoryChoiceGroupItem> InventoryChoiceGroupItems => Set<InventoryChoiceGroupItem>();
         public DbSet<ClientIncome> ClientIncomes => Set<ClientIncome>();
-
+        public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
+        public DbSet<ReferringOrganizationServiceCategory> ReferringOrganizationServiceCategories => Set<ReferringOrganizationServiceCategory>();
 
         /// <summary>
         /// OnModelCreating is where you configure EF Core mapping rules:
@@ -634,6 +635,52 @@ namespace A_New_Hope.Data
                     .WithMany()
                     .HasForeignKey(e => e.UpdatedByUserId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // =============================================================
+            // SERVICE CATEGORIES
+            // =============================================================
+            modelBuilder.Entity<ServiceCategory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .HasMaxLength(100)
+                    .IsRequired();
+
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => e.IsActive);
+                entity.HasIndex(e => e.DeletedAt);
+
+                entity.HasQueryFilter(e => e.DeletedAt == null);
+
+                entity.HasOne(e => e.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.UpdatedByUser)
+                    .WithMany()
+                    .HasForeignKey(e => e.UpdatedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // =============================================================
+            // REFERRING ORGANIZATION SERVICE CATEGORIES
+            // =============================================================
+            modelBuilder.Entity<ReferringOrganizationServiceCategory>(entity =>
+            {
+                entity.HasKey(e => new { e.ReferringOrganizationId, e.ServiceCategoryId });
+
+                entity.HasOne(e => e.ReferringOrganization)
+                    .WithMany(o => o.ReferringOrganizationServiceCategories)
+                    .HasForeignKey(e => e.ReferringOrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ServiceCategory)
+                    .WithMany(c => c.ReferringOrganizationServiceCategories)
+                    .HasForeignKey(e => e.ServiceCategoryId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // =============================================================

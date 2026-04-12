@@ -1,11 +1,12 @@
+using System.Text.RegularExpressions;
 using A_New_Hope.Data;
 using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
-using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Models.ViewModels.ReferringOrganizations;
 using A_New_Hope.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Controllers
 {
@@ -109,9 +110,11 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Fetching details for Referring Organization Id {Id}", id);
 
-            // Retrieve the requested active referring organization.
+            // Retrieve the requested active referring organization with service categories.
             var referringOrganization = await _context.ReferringOrganizations
                 .Where(r => r.DeletedAt == null)
+                .Include(r => r.ReferringOrganizationServiceCategories)
+                    .ThenInclude(rosc => rosc.ServiceCategory)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             // Return not found when the organization does not exist.
@@ -128,17 +131,19 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Shows the create form.
         /// </summary>
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             _logger.LogInformation("Loading Create Referring Organization page");
 
-            // Initialize the form with the default state value.
-            var model = new ReferringOrganization
+            var vm = new ReferringOrganizationEditViewModel
             {
-                State = "WI"
+                State = "WI",
+                IsActive = true
             };
 
-            return View(model);
+            await PopulateServiceCategoriesAsync(vm);
+
+            return View(vm);
         }
 
         // POST: ReferringOrganizations/Create
@@ -147,70 +152,78 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Type,PhoneNumber,Email,AddressLine1,AddressLine2,City,State,PostalCode,PrimaryContactName,Notes,IsActive")] ReferringOrganization referringOrganization)
+        public async Task<IActionResult> Create(ReferringOrganizationEditViewModel vm)
         {
-            _logger.LogInformation("Attempting to create Referring Organization '{Name}'", referringOrganization.Name);
+            _logger.LogInformation("Attempting to create Referring Organization '{Name}'", vm.Name);
 
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(ReferringOrganization.Referrals));
-            ModelState.Remove(nameof(ReferringOrganization.CreatedByUser));
-            ModelState.Remove(nameof(ReferringOrganization.UpdatedByUser));
+            NormalizeReferringOrganization(vm);
+            await ApplyReferringOrganizationValidationAsync(vm);
 
-            // Normalize text input before applying business-rule validation.
-            NormalizeReferringOrganization(referringOrganization);
-            await ApplyReferringOrganizationValidationAsync(referringOrganization);
-
-            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
-                _logger.LogWarning("Create Referring Organization failed validation for '{Name}'", referringOrganization.Name);
-                return View(referringOrganization);
+                _logger.LogWarning("Create Referring Organization failed validation for '{Name}'", vm.Name);
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
             }
 
             try
             {
                 var input = new ReferringOrganizationEntryInput
                 {
-                    Name = referringOrganization.Name,
-                    Type = referringOrganization.Type,
-                    PrimaryContactName = referringOrganization.PrimaryContactName,
-                    Email = referringOrganization.Email,
-                    PhoneNumber = referringOrganization.PhoneNumber,
-                    AddressLine1 = referringOrganization.AddressLine1,
-                    AddressLine2 = referringOrganization.AddressLine2,
-                    City = referringOrganization.City,
-                    State = referringOrganization.State,
-                    PostalCode = referringOrganization.PostalCode,
-                    Notes = referringOrganization.Notes
+                    Name = vm.Name,
+                    SelectedServiceCategoryIds = vm.SelectedServiceCategoryIds,
+                    PrimaryContactName = vm.PrimaryContactName,
+                    Email = vm.Email,
+                    PhoneNumber = vm.PhoneNumber,
+                    AddressLine1 = vm.AddressLine1,
+                    AddressLine2 = vm.AddressLine2,
+                    City = vm.City,
+                    State = vm.State,
+                    PostalCode = vm.PostalCode,
+                    Notes = vm.Notes
                 };
 
                 var organizationId = await _referringOrganizationService.CreateAndReturnIdAsync(
                     input,
                     actingUserId: null);
 
+                if (!vm.IsActive)
+                {
+                    var created = await _context.ReferringOrganizations
+                        .FirstOrDefaultAsync(r => r.Id == organizationId && r.DeletedAt == null);
+
+                    if (created != null)
+                    {
+                        created.IsActive = false;
+                        created.UpdatedAt = DateTime.UtcNow;
+                        created.UpdatedByUserId = null;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
                 _logger.LogInformation("Referring Organization Id {Id} created successfully", organizationId);
                 return RedirectToAction(nameof(Details), new { id = organizationId });
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogWarning(ex, "Business validation failed while creating Referring Organization '{Name}'", referringOrganization.Name);
-
+                _logger.LogWarning(ex, "Business validation failed while creating Referring Organization '{Name}'", vm.Name);
                 ModelState.AddModelError(string.Empty, ex.Message);
-                return View(referringOrganization);
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(ex, "Argument validation failed while creating Referring Organization '{Name}'", referringOrganization.Name);
-
+                _logger.LogWarning(ex, "Argument validation failed while creating Referring Organization '{Name}'", vm.Name);
                 ModelState.AddModelError(string.Empty, ex.Message);
-                return View(referringOrganization);
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Error creating Referring Organization '{Name}'", referringOrganization.Name);
-
+                _logger.LogError(ex, "Error creating Referring Organization '{Name}'", vm.Name);
                 ModelState.AddModelError("", "Unable to save referring organization.");
-                return View(referringOrganization);
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
             }
         }
 
@@ -220,7 +233,6 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            // Reject requests with no id.
             if (id == null)
             {
                 _logger.LogWarning("Edit requested with null Id");
@@ -229,18 +241,38 @@ namespace A_New_Hope.Controllers
 
             _logger.LogInformation("Loading Edit page for Referring Organization Id {Id}", id);
 
-            // Retrieve the requested active referring organization for editing.
             var referringOrganization = await _context.ReferringOrganizations
+                .Include(r => r.ReferringOrganizationServiceCategories)
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
-            // Return not found when the organization does not exist.
             if (referringOrganization == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found for edit", id);
                 return NotFound();
             }
 
-            return View(referringOrganization);
+            var vm = new ReferringOrganizationEditViewModel
+            {
+                Id = referringOrganization.Id,
+                Name = referringOrganization.Name,
+                SelectedServiceCategoryIds = referringOrganization.ReferringOrganizationServiceCategories
+                    .Select(x => x.ServiceCategoryId)
+                    .ToList(),
+                PhoneNumber = referringOrganization.PhoneNumber,
+                Email = referringOrganization.Email,
+                AddressLine1 = referringOrganization.AddressLine1,
+                AddressLine2 = referringOrganization.AddressLine2,
+                City = referringOrganization.City,
+                State = referringOrganization.State,
+                PostalCode = referringOrganization.PostalCode,
+                PrimaryContactName = referringOrganization.PrimaryContactName,
+                Notes = referringOrganization.Notes,
+                IsActive = referringOrganization.IsActive
+            };
+
+            await PopulateServiceCategoriesAsync(vm);
+
+            return View(vm);
         }
 
         // POST: ReferringOrganizations/Edit/5
@@ -249,72 +281,87 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Name,Type,PhoneNumber,Email,AddressLine1,AddressLine2,City,State,PostalCode,PrimaryContactName,Notes,IsActive")] ReferringOrganization formModel)
+        public async Task<IActionResult> Edit(ulong id, ReferringOrganizationEditViewModel vm)
         {
             _logger.LogInformation("Attempting to edit Referring Organization Id {Id}", id);
 
-            // Ensure the route id matches the posted model id.
-            if (id != formModel.Id)
+            if (vm.Id != id)
             {
-                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
+                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, vm.Id);
                 return NotFound();
             }
 
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(ReferringOrganization.Referrals));
-            ModelState.Remove(nameof(ReferringOrganization.CreatedByUser));
-            ModelState.Remove(nameof(ReferringOrganization.UpdatedByUser));
+            NormalizeReferringOrganization(vm);
+            await ApplyReferringOrganizationValidationAsync(vm, id);
 
-            // Normalize text input before applying business-rule validation.
-            NormalizeReferringOrganization(formModel);
-            await ApplyReferringOrganizationValidationAsync(formModel, formModel.Id);
-
-            // Return the form when validation fails.
             if (!ModelState.IsValid)
             {
                 _logger.LogWarning("Edit Referring Organization failed validation for Id {Id}", id);
-                return View(formModel);
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
             }
 
-            // Load the tracked entity so only approved fields are updated.
             var existing = await _context.ReferringOrganizations
+                .Include(r => r.ReferringOrganizationServiceCategories)
                 .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
 
-            // Return not found when the target record no longer exists.
             if (existing == null)
             {
                 _logger.LogWarning("Referring Organization Id {Id} not found during edit save", id);
                 return NotFound();
             }
 
-            // Copy validated form values into the tracked entity.
-            existing.Name = formModel.Name;
-            existing.Type = formModel.Type;
-            existing.PhoneNumber = formModel.PhoneNumber;
-            existing.Email = formModel.Email;
-            existing.AddressLine1 = formModel.AddressLine1;
-            existing.AddressLine2 = formModel.AddressLine2;
-            existing.City = formModel.City;
-            existing.State = formModel.State;
-            existing.PostalCode = formModel.PostalCode;
-            existing.PrimaryContactName = formModel.PrimaryContactName;
-            existing.Notes = formModel.Notes;
-            existing.IsActive = formModel.IsActive;
-
+            existing.Name = vm.Name!;
+            existing.PhoneNumber = vm.PhoneNumber!;
+            existing.Email = vm.Email!;
+            existing.AddressLine1 = vm.AddressLine1!;
+            existing.AddressLine2 = vm.AddressLine2;
+            existing.City = vm.City!;
+            existing.State = vm.State!;
+            existing.PostalCode = vm.PostalCode!;
+            existing.PrimaryContactName = vm.PrimaryContactName;
+            existing.Notes = vm.Notes;
+            existing.IsActive = vm.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // Replace when auth/user tracking is added.
+            existing.UpdatedByUserId = null;
+
+            var selectedCategoryIds = vm.SelectedServiceCategoryIds
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList();
+
+            var validCategoryIds = await _context.ServiceCategories
+                .Where(c => c.DeletedAt == null && c.IsActive && selectedCategoryIds.Contains(c.Id))
+                .Select(c => c.Id)
+                .ToListAsync();
+
+            if (validCategoryIds.Count != selectedCategoryIds.Count)
+            {
+                ModelState.AddModelError(nameof(vm.SelectedServiceCategoryIds), "One or more selected service categories are invalid.");
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
+            }
+
+            _context.ReferringOrganizationServiceCategories.RemoveRange(existing.ReferringOrganizationServiceCategories);
+
+            existing.ReferringOrganizationServiceCategories = validCategoryIds
+                .Select(categoryId => new ReferringOrganizationServiceCategory
+                {
+                    ReferringOrganizationId = existing.Id,
+                    ServiceCategoryId = categoryId
+                })
+                .ToList();
 
             try
             {
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Referring Organization Id {Id} updated successfully", id);
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Details), new { id });
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Check whether the record was deleted during the edit attempt.
-                if (!await ReferringOrganizationExists(formModel.Id))
+                if (!await ReferringOrganizationExists(id))
                 {
                     _logger.LogWarning("Referring Organization Id {Id} no longer exists during concurrency check", id);
                     return NotFound();
@@ -325,9 +372,9 @@ namespace A_New_Hope.Controllers
             catch (DbUpdateException ex)
             {
                 _logger.LogError(ex, "Error updating Referring Organization Id {Id}", id);
-
                 ModelState.AddModelError("", "Unable to save changes.");
-                return View(formModel);
+                await PopulateServiceCategoriesAsync(vm);
+                return View(vm);
             }
         }
 
@@ -417,45 +464,40 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Trims strings and converts blank optional values to null.
         /// </summary>
-        private static void NormalizeReferringOrganization(ReferringOrganization model)
+        private static void NormalizeReferringOrganization(ReferringOrganizationEditViewModel model)
         {
-            // Keep the required organization name as an empty string instead of null for validation.
             model.Name = model.Name?.Trim() ?? string.Empty;
+            model.PhoneNumber = model.PhoneNumber?.Trim() ?? string.Empty;
+            model.Email = model.Email?.Trim() ?? string.Empty;
+            model.AddressLine1 = model.AddressLine1?.Trim() ?? string.Empty;
+            model.City = model.City?.Trim() ?? string.Empty;
+            model.State = (model.State?.Trim() ?? string.Empty).ToUpperInvariant();
+            model.PostalCode = model.PostalCode?.Trim() ?? string.Empty;
 
-            // Normalize optional text values before validation and save.
-            model.Type = NullIfWhiteSpace(model.Type);
-            model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
-            model.Email = NullIfWhiteSpace(model.Email);
-            model.AddressLine1 = NullIfWhiteSpace(model.AddressLine1);
             model.AddressLine2 = NullIfWhiteSpace(model.AddressLine2);
-            model.City = NullIfWhiteSpace(model.City);
-            model.State = NullIfWhiteSpace(model.State)?.ToUpperInvariant();
-            model.PostalCode = NullIfWhiteSpace(model.PostalCode);
             model.PrimaryContactName = NullIfWhiteSpace(model.PrimaryContactName);
             model.Notes = NullIfWhiteSpace(model.Notes);
+
+            model.SelectedServiceCategoryIds ??= new List<ulong>();
         }
 
         /// <summary>
         /// Applies business-rule validation beyond data annotations.
         /// </summary>
-        private async Task ApplyReferringOrganizationValidationAsync(ReferringOrganization model, ulong? currentId = null)
+        private async Task ApplyReferringOrganizationValidationAsync(ReferringOrganizationEditViewModel model, ulong? currentId = null)
         {
-            // Require an organization name.
             if (string.IsNullOrWhiteSpace(model.Name))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.Name), "Organization name is required.");
+                ModelState.AddModelError(nameof(model.Name), "Organization name is required.");
             }
 
-            // Require at least one letter or number in the organization name.
             if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.Name), "Organization name must contain letters or numbers.");
+                ModelState.AddModelError(nameof(model.Name), "Organization name must contain letters or numbers.");
             }
 
-            // Prevent duplicate active organization names.
             if (!string.IsNullOrWhiteSpace(model.Name))
             {
-                // Only check against non-deleted rows and ignore the current record during edit.
                 var normalizedName = model.Name.ToLower();
 
                 var duplicateExists = await _context.ReferringOrganizations
@@ -466,62 +508,53 @@ namespace A_New_Hope.Controllers
 
                 if (duplicateExists)
                 {
-                    ModelState.AddModelError(nameof(ReferringOrganization.Name), "An organization with this name already exists.");
+                    ModelState.AddModelError(nameof(model.Name), "An organization with this name already exists.");
                 }
             }
 
-            // Validate organization type content when provided.
-            if (!string.IsNullOrWhiteSpace(model.Type) && !ContainsLetterOrDigit(model.Type))
+            if (model.SelectedServiceCategoryIds == null || !model.SelectedServiceCategoryIds.Any())
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.Type), "Type must contain letters or numbers.");
+                ModelState.AddModelError(nameof(model.SelectedServiceCategoryIds), "Select at least one service category.");
             }
 
-            // Validate address line 1 content when provided.
             if (!string.IsNullOrWhiteSpace(model.AddressLine1) && !ContainsLetterOrDigit(model.AddressLine1))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.AddressLine1), "Address Line 1 must contain letters or numbers.");
+                ModelState.AddModelError(nameof(model.AddressLine1), "Address Line 1 must contain letters or numbers.");
             }
 
-            // Validate address line 2 content when provided.
             if (!string.IsNullOrWhiteSpace(model.AddressLine2) && !ContainsLetterOrDigit(model.AddressLine2))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.AddressLine2), "Address Line 2 must contain letters or numbers.");
+                ModelState.AddModelError(nameof(model.AddressLine2), "Address Line 2 must contain letters or numbers.");
             }
 
-            // Validate phone number format when provided.
             if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
+                ModelState.AddModelError(nameof(model.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
-            // Validate email format when provided.
             if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.Email), "Email format is invalid.");
+                ModelState.AddModelError(nameof(model.Email), "Email format is invalid.");
             }
 
-            // Validate city characters when provided.
             if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.City), "City contains invalid characters.");
+                ModelState.AddModelError(nameof(model.City), "City contains invalid characters.");
             }
 
-            // Validate state code when provided.
             if (!string.IsNullOrWhiteSpace(model.State) && !IsValidUsStateCode(model.State))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.State), "Enter a valid 2-letter US state code.");
+                ModelState.AddModelError(nameof(model.State), "Enter a valid 2-letter US state code.");
             }
 
-            // Validate ZIP code format when provided.
             if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
+                ModelState.AddModelError(nameof(model.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
             }
 
-            // Validate primary contact name characters when provided.
             if (!string.IsNullOrWhiteSpace(model.PrimaryContactName) && !IsValidPersonName(model.PrimaryContactName))
             {
-                ModelState.AddModelError(nameof(ReferringOrganization.PrimaryContactName), "Primary contact name contains invalid characters.");
+                ModelState.AddModelError(nameof(model.PrimaryContactName), "Primary contact name contains invalid characters.");
             }
         }
 
@@ -677,6 +710,22 @@ namespace A_New_Hope.Controllers
         {
             // Accept 5-digit ZIP codes and ZIP+4 values.
             return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
+        }
+
+        private async Task PopulateServiceCategoriesAsync(ReferringOrganizationEditViewModel vm)
+        {
+            vm.SelectedServiceCategoryIds ??= new List<ulong>();
+
+            vm.AvailableServiceCategories = await _context.ServiceCategories
+                .Where(c => c.DeletedAt == null && c.IsActive)
+                .OrderBy(c => c.Name)
+                .Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Name,
+                    Selected = vm.SelectedServiceCategoryIds.Contains(c.Id)
+                })
+                .ToListAsync();
         }
     }
 }

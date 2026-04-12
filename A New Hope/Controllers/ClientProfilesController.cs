@@ -1,5 +1,6 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -104,8 +105,6 @@ namespace A_New_Hope.Controllers
             ModelState.Remove(nameof(ClientProfile.CreatedByUser));
             ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
 
-            // Normalize incoming values before business-rule validation.
-            NormalizeClientProfile(clientProfile);
             await ApplyClientProfileValidationAsync(clientProfile);
 
             // Return the form with dropdowns restored when validation fails.
@@ -195,8 +194,6 @@ namespace A_New_Hope.Controllers
             ModelState.Remove(nameof(ClientProfile.CreatedByUser));
             ModelState.Remove(nameof(ClientProfile.UpdatedByUser));
 
-            // Normalize incoming values before business-rule validation.
-            NormalizeClientProfile(formModel);
             await ApplyClientProfileValidationAsync(formModel, formModel.UserId);
 
             // Return the form when validation fails.
@@ -368,15 +365,6 @@ namespace A_New_Hope.Controllers
         }
 
         /// <summary>
-        /// Trims strings and converts blank optional values to null.
-        /// </summary>
-        private static void NormalizeClientProfile(ClientProfile model)
-        {
-            // Normalize optional string values before validation and save.
-            model.EmploymentStatus = NullIfWhiteSpace(model.EmploymentStatus);
-        }
-
-        /// <summary>
         /// Applies business-rule validation beyond data annotations.
         /// </summary>
         private async Task ApplyClientProfileValidationAsync(ClientProfile model, ulong? currentUserId = null)
@@ -407,9 +395,9 @@ namespace A_New_Hope.Controllers
             }
 
             // Validate employment status content when provided.
-            if (!string.IsNullOrWhiteSpace(model.EmploymentStatus) && !ContainsLetterOrDigit(model.EmploymentStatus))
+            if (!Enum.IsDefined(typeof(EmploymentStatus), model.EmploymentStatus))
             {
-                ModelState.AddModelError(nameof(ClientProfile.EmploymentStatus), "Employment Status must contain letters or numbers.");
+                ModelState.AddModelError(nameof(ClientProfile.EmploymentStatus), "Select a valid employment status.");
             }
         }
 

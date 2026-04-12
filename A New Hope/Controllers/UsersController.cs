@@ -134,7 +134,7 @@ namespace A_New_Hope.Controllers
                 var users = domainUsers.Select(u => new DomainUserIndexRowViewModel
                 {
                     Id = u.Id,
-                    Email = u.Email,
+                    Email = u.Email ?? string.Empty,
                     PhoneNumber = u.PhoneNumber,
                     FirstName = u.FirstName,
                     LastName = u.LastName,
@@ -616,10 +616,11 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeDomainUser(DomainUser model)
         {
+            model.FirstName = model.FirstName?.Trim() ?? string.Empty;
+            model.LastName = model.LastName?.Trim() ?? string.Empty;
+
             model.Email = NullIfWhiteSpace(model.Email);
             model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
-            model.FirstName = NullIfWhiteSpace(model.FirstName);
-            model.LastName = NullIfWhiteSpace(model.LastName);
             model.AddressLine1 = NullIfWhiteSpace(model.AddressLine1);
             model.AddressLine2 = NullIfWhiteSpace(model.AddressLine2);
             model.City = NullIfWhiteSpace(model.City);
@@ -642,12 +643,20 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(DomainUser.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.FirstName) && !IsValidPersonName(model.FirstName))
+            if (string.IsNullOrWhiteSpace(model.FirstName))
+            {
+                ModelState.AddModelError(nameof(DomainUser.FirstName), "First name is required.");
+            }
+            else if (!IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First Name contains invalid characters.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.LastName) && !IsValidPersonName(model.LastName))
+            if (string.IsNullOrWhiteSpace(model.LastName))
+            {
+                ModelState.AddModelError(nameof(DomainUser.LastName), "Last name is required.");
+            }
+            else if (!IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last Name contains invalid characters.");
             }

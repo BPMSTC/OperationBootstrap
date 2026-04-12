@@ -347,8 +347,7 @@ namespace A_New_Hope.Controllers
 
             var choiceGroups = await _context.InventoryChoiceGroups
                 .Where(g => g.DeletedAt == null)
-                .OrderBy(g => g.SortOrder)
-                .ThenBy(g => g.Name)
+                .OrderBy(g => g.Name)
                 .ToListAsync();
 
             var inventoryItems = await _context.InventoryItems
