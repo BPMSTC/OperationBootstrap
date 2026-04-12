@@ -29,23 +29,33 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            _logger.LogInformation("Loading UserChoiceGroupPreferences Index page");
+            try
+            {
+                _logger.LogInformation("Loading UserChoiceGroupPreferences Index page");
 
-            var userChoiceGroupPreferences = await _context.UserChoiceGroupPreferences
-                .Where(p => p.DeletedAt == null)
-                .Include(p => p.User)
-                .Include(p => p.InventoryChoiceGroup)
-                .Include(p => p.SelectedInventoryItem)
-                    .ThenInclude(i => i.Category)
-                        .ThenInclude(c => c.CategoryGroup)
-                .OrderBy(p => p.User.LastName)
-                .ThenBy(p => p.User.FirstName)
-                .ThenBy(p => p.InventoryChoiceGroup.Name)
-                .ToListAsync();
+                // Retrieve active user choice group preferences for display.
+                var userChoiceGroupPreferences = await _context.UserChoiceGroupPreferences
+                    .Where(p => p.DeletedAt == null)
+                    .Include(p => p.User)
+                    .Include(p => p.InventoryChoiceGroup)
+                    .Include(p => p.SelectedInventoryItem)
+                        .ThenInclude(i => i.Category)
+                            .ThenInclude(c => c.CategoryGroup)
+                    .OrderBy(p => p.User.LastName)
+                    .ThenBy(p => p.User.FirstName)
+                    .ThenBy(p => p.InventoryChoiceGroup.Name)
+                    .ToListAsync();
 
-            _logger.LogInformation("Loaded {Count} user choice group preferences", userChoiceGroupPreferences.Count);
+                _logger.LogInformation("Loaded {Count} user choice group preferences", userChoiceGroupPreferences.Count);
 
-            return View(userChoiceGroupPreferences);
+                return View(userChoiceGroupPreferences);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading user choice group preferences list");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading user choice group preferences.";
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // GET: UserChoiceGroupPreferences/Details/5
@@ -54,30 +64,42 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Details requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Details requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Fetching details for UserChoiceGroupPreference Id {Id}", id);
+
+                // Retrieve the requested active user choice group preference.
+                var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
+                    .Where(p => p.DeletedAt == null)
+                    .Include(p => p.User)
+                    .Include(p => p.InventoryChoiceGroup)
+                    .Include(p => p.SelectedInventoryItem)
+                        .ThenInclude(i => i.Category)
+                            .ThenInclude(c => c.CategoryGroup)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the user choice group preference does not exist.
+                if (userChoiceGroupPreference == null)
+                {
+                    _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found", id);
+                    return NotFound();
+                }
+
+                return View(userChoiceGroupPreference);
             }
-
-            _logger.LogInformation("Fetching details for UserChoiceGroupPreference Id {Id}", id);
-
-            var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
-                .Where(p => p.DeletedAt == null)
-                .Include(p => p.User)
-                .Include(p => p.InventoryChoiceGroup)
-                .Include(p => p.SelectedInventoryItem)
-                    .ThenInclude(i => i.Category)
-                        .ThenInclude(c => c.CategoryGroup)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (userChoiceGroupPreference == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading details for UserChoiceGroupPreference Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading user choice group preference details.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(userChoiceGroupPreference);
         }
 
         // GET: UserChoiceGroupPreferences/Create
@@ -86,10 +108,20 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Create()
         {
-            _logger.LogInformation("Loading Create UserChoiceGroupPreference page");
+            try
+            {
+                _logger.LogInformation("Loading Create UserChoiceGroupPreference page");
 
-            await PopulateDropdowns();
-            return View();
+                // Populate dropdown values for the create form.
+                await PopulateDropdowns();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Create UserChoiceGroupPreference page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: UserChoiceGroupPreferences/Create
@@ -100,51 +132,71 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("UserId,InventoryChoiceGroupId,SelectedInventoryItemId")] UserChoiceGroupPreference userChoiceGroupPreference)
         {
-            _logger.LogInformation("Attempting to create UserChoiceGroupPreference for UserId {UserId}", userChoiceGroupPreference.UserId);
-
-            ModelState.Remove(nameof(UserChoiceGroupPreference.User));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.InventoryChoiceGroup));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.SelectedInventoryItem));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.CreatedByUser));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.UpdatedByUser));
-
-            await ApplyUserChoiceGroupPreferenceValidationAsync(userChoiceGroupPreference);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Create UserChoiceGroupPreference failed validation for UserId {UserId}", userChoiceGroupPreference.UserId);
-                await PopulateDropdowns(
-                    userChoiceGroupPreference.UserId,
-                    userChoiceGroupPreference.InventoryChoiceGroupId,
-                    userChoiceGroupPreference.SelectedInventoryItemId);
-                return View(userChoiceGroupPreference);
-            }
-
-            var now = DateTime.UtcNow;
-            userChoiceGroupPreference.CreatedAt = now;
-            userChoiceGroupPreference.UpdatedAt = now;
-            userChoiceGroupPreference.CreatedByUserId = null; // Replace when auth integration is added.
-            userChoiceGroupPreference.UpdatedByUserId = null; // Replace when auth integration is added.
-
-            _context.Add(userChoiceGroupPreference);
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to create UserChoiceGroupPreference for UserId {UserId}", userChoiceGroupPreference.UserId);
 
-                _logger.LogInformation("UserChoiceGroupPreference created successfully");
-                return RedirectToAction(nameof(Index));
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(UserChoiceGroupPreference.User));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.InventoryChoiceGroup));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.SelectedInventoryItem));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.CreatedByUser));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.UpdatedByUser));
+
+                // Apply business-rule validation before saving.
+                await ApplyUserChoiceGroupPreferenceValidationAsync(userChoiceGroupPreference);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Create UserChoiceGroupPreference failed validation for UserId {UserId}", userChoiceGroupPreference.UserId);
+                    await PopulateDropdowns(
+                        userChoiceGroupPreference.UserId,
+                        userChoiceGroupPreference.InventoryChoiceGroupId,
+                        userChoiceGroupPreference.SelectedInventoryItemId);
+                    return View(userChoiceGroupPreference);
+                }
+
+                // Set audit fields for the new user choice group preference record.
+                var now = DateTime.UtcNow;
+                userChoiceGroupPreference.CreatedAt = now;
+                userChoiceGroupPreference.UpdatedAt = now;
+                userChoiceGroupPreference.CreatedByUserId = null; // Replace when auth integration is added.
+                userChoiceGroupPreference.UpdatedByUserId = null; // Replace when auth integration is added.
+
+                // Queue the new user choice group preference for insert.
+                _context.Add(userChoiceGroupPreference);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("UserChoiceGroupPreference created successfully");
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error creating UserChoiceGroupPreference");
+
+                    ModelState.AddModelError("", "Unable to save user choice group preference.");
+                    await PopulateDropdowns(
+                        userChoiceGroupPreference.UserId,
+                        userChoiceGroupPreference.InventoryChoiceGroupId,
+                        userChoiceGroupPreference.SelectedInventoryItemId);
+                    return View(userChoiceGroupPreference);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating UserChoiceGroupPreference");
+                _logger.LogError(ex, "Unexpected error creating UserChoiceGroupPreference for UserId {UserId}", userChoiceGroupPreference?.UserId);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the user choice group preference.");
 
-                ModelState.AddModelError("", "Unable to save user choice group preference.");
                 await PopulateDropdowns(
-                    userChoiceGroupPreference.UserId,
-                    userChoiceGroupPreference.InventoryChoiceGroupId,
-                    userChoiceGroupPreference.SelectedInventoryItemId);
-                return View(userChoiceGroupPreference);
+                    userChoiceGroupPreference?.UserId,
+                    userChoiceGroupPreference?.InventoryChoiceGroupId,
+                    userChoiceGroupPreference?.SelectedInventoryItemId);
+
+                return View(userChoiceGroupPreference ?? new UserChoiceGroupPreference());
             }
         }
 
@@ -154,29 +206,42 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Edit requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Edit requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Edit page for UserChoiceGroupPreference Id {Id}", id);
+
+                // Retrieve the requested active user choice group preference for editing.
+                var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
+                    .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
+
+                // Return not found when the user choice group preference does not exist.
+                if (userChoiceGroupPreference == null)
+                {
+                    _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found for edit", id);
+                    return NotFound();
+                }
+
+                // Populate dropdown values using the current record selections.
+                await PopulateDropdowns(
+                    userChoiceGroupPreference.UserId,
+                    userChoiceGroupPreference.InventoryChoiceGroupId,
+                    userChoiceGroupPreference.SelectedInventoryItemId);
+
+                return View(userChoiceGroupPreference);
             }
-
-            _logger.LogInformation("Loading Edit page for UserChoiceGroupPreference Id {Id}", id);
-
-            var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
-                .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
-
-            if (userChoiceGroupPreference == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found for edit", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading edit page for UserChoiceGroupPreference Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            await PopulateDropdowns(
-                userChoiceGroupPreference.UserId,
-                userChoiceGroupPreference.InventoryChoiceGroupId,
-                userChoiceGroupPreference.SelectedInventoryItemId);
-
-            return View(userChoiceGroupPreference);
         }
 
         // POST: UserChoiceGroupPreferences/Edit/5
@@ -187,69 +252,91 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,UserId,InventoryChoiceGroupId,SelectedInventoryItemId")] UserChoiceGroupPreference formModel)
         {
-            _logger.LogInformation("Attempting to edit UserChoiceGroupPreference Id {Id}", id);
-
-            if (id != formModel.Id)
-            {
-                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
-                return NotFound();
-            }
-
-            ModelState.Remove(nameof(UserChoiceGroupPreference.User));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.InventoryChoiceGroup));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.SelectedInventoryItem));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.CreatedByUser));
-            ModelState.Remove(nameof(UserChoiceGroupPreference.UpdatedByUser));
-
-            await ApplyUserChoiceGroupPreferenceValidationAsync(formModel, formModel.Id);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Edit UserChoiceGroupPreference failed validation for Id {Id}", id);
-                await PopulateDropdowns(
-                    formModel.UserId,
-                    formModel.InventoryChoiceGroupId,
-                    formModel.SelectedInventoryItemId);
-                return View(formModel);
-            }
-
-            var existing = await _context.UserChoiceGroupPreferences
-                .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
-
-            if (existing == null)
-            {
-                _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found during edit save", id);
-                return NotFound();
-            }
-
-            existing.UserId = formModel.UserId;
-            existing.InventoryChoiceGroupId = formModel.InventoryChoiceGroupId;
-            existing.SelectedInventoryItemId = formModel.SelectedInventoryItemId;
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // Replace when auth integration is added.
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to edit UserChoiceGroupPreference Id {Id}", id);
 
-                _logger.LogInformation("UserChoiceGroupPreference Id {Id} updated successfully", id);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await UserChoiceGroupPreferenceExists(formModel.Id))
+                // Ensure the route id matches the posted model id.
+                if (id != formModel.Id)
                 {
-                    _logger.LogWarning("UserChoiceGroupPreference Id {Id} no longer exists during concurrency check", id);
+                    _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
                     return NotFound();
                 }
 
-                throw;
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error updating UserChoiceGroupPreference Id {Id}", id);
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(UserChoiceGroupPreference.User));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.InventoryChoiceGroup));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.SelectedInventoryItem));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.CreatedByUser));
+                ModelState.Remove(nameof(UserChoiceGroupPreference.UpdatedByUser));
 
-                ModelState.AddModelError("", "Unable to save changes.");
+                // Apply business-rule validation before saving.
+                await ApplyUserChoiceGroupPreferenceValidationAsync(formModel, formModel.Id);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Edit UserChoiceGroupPreference failed validation for Id {Id}", id);
+                    await PopulateDropdowns(
+                        formModel.UserId,
+                        formModel.InventoryChoiceGroupId,
+                        formModel.SelectedInventoryItemId);
+                    return View(formModel);
+                }
+
+                // Retrieve the existing active user choice group preference record.
+                var existing = await _context.UserChoiceGroupPreferences
+                    .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found during edit save", id);
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.UserId = formModel.UserId;
+                existing.InventoryChoiceGroupId = formModel.InventoryChoiceGroupId;
+                existing.SelectedInventoryItemId = formModel.SelectedInventoryItemId;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null; // Replace when auth integration is added.
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("UserChoiceGroupPreference Id {Id} updated successfully", id);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    // Check whether the record was deleted during the edit attempt.
+                    if (!await UserChoiceGroupPreferenceExists(formModel.Id))
+                    {
+                        _logger.LogWarning("UserChoiceGroupPreference Id {Id} no longer exists during concurrency check", id);
+                        return NotFound();
+                    }
+
+                    _logger.LogError(ex, "Concurrency error updating UserChoiceGroupPreference Id {Id}", id);
+                    throw;
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error updating UserChoiceGroupPreference Id {Id}", id);
+
+                    ModelState.AddModelError("", "Unable to save changes.");
+                    await PopulateDropdowns(
+                        formModel.UserId,
+                        formModel.InventoryChoiceGroupId,
+                        formModel.SelectedInventoryItemId);
+                    return View(formModel);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error editing UserChoiceGroupPreference Id {Id}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the user choice group preference.");
                 await PopulateDropdowns(
                     formModel.UserId,
                     formModel.InventoryChoiceGroupId,
@@ -264,30 +351,42 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Delete requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Delete requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Delete confirmation for UserChoiceGroupPreference Id {Id}", id);
+
+                // Retrieve the requested active user choice group preference.
+                var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
+                    .Where(p => p.DeletedAt == null)
+                    .Include(p => p.User)
+                    .Include(p => p.InventoryChoiceGroup)
+                    .Include(p => p.SelectedInventoryItem)
+                        .ThenInclude(i => i.Category)
+                            .ThenInclude(c => c.CategoryGroup)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the user choice group preference does not exist.
+                if (userChoiceGroupPreference == null)
+                {
+                    _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found for delete", id);
+                    return NotFound();
+                }
+
+                return View(userChoiceGroupPreference);
             }
-
-            _logger.LogInformation("Loading Delete confirmation for UserChoiceGroupPreference Id {Id}", id);
-
-            var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
-                .Where(p => p.DeletedAt == null)
-                .Include(p => p.User)
-                .Include(p => p.InventoryChoiceGroup)
-                .Include(p => p.SelectedInventoryItem)
-                    .ThenInclude(i => i.Category)
-                        .ThenInclude(c => c.CategoryGroup)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (userChoiceGroupPreference == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found for delete", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading delete page for UserChoiceGroupPreference Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(userChoiceGroupPreference);
         }
 
         // POST: UserChoiceGroupPreferences/Delete/5
@@ -298,35 +397,47 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            _logger.LogWarning("Soft deleting UserChoiceGroupPreference Id {Id}", id);
-
-            var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
-                .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
-
-            if (userChoiceGroupPreference == null)
-            {
-                _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found during delete", id);
-                return NotFound();
-            }
-
-            userChoiceGroupPreference.DeletedAt = DateTime.UtcNow;
-            userChoiceGroupPreference.UpdatedAt = DateTime.UtcNow;
-            userChoiceGroupPreference.UpdatedByUserId = null; // Replace when auth integration is added.
-
             try
             {
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("UserChoiceGroupPreference Id {Id} soft deleted", id);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error soft deleting UserChoiceGroupPreference Id {Id}", id);
+                _logger.LogWarning("Soft deleting UserChoiceGroupPreference Id {Id}", id);
 
-                TempData["ErrorMessage"] = "Unable to delete user choice group preference.";
+                // Retrieve the active user choice group preference targeted for soft delete.
+                var userChoiceGroupPreference = await _context.UserChoiceGroupPreferences
+                    .FirstOrDefaultAsync(p => p.Id == id && p.DeletedAt == null);
+
+                // Return not found when the user choice group preference does not exist.
+                if (userChoiceGroupPreference == null)
+                {
+                    _logger.LogWarning("UserChoiceGroupPreference Id {Id} not found during delete", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                userChoiceGroupPreference.DeletedAt = DateTime.UtcNow;
+                userChoiceGroupPreference.UpdatedAt = DateTime.UtcNow;
+                userChoiceGroupPreference.UpdatedByUserId = null; // Replace when auth integration is added.
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("UserChoiceGroupPreference Id {Id} soft deleted", id);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error soft deleting UserChoiceGroupPreference Id {Id}", id);
+
+                    TempData["ErrorMessage"] = "Unable to delete user choice group preference.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error deleting UserChoiceGroupPreference Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the user choice group preference.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -339,17 +450,20 @@ namespace A_New_Hope.Controllers
         {
             _logger.LogDebug("Populating dropdowns for UserChoiceGroupPreference");
 
+            // Retrieve active client users for the dropdown list.
             var users = await _context.DomainUsers
                 .Where(u => u.DeletedAt == null && u.UserType == UserType.Client)
                 .OrderBy(u => u.LastName)
                 .ThenBy(u => u.FirstName)
                 .ToListAsync();
 
+            // Retrieve active inventory choice groups for the dropdown list.
             var choiceGroups = await _context.InventoryChoiceGroups
                 .Where(g => g.DeletedAt == null)
                 .OrderBy(g => g.Name)
                 .ToListAsync();
 
+            // Retrieve active inventory items for the dropdown list.
             var inventoryItems = await _context.InventoryItems
                 .Where(i => i.DeletedAt == null && i.Category.DeletedAt == null && i.Category.CategoryGroup.DeletedAt == null)
                 .Include(i => i.Category)
@@ -359,6 +473,7 @@ namespace A_New_Hope.Controllers
                 .ThenBy(i => i.Name)
                 .ToListAsync();
 
+            // Build the user dropdown options.
             var userOptions = users
                 .Select(u => new
                 {
@@ -367,6 +482,7 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
+            // Build the choice group dropdown options.
             var choiceGroupOptions = choiceGroups
                 .Select(g => new
                 {
@@ -375,6 +491,7 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
+            // Build the inventory item dropdown options.
             var inventoryItemOptions = inventoryItems
                 .Select(i => new
                 {
@@ -383,6 +500,7 @@ namespace A_New_Hope.Controllers
                 })
                 .ToList();
 
+            // Store the dropdown options in ViewData.
             ViewData["UserId"] = new SelectList(userOptions, "Id", "DisplayName", selectedUserId);
             ViewData["InventoryChoiceGroupId"] = new SelectList(choiceGroupOptions, "Id", "DisplayName", selectedChoiceGroupId);
             ViewData["SelectedInventoryItemId"] = new SelectList(inventoryItemOptions, "Id", "DisplayName", selectedInventoryItemId);
@@ -393,6 +511,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task<bool> UserChoiceGroupPreferenceExists(ulong id)
         {
+            // Check whether the requested active user choice group preference still exists.
             return await _context.UserChoiceGroupPreferences.AnyAsync(e => e.Id == id && e.DeletedAt == null);
         }
 
@@ -401,6 +520,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyUserChoiceGroupPreferenceValidationAsync(UserChoiceGroupPreference model, ulong? currentId = null)
         {
+            // Validate that the selected user exists and is an active client.
             var userExists = await _context.DomainUsers
                 .AnyAsync(u => u.Id == model.UserId && u.DeletedAt == null && u.UserType == UserType.Client);
 
@@ -409,6 +529,7 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(UserChoiceGroupPreference.UserId), "Select a valid client user.");
             }
 
+            // Validate that the selected choice group exists and is not deleted.
             var choiceGroupExists = await _context.InventoryChoiceGroups
                 .AnyAsync(g => g.Id == model.InventoryChoiceGroupId && g.DeletedAt == null);
 
@@ -417,6 +538,7 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(UserChoiceGroupPreference.InventoryChoiceGroupId), "Select a valid choice group.");
             }
 
+            // Validate that the selected inventory item exists and is not deleted.
             var selectedItemExists = await _context.InventoryItems
                 .AnyAsync(i =>
                     i.Id == model.SelectedInventoryItemId &&
@@ -429,6 +551,7 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(UserChoiceGroupPreference.SelectedInventoryItemId), "Select a valid inventory item.");
             }
 
+            // Prevent duplicate active preferences for the same user and choice group.
             var duplicateExists = await _context.UserChoiceGroupPreferences
                 .AnyAsync(p =>
                     p.DeletedAt == null &&

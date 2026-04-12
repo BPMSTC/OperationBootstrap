@@ -29,17 +29,26 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            _logger.LogInformation("Fetching category groups list");
+            try
+            {
+                _logger.LogInformation("Fetching category groups list");
 
-            // Retrieve active category groups for display.
-            var categoryGroups = await _context.CategoryGroups
-                .Where(cg => cg.DeletedAt == null)
-                .OrderBy(cg => cg.Name)
-                .ToListAsync();
+                // Retrieve active category groups for display.
+                var categoryGroups = await _context.CategoryGroups
+                    .Where(cg => cg.DeletedAt == null)
+                    .OrderBy(cg => cg.Name)
+                    .ToListAsync();
 
-            _logger.LogInformation("Fetched {Count} category groups", categoryGroups.Count);
+                _logger.LogInformation("Fetched {Count} category groups", categoryGroups.Count);
 
-            return View(categoryGroups);
+                return View(categoryGroups);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading category groups list");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading category groups.";
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // GET: CategoryGroups/Details/5
@@ -48,27 +57,36 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("CategoryGroup Details requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("CategoryGroup Details requested with null id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Fetching details for CategoryGroupId {Id}", id);
+
+                // Retrieve the requested active category group.
+                var categoryGroup = await _context.CategoryGroups
+                    .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
+
+                // Return not found when the category group does not exist.
+                if (categoryGroup == null)
+                {
+                    _logger.LogWarning("CategoryGroup {Id} not found", id);
+                    return NotFound();
+                }
+
+                return View(categoryGroup);
             }
-
-            _logger.LogInformation("Fetching details for CategoryGroupId {Id}", id);
-
-            // Retrieve the requested active category group.
-            var categoryGroup = await _context.CategoryGroups
-                .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
-
-            // Return not found when the category group does not exist.
-            if (categoryGroup == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("CategoryGroup {Id} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading details for CategoryGroupId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading category group details.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(categoryGroup);
         }
 
         // GET: CategoryGroups/Create
@@ -77,8 +95,17 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public IActionResult Create()
         {
-            _logger.LogInformation("Loading Create CategoryGroup page");
-            return View();
+            try
+            {
+                _logger.LogInformation("Loading Create CategoryGroup page");
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Create CategoryGroup page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: CategoryGroups/Create
@@ -89,50 +116,59 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Name,IsActive")] CategoryGroup categoryGroup)
         {
-            _logger.LogInformation("Attempting to create CategoryGroup {Name}", categoryGroup.Name);
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(CategoryGroup.Categories));
-            ModelState.Remove(nameof(CategoryGroup.CreatedByUser));
-            ModelState.Remove(nameof(CategoryGroup.UpdatedByUser));
-
-            // Normalize incoming values before business-rule validation.
-            NormalizeCategoryGroup(categoryGroup);
-            await ApplyCategoryGroupValidationAsync(categoryGroup);
-
-            // Return the form when validation fails.
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Create CategoryGroup failed validation");
-                return View(categoryGroup);
-            }
-
-            // Set audit fields for the new category group record.
-            var now = DateTime.UtcNow;
-            categoryGroup.CreatedAt = now;
-            categoryGroup.UpdatedAt = now;
-            categoryGroup.CreatedByUserId = null; // Replace when auth/user tracking is added.
-            categoryGroup.UpdatedByUserId = null; // Replace when auth/user tracking is added.
-
-            // Queue the new category group for insert.
-            _context.Add(categoryGroup);
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to create CategoryGroup {Name}", categoryGroup.Name);
 
-                _logger.LogInformation(
-                    "CategoryGroup {Name} created successfully (Id {Id})",
-                    categoryGroup.Name,
-                    categoryGroup.Id);
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(CategoryGroup.Categories));
+                ModelState.Remove(nameof(CategoryGroup.CreatedByUser));
+                ModelState.Remove(nameof(CategoryGroup.UpdatedByUser));
 
-                return RedirectToAction(nameof(Index));
+                // Normalize incoming values before business-rule validation.
+                NormalizeCategoryGroup(categoryGroup);
+                await ApplyCategoryGroupValidationAsync(categoryGroup);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Create CategoryGroup failed validation");
+                    return View(categoryGroup);
+                }
+
+                // Set audit fields for the new category group record.
+                var now = DateTime.UtcNow;
+                categoryGroup.CreatedAt = now;
+                categoryGroup.UpdatedAt = now;
+                categoryGroup.CreatedByUserId = null; // Replace when auth/user tracking is added.
+                categoryGroup.UpdatedByUserId = null; // Replace when auth/user tracking is added.
+
+                // Queue the new category group for insert.
+                _context.Add(categoryGroup);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation(
+                        "CategoryGroup {Name} created successfully (Id {Id})",
+                        categoryGroup.Name,
+                        categoryGroup.Id);
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error creating CategoryGroup {Name}", categoryGroup.Name);
+
+                    ModelState.AddModelError("", "Unable to save. The category group name may already exist.");
+                    return View(categoryGroup);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating CategoryGroup {Name}", categoryGroup.Name);
-
-                ModelState.AddModelError("", "Unable to save. The category group name may already exist.");
+                _logger.LogError(ex, "Unexpected error creating CategoryGroup {Name}", categoryGroup?.Name);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the category group.");
                 return View(categoryGroup);
             }
         }
@@ -143,27 +179,36 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Edit CategoryGroup requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Edit CategoryGroup requested with null id");
+                    return NotFound();
+                }
+
+                // Retrieve the requested active category group for editing.
+                var categoryGroup = await _context.CategoryGroups
+                    .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
+
+                // Return not found when the category group does not exist.
+                if (categoryGroup == null)
+                {
+                    _logger.LogWarning("CategoryGroup {Id} not found for edit", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Edit page for CategoryGroupId {Id}", id);
+
+                return View(categoryGroup);
             }
-
-            // Retrieve the requested active category group for editing.
-            var categoryGroup = await _context.CategoryGroups
-                .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
-
-            // Return not found when the category group does not exist.
-            if (categoryGroup == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("CategoryGroup {Id} not found for edit", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading edit page for CategoryGroupId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            _logger.LogInformation("Loading Edit page for CategoryGroupId {Id}", id);
-
-            return View(categoryGroup);
         }
 
         // POST: CategoryGroups/Edit/5
@@ -174,65 +219,73 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,Name,IsActive")] CategoryGroup formModel)
         {
-            _logger.LogInformation("Attempting to edit CategoryGroupId {Id}", id);
-
-            // Ensure the route id matches the posted model id.
-            if (id != formModel.Id)
-            {
-                _logger.LogWarning(
-                    "Edit mismatch: route id {RouteId} vs model id {ModelId}",
-                    id,
-                    formModel.Id);
-
-                return NotFound();
-            }
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(CategoryGroup.Categories));
-            ModelState.Remove(nameof(CategoryGroup.CreatedByUser));
-            ModelState.Remove(nameof(CategoryGroup.UpdatedByUser));
-
-            // Normalize incoming values before business-rule validation.
-            NormalizeCategoryGroup(formModel);
-            await ApplyCategoryGroupValidationAsync(formModel, formModel.Id);
-
-            // Return the form when validation fails.
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Edit CategoryGroupId {Id} failed validation", id);
-                return View(formModel);
-            }
-
-            // Retrieve the existing active category group record.
-            var existing = await _context.CategoryGroups
-                .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
-
-            // Return not found when the target record no longer exists.
-            if (existing == null)
-            {
-                _logger.LogWarning("CategoryGroup {Id} not found during edit save", id);
-                return NotFound();
-            }
-
-            // Copy validated form values into the tracked entity.
-            existing.Name = formModel.Name;
-            existing.IsActive = formModel.IsActive;
-
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null; // Placeholder until auth is implemented.
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to edit CategoryGroupId {Id}", id);
 
-                _logger.LogInformation("CategoryGroup {Id} updated successfully", id);
-                return RedirectToAction(nameof(Index));
+                // Ensure the route id matches the posted model id.
+                if (id != formModel.Id)
+                {
+                    _logger.LogWarning(
+                        "Edit mismatch: route id {RouteId} vs model id {ModelId}",
+                        id,
+                        formModel.Id);
+
+                    return NotFound();
+                }
+
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(CategoryGroup.Categories));
+                ModelState.Remove(nameof(CategoryGroup.CreatedByUser));
+                ModelState.Remove(nameof(CategoryGroup.UpdatedByUser));
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeCategoryGroup(formModel);
+                await ApplyCategoryGroupValidationAsync(formModel, formModel.Id);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Edit CategoryGroupId {Id} failed validation", id);
+                    return View(formModel);
+                }
+
+                // Retrieve the existing active category group record.
+                var existing = await _context.CategoryGroups
+                    .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    _logger.LogWarning("CategoryGroup {Id} not found during edit save", id);
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.Name = formModel.Name;
+                existing.IsActive = formModel.IsActive;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null; // Placeholder until auth is implemented.
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("CategoryGroup {Id} updated successfully", id);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error updating CategoryGroupId {Id}", id);
+
+                    ModelState.AddModelError("", "Unable to save changes. The category group name may already exist.");
+                    return View(formModel);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating CategoryGroupId {Id}", id);
-
-                ModelState.AddModelError("", "Unable to save changes. The category group name may already exist.");
+                _logger.LogError(ex, "Unexpected error editing CategoryGroupId {Id}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the category group.");
                 return View(formModel);
             }
         }
@@ -243,27 +296,36 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Delete CategoryGroup requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Delete CategoryGroup requested with null id");
+                    return NotFound();
+                }
+
+                // Retrieve the requested active category group for delete confirmation.
+                var categoryGroup = await _context.CategoryGroups
+                    .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
+
+                // Return not found when the category group does not exist.
+                if (categoryGroup == null)
+                {
+                    _logger.LogWarning("CategoryGroup {Id} not found for delete", id);
+                    return NotFound();
+                }
+
+                _logger.LogWarning("Loading Delete confirmation for CategoryGroupId {Id}", id);
+
+                return View(categoryGroup);
             }
-
-            // Retrieve the requested active category group for delete confirmation.
-            var categoryGroup = await _context.CategoryGroups
-                .FirstOrDefaultAsync(m => m.Id == id && m.DeletedAt == null);
-
-            // Return not found when the category group does not exist.
-            if (categoryGroup == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("CategoryGroup {Id} not found for delete", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading delete page for CategoryGroupId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            _logger.LogWarning("Loading Delete confirmation for CategoryGroupId {Id}", id);
-
-            return View(categoryGroup);
         }
 
         // POST: CategoryGroups/Delete/5
@@ -274,39 +336,48 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            _logger.LogWarning("Soft deleting CategoryGroupId {Id}", id);
-
-            // Retrieve the active category group targeted for soft delete.
-            var categoryGroup = await _context.CategoryGroups
-                .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
-
-            // Return not found when the category group does not exist.
-            if (categoryGroup == null)
-            {
-                _logger.LogWarning("CategoryGroup {Id} not found during delete", id);
-                return NotFound();
-            }
-
-            // Apply soft-delete and audit values.
-            categoryGroup.DeletedAt = DateTime.UtcNow;
-            categoryGroup.UpdatedAt = DateTime.UtcNow;
-            categoryGroup.UpdatedByUserId = null; // Placeholder until auth is implemented.
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogWarning("Soft deleting CategoryGroupId {Id}", id);
 
-                _logger.LogInformation("CategoryGroup {Id} soft deleted", id);
+                // Retrieve the active category group targeted for soft delete.
+                var categoryGroup = await _context.CategoryGroups
+                    .FirstOrDefaultAsync(cg => cg.Id == id && cg.DeletedAt == null);
+
+                // Return not found when the category group does not exist.
+                if (categoryGroup == null)
+                {
+                    _logger.LogWarning("CategoryGroup {Id} not found during delete", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                categoryGroup.DeletedAt = DateTime.UtcNow;
+                categoryGroup.UpdatedAt = DateTime.UtcNow;
+                categoryGroup.UpdatedByUserId = null; // Placeholder until auth is implemented.
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("CategoryGroup {Id} soft deleted", id);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error soft deleting CategoryGroupId {Id}", id);
+
+                    TempData["ErrorMessage"] = "Unable to delete category group.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error soft deleting CategoryGroupId {Id}", id);
-
-                TempData["ErrorMessage"] = "Unable to delete category group.";
+                _logger.LogError(ex, "Unexpected error deleting CategoryGroupId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the category group.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>

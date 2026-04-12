@@ -48,13 +48,15 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index(string? searchTerm)
         {
-            _logger.LogInformation("Loading Referring Organizations Index page");
-
             try
             {
+                _logger.LogInformation("Loading Referring Organizations Index page");
+
+                // Build the base query for active referring organizations.
                 var query = _context.ReferringOrganizations
                     .Where(r => r.DeletedAt == null);
 
+                // Apply the search filter when one is provided.
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     searchTerm = searchTerm.Trim();
@@ -67,7 +69,7 @@ namespace A_New_Hope.Controllers
                         (r.City != null && r.City.Contains(searchTerm)) ||
                         (r.State != null && r.State.Contains(searchTerm)) ||
 
-                        // ✅ Safe phone search
+                        // Safe phone search
                         (!string.IsNullOrEmpty(digitsOnly) &&
                             r.PhoneNumber != null &&
                             r.PhoneNumber.Replace(" ", "")
@@ -78,6 +80,7 @@ namespace A_New_Hope.Controllers
                     );
                 }
 
+                // Retrieve the ordered organizations for display.
                 var referringOrganizations = await query
                     .OrderBy(r => r.Name)
                     .ToListAsync();
@@ -101,30 +104,39 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Details requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Details requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Fetching details for Referring Organization Id {Id}", id);
+
+                // Retrieve the requested active referring organization with service categories.
+                var referringOrganization = await _context.ReferringOrganizations
+                    .Where(r => r.DeletedAt == null)
+                    .Include(r => r.ReferringOrganizationServiceCategories)
+                        .ThenInclude(rosc => rosc.ServiceCategory)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the organization does not exist.
+                if (referringOrganization == null)
+                {
+                    _logger.LogWarning("Referring Organization Id {Id} not found", id);
+                    return NotFound();
+                }
+
+                return View(referringOrganization);
             }
-
-            _logger.LogInformation("Fetching details for Referring Organization Id {Id}", id);
-
-            // Retrieve the requested active referring organization with service categories.
-            var referringOrganization = await _context.ReferringOrganizations
-                .Where(r => r.DeletedAt == null)
-                .Include(r => r.ReferringOrganizationServiceCategories)
-                    .ThenInclude(rosc => rosc.ServiceCategory)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            // Return not found when the organization does not exist.
-            if (referringOrganization == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Referring Organization Id {Id} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading details for Referring Organization Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading referring organization details.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(referringOrganization);
         }
 
         // GET: ReferringOrganizations/Create
@@ -133,17 +145,28 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Create()
         {
-            _logger.LogInformation("Loading Create Referring Organization page");
-
-            var vm = new ReferringOrganizationEditViewModel
+            try
             {
-                State = "WI",
-                IsActive = true
-            };
+                _logger.LogInformation("Loading Create Referring Organization page");
 
-            await PopulateServiceCategoriesAsync(vm);
+                // Build the default view model for the create view.
+                var vm = new ReferringOrganizationEditViewModel
+                {
+                    State = "WI",
+                    IsActive = true
+                };
 
-            return View(vm);
+                // Populate dropdown values for the create form.
+                await PopulateServiceCategoriesAsync(vm);
+
+                return View(vm);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Create Referring Organization page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: ReferringOrganizations/Create
@@ -154,75 +177,92 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ReferringOrganizationEditViewModel vm)
         {
-            _logger.LogInformation("Attempting to create Referring Organization '{Name}'", vm.Name);
-
-            NormalizeReferringOrganization(vm);
-            await ApplyReferringOrganizationValidationAsync(vm);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Create Referring Organization failed validation for '{Name}'", vm.Name);
-                await PopulateServiceCategoriesAsync(vm);
-                return View(vm);
-            }
-
             try
             {
-                var input = new ReferringOrganizationEntryInput
+                _logger.LogInformation("Attempting to create Referring Organization '{Name}'", vm.Name);
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeReferringOrganization(vm);
+                await ApplyReferringOrganizationValidationAsync(vm);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
                 {
-                    Name = vm.Name,
-                    SelectedServiceCategoryIds = vm.SelectedServiceCategoryIds,
-                    PrimaryContactName = vm.PrimaryContactName,
-                    Email = vm.Email,
-                    PhoneNumber = vm.PhoneNumber,
-                    AddressLine1 = vm.AddressLine1,
-                    AddressLine2 = vm.AddressLine2,
-                    City = vm.City,
-                    State = vm.State,
-                    PostalCode = vm.PostalCode,
-                    Notes = vm.Notes
-                };
-
-                var organizationId = await _referringOrganizationService.CreateAndReturnIdAsync(
-                    input,
-                    actingUserId: null);
-
-                if (!vm.IsActive)
-                {
-                    var created = await _context.ReferringOrganizations
-                        .FirstOrDefaultAsync(r => r.Id == organizationId && r.DeletedAt == null);
-
-                    if (created != null)
-                    {
-                        created.IsActive = false;
-                        created.UpdatedAt = DateTime.UtcNow;
-                        created.UpdatedByUserId = null;
-                        await _context.SaveChangesAsync();
-                    }
+                    _logger.LogWarning("Create Referring Organization failed validation for '{Name}'", vm.Name);
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
                 }
 
-                _logger.LogInformation("Referring Organization Id {Id} created successfully", organizationId);
-                return RedirectToAction(nameof(Details), new { id = organizationId });
+                try
+                {
+                    // Build the input model for the organization service.
+                    var input = new ReferringOrganizationEntryInput
+                    {
+                        Name = vm.Name,
+                        SelectedServiceCategoryIds = vm.SelectedServiceCategoryIds,
+                        PrimaryContactName = vm.PrimaryContactName,
+                        Email = vm.Email,
+                        PhoneNumber = vm.PhoneNumber,
+                        AddressLine1 = vm.AddressLine1,
+                        AddressLine2 = vm.AddressLine2,
+                        City = vm.City,
+                        State = vm.State,
+                        PostalCode = vm.PostalCode,
+                        Notes = vm.Notes
+                    };
+
+                    // Create the organization and capture the new id.
+                    var organizationId = await _referringOrganizationService.CreateAndReturnIdAsync(
+                        input,
+                        actingUserId: null);
+
+                    if (!vm.IsActive)
+                    {
+                        var created = await _context.ReferringOrganizations
+                            .FirstOrDefaultAsync(r => r.Id == organizationId && r.DeletedAt == null);
+
+                        if (created != null)
+                        {
+                            created.IsActive = false;
+                            created.UpdatedAt = DateTime.UtcNow;
+                            created.UpdatedByUserId = null;
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+
+                    _logger.LogInformation("Referring Organization Id {Id} created successfully", organizationId);
+                    return RedirectToAction(nameof(Details), new { id = organizationId });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(ex, "Business validation failed while creating Referring Organization '{Name}'", vm.Name);
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
+                }
+                catch (ArgumentException ex)
+                {
+                    _logger.LogWarning(ex, "Argument validation failed while creating Referring Organization '{Name}'", vm.Name);
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error creating Referring Organization '{Name}'", vm.Name);
+                    ModelState.AddModelError("", "Unable to save referring organization.");
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
+                }
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Business validation failed while creating Referring Organization '{Name}'", vm.Name);
-                ModelState.AddModelError(string.Empty, ex.Message);
+                _logger.LogError(ex, "Unexpected error creating Referring Organization '{Name}'", vm?.Name);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the referring organization.");
+
+                vm ??= new ReferringOrganizationEditViewModel();
                 await PopulateServiceCategoriesAsync(vm);
-                return View(vm);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Argument validation failed while creating Referring Organization '{Name}'", vm.Name);
-                ModelState.AddModelError(string.Empty, ex.Message);
-                await PopulateServiceCategoriesAsync(vm);
-                return View(vm);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error creating Referring Organization '{Name}'", vm.Name);
-                ModelState.AddModelError("", "Unable to save referring organization.");
-                await PopulateServiceCategoriesAsync(vm);
+
                 return View(vm);
             }
         }
@@ -233,46 +273,60 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Edit requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Edit requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Edit page for Referring Organization Id {Id}", id);
+
+                // Retrieve the requested active referring organization for editing.
+                var referringOrganization = await _context.ReferringOrganizations
+                    .Include(r => r.ReferringOrganizationServiceCategories)
+                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+
+                // Return not found when the organization does not exist.
+                if (referringOrganization == null)
+                {
+                    _logger.LogWarning("Referring Organization Id {Id} not found for edit", id);
+                    return NotFound();
+                }
+
+                // Build the view model from the existing organization.
+                var vm = new ReferringOrganizationEditViewModel
+                {
+                    Id = referringOrganization.Id,
+                    Name = referringOrganization.Name,
+                    SelectedServiceCategoryIds = referringOrganization.ReferringOrganizationServiceCategories
+                        .Select(x => x.ServiceCategoryId)
+                        .ToList(),
+                    PhoneNumber = referringOrganization.PhoneNumber,
+                    Email = referringOrganization.Email,
+                    AddressLine1 = referringOrganization.AddressLine1,
+                    AddressLine2 = referringOrganization.AddressLine2,
+                    City = referringOrganization.City,
+                    State = referringOrganization.State,
+                    PostalCode = referringOrganization.PostalCode,
+                    PrimaryContactName = referringOrganization.PrimaryContactName,
+                    Notes = referringOrganization.Notes,
+                    IsActive = referringOrganization.IsActive
+                };
+
+                // Populate dropdown values for the edit form.
+                await PopulateServiceCategoriesAsync(vm);
+
+                return View(vm);
             }
-
-            _logger.LogInformation("Loading Edit page for Referring Organization Id {Id}", id);
-
-            var referringOrganization = await _context.ReferringOrganizations
-                .Include(r => r.ReferringOrganizationServiceCategories)
-                .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-            if (referringOrganization == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Referring Organization Id {Id} not found for edit", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading edit page for Referring Organization Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            var vm = new ReferringOrganizationEditViewModel
-            {
-                Id = referringOrganization.Id,
-                Name = referringOrganization.Name,
-                SelectedServiceCategoryIds = referringOrganization.ReferringOrganizationServiceCategories
-                    .Select(x => x.ServiceCategoryId)
-                    .ToList(),
-                PhoneNumber = referringOrganization.PhoneNumber,
-                Email = referringOrganization.Email,
-                AddressLine1 = referringOrganization.AddressLine1,
-                AddressLine2 = referringOrganization.AddressLine2,
-                City = referringOrganization.City,
-                State = referringOrganization.State,
-                PostalCode = referringOrganization.PostalCode,
-                PrimaryContactName = referringOrganization.PrimaryContactName,
-                Notes = referringOrganization.Notes,
-                IsActive = referringOrganization.IsActive
-            };
-
-            await PopulateServiceCategoriesAsync(vm);
-
-            return View(vm);
         }
 
         // POST: ReferringOrganizations/Edit/5
@@ -283,96 +337,115 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, ReferringOrganizationEditViewModel vm)
         {
-            _logger.LogInformation("Attempting to edit Referring Organization Id {Id}", id);
-
-            if (vm.Id != id)
-            {
-                _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, vm.Id);
-                return NotFound();
-            }
-
-            NormalizeReferringOrganization(vm);
-            await ApplyReferringOrganizationValidationAsync(vm, id);
-
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Edit Referring Organization failed validation for Id {Id}", id);
-                await PopulateServiceCategoriesAsync(vm);
-                return View(vm);
-            }
-
-            var existing = await _context.ReferringOrganizations
-                .Include(r => r.ReferringOrganizationServiceCategories)
-                .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-            if (existing == null)
-            {
-                _logger.LogWarning("Referring Organization Id {Id} not found during edit save", id);
-                return NotFound();
-            }
-
-            existing.Name = vm.Name!;
-            existing.PhoneNumber = vm.PhoneNumber!;
-            existing.Email = vm.Email!;
-            existing.AddressLine1 = vm.AddressLine1!;
-            existing.AddressLine2 = vm.AddressLine2;
-            existing.City = vm.City!;
-            existing.State = vm.State!;
-            existing.PostalCode = vm.PostalCode!;
-            existing.PrimaryContactName = vm.PrimaryContactName;
-            existing.Notes = vm.Notes;
-            existing.IsActive = vm.IsActive;
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null;
-
-            var selectedCategoryIds = vm.SelectedServiceCategoryIds
-                .Where(x => x > 0)
-                .Distinct()
-                .ToList();
-
-            var validCategoryIds = await _context.ServiceCategories
-                .Where(c => c.DeletedAt == null && c.IsActive && selectedCategoryIds.Contains(c.Id))
-                .Select(c => c.Id)
-                .ToListAsync();
-
-            if (validCategoryIds.Count != selectedCategoryIds.Count)
-            {
-                ModelState.AddModelError(nameof(vm.SelectedServiceCategoryIds), "One or more selected service categories are invalid.");
-                await PopulateServiceCategoriesAsync(vm);
-                return View(vm);
-            }
-
-            _context.ReferringOrganizationServiceCategories.RemoveRange(existing.ReferringOrganizationServiceCategories);
-
-            existing.ReferringOrganizationServiceCategories = validCategoryIds
-                .Select(categoryId => new ReferringOrganizationServiceCategory
-                {
-                    ReferringOrganizationId = existing.Id,
-                    ServiceCategoryId = categoryId
-                })
-                .ToList();
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to edit Referring Organization Id {Id}", id);
 
-                _logger.LogInformation("Referring Organization Id {Id} updated successfully", id);
-                return RedirectToAction(nameof(Details), new { id });
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await ReferringOrganizationExists(id))
+                // Ensure the route id matches the posted model id.
+                if (vm.Id != id)
                 {
-                    _logger.LogWarning("Referring Organization Id {Id} no longer exists during concurrency check", id);
+                    _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, vm.Id);
                     return NotFound();
                 }
 
-                throw;
+                // Normalize incoming values before business-rule validation.
+                NormalizeReferringOrganization(vm);
+                await ApplyReferringOrganizationValidationAsync(vm, id);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Edit Referring Organization failed validation for Id {Id}", id);
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
+                }
+
+                // Retrieve the existing active organization record.
+                var existing = await _context.ReferringOrganizations
+                    .Include(r => r.ReferringOrganizationServiceCategories)
+                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    _logger.LogWarning("Referring Organization Id {Id} not found during edit save", id);
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.Name = vm.Name!;
+                existing.PhoneNumber = vm.PhoneNumber!;
+                existing.Email = vm.Email!;
+                existing.AddressLine1 = vm.AddressLine1!;
+                existing.AddressLine2 = vm.AddressLine2;
+                existing.City = vm.City!;
+                existing.State = vm.State!;
+                existing.PostalCode = vm.PostalCode!;
+                existing.PrimaryContactName = vm.PrimaryContactName;
+                existing.Notes = vm.Notes;
+                existing.IsActive = vm.IsActive;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null;
+
+                var selectedCategoryIds = vm.SelectedServiceCategoryIds
+                    .Where(x => x > 0)
+                    .Distinct()
+                    .ToList();
+
+                var validCategoryIds = await _context.ServiceCategories
+                    .Where(c => c.DeletedAt == null && c.IsActive && selectedCategoryIds.Contains(c.Id))
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                if (validCategoryIds.Count != selectedCategoryIds.Count)
+                {
+                    ModelState.AddModelError(nameof(vm.SelectedServiceCategoryIds), "One or more selected service categories are invalid.");
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
+                }
+
+                // Replace the organization's service category assignments with the selected set.
+                _context.ReferringOrganizationServiceCategories.RemoveRange(existing.ReferringOrganizationServiceCategories);
+
+                existing.ReferringOrganizationServiceCategories = validCategoryIds
+                    .Select(categoryId => new ReferringOrganizationServiceCategory
+                    {
+                        ReferringOrganizationId = existing.Id,
+                        ServiceCategoryId = categoryId
+                    })
+                    .ToList();
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Referring Organization Id {Id} updated successfully", id);
+                    return RedirectToAction(nameof(Details), new { id });
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    // Check whether the record was deleted during the edit attempt.
+                    if (!await ReferringOrganizationExists(id))
+                    {
+                        _logger.LogWarning("Referring Organization Id {Id} no longer exists during concurrency check", id);
+                        return NotFound();
+                    }
+
+                    _logger.LogError(ex, "Concurrency error updating Referring Organization Id {Id}", id);
+                    throw;
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error updating Referring Organization Id {Id}", id);
+                    ModelState.AddModelError("", "Unable to save changes.");
+                    await PopulateServiceCategoriesAsync(vm);
+                    return View(vm);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating Referring Organization Id {Id}", id);
-                ModelState.AddModelError("", "Unable to save changes.");
+                _logger.LogError(ex, "Unexpected error editing Referring Organization Id {Id}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the referring organization.");
                 await PopulateServiceCategoriesAsync(vm);
                 return View(vm);
             }
@@ -384,28 +457,37 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Delete requested with null Id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Delete requested with null Id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Delete confirmation for Referring Organization Id {Id}", id);
+
+                // Retrieve the requested active referring organization for delete confirmation.
+                var referringOrganization = await _context.ReferringOrganizations
+                    .Where(r => r.DeletedAt == null)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the organization does not exist.
+                if (referringOrganization == null)
+                {
+                    _logger.LogWarning("Referring Organization Id {Id} not found for delete", id);
+                    return NotFound();
+                }
+
+                return View(referringOrganization);
             }
-
-            _logger.LogInformation("Loading Delete confirmation for Referring Organization Id {Id}", id);
-
-            // Retrieve the requested active referring organization for delete confirmation.
-            var referringOrganization = await _context.ReferringOrganizations
-                .Where(r => r.DeletedAt == null)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            // Return not found when the organization does not exist.
-            if (referringOrganization == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Referring Organization Id {Id} not found for delete", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading delete page for Referring Organization Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(referringOrganization);
         }
 
         // POST: ReferringOrganizations/Delete/5
@@ -416,39 +498,48 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            _logger.LogWarning("Soft deleting Referring Organization Id {Id}", id);
-
-            // Retrieve the active referring organization targeted for soft delete.
-            var referringOrganization = await _context.ReferringOrganizations
-                .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-            // Return not found when the organization does not exist.
-            if (referringOrganization == null)
-            {
-                _logger.LogWarning("Referring Organization Id {Id} not found during delete", id);
-                return NotFound();
-            }
-
-            // Apply soft-delete and audit values.
-            referringOrganization.DeletedAt = DateTime.UtcNow;
-            referringOrganization.UpdatedAt = DateTime.UtcNow;
-            referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogWarning("Soft deleting Referring Organization Id {Id}", id);
 
-                _logger.LogInformation("Referring Organization Id {Id} soft deleted", id);
+                // Retrieve the active referring organization targeted for soft delete.
+                var referringOrganization = await _context.ReferringOrganizations
+                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+
+                // Return not found when the organization does not exist.
+                if (referringOrganization == null)
+                {
+                    _logger.LogWarning("Referring Organization Id {Id} not found during delete", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                referringOrganization.DeletedAt = DateTime.UtcNow;
+                referringOrganization.UpdatedAt = DateTime.UtcNow;
+                referringOrganization.UpdatedByUserId = null; // Replace when auth/user tracking is added.
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Referring Organization Id {Id} soft deleted", id);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error soft deleting Referring Organization Id {Id}", id);
+
+                    TempData["ErrorMessage"] = "Unable to delete referring organization.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error soft deleting Referring Organization Id {Id}", id);
-
-                TempData["ErrorMessage"] = "Unable to delete referring organization.";
+                _logger.LogError(ex, "Unexpected error deleting Referring Organization Id {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the referring organization.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
@@ -712,6 +803,9 @@ namespace A_New_Hope.Controllers
             return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
 
+        /// <summary>
+        /// Populates the available service categories for the create and edit forms.
+        /// </summary>
         private async Task PopulateServiceCategoriesAsync(ReferringOrganizationEditViewModel vm)
         {
             vm.SelectedServiceCategoryIds ??= new List<ulong>();

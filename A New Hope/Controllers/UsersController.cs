@@ -45,16 +45,14 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index(string searchTerm, string filter)
         {
-            _logger.LogInformation("Retrieving users");
-
             try
             {
+                _logger.LogInformation("Retrieving users");
+
                 var query = _context.DomainUsers
                     .Where(u => u.DeletedAt == null);
 
-                // -------------------------
-                // SEARCH (unchanged)
-                // -------------------------
+                // Search
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     searchTerm = searchTerm.Trim();
@@ -62,41 +60,33 @@ namespace A_New_Hope.Controllers
 
                     query = query.Where(u =>
                         (u.Email != null && u.Email.Contains(searchTerm)) ||
-
                         (u.FirstName != null && u.FirstName.Contains(searchTerm)) ||
                         (u.LastName != null && u.LastName.Contains(searchTerm)) ||
-
                         (u.FirstName != null && u.LastName != null &&
                             (u.FirstName + " " + u.LastName).Contains(searchTerm)) ||
-
                         (u.City != null && u.City.Contains(searchTerm)) ||
                         (u.State != null && u.State.Contains(searchTerm)) ||
                         (u.PostalCode != null && u.PostalCode.Contains(searchTerm)) ||
-
                         (u.AddressLine1 != null && u.AddressLine1.Contains(searchTerm)) ||
                         (u.AddressLine2 != null && u.AddressLine2.Contains(searchTerm)) ||
-
                         (u.PhoneNumber != null &&
                             u.PhoneNumber.Replace(" ", "").Replace("-", "")
                             .Contains(digitsOnly))
                     );
                 }
 
-                // -------------------------
-                // FILTER (NEW)
-                // -------------------------
+                // Filter
                 filter ??= "all";
 
                 if (!User.IsInRole("Admin"))
                 {
-                    // Non-admins ONLY see clients
+                    // Non-admins only see clients.
                     query = query.Where(u =>
                         u.UserType != UserType.Admin &&
                         u.UserType != UserType.Staff);
                 }
                 else
                 {
-                    // Admin filter toggle
                     switch (filter)
                     {
                         case "clients":
@@ -108,14 +98,10 @@ namespace A_New_Hope.Controllers
                                 u.UserType == UserType.Admin ||
                                 u.UserType == UserType.Staff);
                             break;
-
-                            // "all" → no extra filter
                     }
                 }
 
-                // -------------------------
-                // DATA FETCH (unchanged)
-                // -------------------------
+                // Retrieve the filtered users.
                 var domainUsers = await query
                     .OrderBy(u => u.LastName)
                     .ThenBy(u => u.FirstName)
@@ -149,9 +135,6 @@ namespace A_New_Hope.Controllers
                     IdentityUserId = identityByDomainUserId.TryGetValue(u.Id, out var identityId) ? identityId : null
                 }).ToList();
 
-                // -------------------------
-                // VIEWDATA (updated)
-                // -------------------------
                 ViewData["CurrentFilter"] = searchTerm;
                 ViewData["UserFilter"] = filter;
 
@@ -172,72 +155,81 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogInformation("Details requested with null id");
-                return NotFound();
-            }
-
-            // Retrieve the requested non-deleted domain user.
-            var user = await _context.DomainUsers
-                .Where(u => u.DeletedAt == null)
-                .Include(u => u.CreatedByUser)
-                .Include(u => u.UpdatedByUser)
-                .Include(u => u.ClientProfile)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            // Return not found when the user does not exist.
-            if (user == null)
-            {
-                _logger.LogInformation("User not found. UserId = {UserID}", id);
-                return NotFound();
-            }
-
-            var linkedApplicationUser = await _context.Users
-                .Where(au => au.DomainUserId == user.Id)
-                .Select(au => new
+                // Reject requests with no id.
+                if (id == null)
                 {
-                    au.Id
-                })
-                .FirstOrDefaultAsync();
+                    _logger.LogInformation("Details requested with null id");
+                    return NotFound();
+                }
 
-            var vm = new UserDetailsViewModel
-            {
-                User = user,
-                ClientProfile = user.ClientProfile,
-                HouseholdMembers = new List<HouseholdMember>(),
-                ClientIncomes = new List<ClientIncome>(),
-                Referrals = new List<Referral>(),
-                HasLoginAccount = linkedApplicationUser != null,
-                IdentityUserId = linkedApplicationUser?.Id
-            };
+                // Retrieve the requested non-deleted domain user.
+                var user = await _context.DomainUsers
+                    .Where(u => u.DeletedAt == null)
+                    .Include(u => u.CreatedByUser)
+                    .Include(u => u.UpdatedByUser)
+                    .Include(u => u.ClientProfile)
+                    .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (user.UserType == UserType.Client)
-            {
-                vm.HouseholdMembers = await _context.HouseholdMembers
-                    .Where(h => h.ClientUserId == user.Id && h.DeletedAt == null)
-                    .OrderBy(h => h.LastName)
-                    .ThenBy(h => h.FirstName)
-                    .ToListAsync();
+                // Return not found when the user does not exist.
+                if (user == null)
+                {
+                    _logger.LogInformation("User not found. UserId = {UserID}", id);
+                    return NotFound();
+                }
 
-                vm.ClientIncomes = await _context.ClientIncomes
-                    .Where(ci =>
-                        ci.ClientProfileUserId == user.Id &&
-                        ci.DeletedAt == null &&
-                        ci.IsActive)
-                    .OrderBy(ci => ci.IncomeType)
-                    .ThenBy(ci => ci.Id)
-                    .ToListAsync();
+                var linkedApplicationUser = await _context.Users
+                    .Where(au => au.DomainUserId == user.Id)
+                    .Select(au => new
+                    {
+                        au.Id
+                    })
+                    .FirstOrDefaultAsync();
 
-                vm.Referrals = await _context.Referrals
-                    .Include(r => r.ReferringOrganization)
-                    .Where(r => r.ClientUserId == user.Id && r.DeletedAt == null)
-                    .OrderByDescending(r => r.ReferredOn)
-                    .ToListAsync();
+                var vm = new UserDetailsViewModel
+                {
+                    User = user,
+                    ClientProfile = user.ClientProfile,
+                    HouseholdMembers = new List<HouseholdMember>(),
+                    ClientIncomes = new List<ClientIncome>(),
+                    Referrals = new List<Referral>(),
+                    HasLoginAccount = linkedApplicationUser != null,
+                    IdentityUserId = linkedApplicationUser?.Id
+                };
+
+                if (user.UserType == UserType.Client)
+                {
+                    vm.HouseholdMembers = await _context.HouseholdMembers
+                        .Where(h => h.ClientUserId == user.Id && h.DeletedAt == null)
+                        .OrderBy(h => h.LastName)
+                        .ThenBy(h => h.FirstName)
+                        .ToListAsync();
+
+                    vm.ClientIncomes = await _context.ClientIncomes
+                        .Where(ci =>
+                            ci.ClientProfileUserId == user.Id &&
+                            ci.DeletedAt == null &&
+                            ci.IsActive)
+                        .OrderBy(ci => ci.IncomeType)
+                        .ThenBy(ci => ci.Id)
+                        .ToListAsync();
+
+                    vm.Referrals = await _context.Referrals
+                        .Include(r => r.ReferringOrganization)
+                        .Where(r => r.ClientUserId == user.Id && r.DeletedAt == null)
+                        .OrderByDescending(r => r.ReferredOn)
+                        .ToListAsync();
+                }
+
+                return View(vm);
             }
-
-            return View(vm);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load user details for UserId={UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading user details.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: Users/Create
@@ -246,7 +238,16 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public IActionResult Create()
         {
-            return View();
+            try
+            {
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load create user page.");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Users/Create
@@ -257,92 +258,103 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] DomainUser user)
         {
-            _logger.LogInformation("Creating user Email = {Email}", user.Email);
-
-            ModelState.Remove(nameof(DomainUser.CreatedByUser));
-            ModelState.Remove(nameof(DomainUser.UpdatedByUser));
-            ModelState.Remove(nameof(DomainUser.ClientProfile));
-
-            NormalizeDomainUser(user);
-            await ApplyDomainUserValidationAsync(user);
-
-            if (!ModelState.IsValid)
+            try
             {
-                return View(user);
-            }
+                _logger.LogInformation("Creating user Email = {Email}", user.Email);
 
-            // Client path: use the reusable client-creation service.
-            if (user.UserType == UserType.Client)
-            {
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(DomainUser.CreatedByUser));
+                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+                ModelState.Remove(nameof(DomainUser.ClientProfile));
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeDomainUser(user);
+                await ApplyDomainUserValidationAsync(user);
+
+                if (!ModelState.IsValid)
+                {
+                    return View(user);
+                }
+
+                // Client path: use the reusable client-creation service.
+                if (user.UserType == UserType.Client)
+                {
+                    try
+                    {
+                        var input = new ClientEntryInput
+                        {
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Email = user.Email,
+                            PhoneNumber = user.PhoneNumber,
+                            AddressLine1 = user.AddressLine1,
+                            AddressLine2 = user.AddressLine2,
+                            City = user.City,
+                            State = user.State,
+                            PostalCode = user.PostalCode,
+                            DateOfBirth = user.DateOfBirth,
+                            EmploymentStatus = null,
+                            IsUnhoused = false,
+                            Incomes = new List<ClientIncomeEntryInput>()
+                        };
+
+                        var clientId = await _clientCreationService.CreateClientAndReturnIdAsync(
+                            input,
+                            householdInputs: new List<HouseholdMemberEntryInput>(),
+                            actingUserId: null);
+
+                        _logger.LogInformation("Client user created successfully. UserId = {UserId}", clientId);
+                        return RedirectToAction(nameof(Details), new { id = clientId });
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        _logger.LogWarning(ex, "Business validation failed while creating client Email = {Email}", user.Email);
+
+                        ModelState.AddModelError(string.Empty, ex.Message);
+                        return View(user);
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        _logger.LogWarning(ex, "Argument validation failed while creating client Email = {Email}", user.Email);
+
+                        ModelState.AddModelError(string.Empty, ex.Message);
+                        return View(user);
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        _logger.LogError(ex, "Failed to create client Email = {Email}", user.Email);
+
+                        ModelState.AddModelError("", "Unable to save user.");
+                        return View(user);
+                    }
+                }
+
+                // Non-client path: keep existing direct-create behavior for Staff/Admin.
+                var now = DateTime.UtcNow;
+                user.CreatedAt = now;
+                user.UpdatedAt = now;
+                user.CreatedByUserId = null;
+                user.UpdatedByUserId = null;
+
+                _context.Add(user);
+
                 try
                 {
-                    var input = new ClientEntryInput
-                    {
-                        FirstName = user.FirstName,
-                        LastName = user.LastName,
-                        Email = user.Email,
-                        PhoneNumber = user.PhoneNumber,
-                        AddressLine1 = user.AddressLine1,
-                        AddressLine2 = user.AddressLine2,
-                        City = user.City,
-                        State = user.State,
-                        PostalCode = user.PostalCode,
-                        DateOfBirth = user.DateOfBirth,
-                        EmploymentStatus = null,
-                        IsUnhoused = false,
-                        Incomes = new List<ClientIncomeEntryInput>()
-                    };
-
-                    var clientId = await _clientCreationService.CreateClientAndReturnIdAsync(
-                        input,
-                        householdInputs: new List<HouseholdMemberEntryInput>(),
-                        actingUserId: null);
-
-                    _logger.LogInformation("Client user created successfully. UserId = {UserId}", clientId);
-                    return RedirectToAction(nameof(Details), new { id = clientId });
-                }
-                catch (InvalidOperationException ex)
-                {
-                    _logger.LogWarning(ex, "Business validation failed while creating client Email = {Email}", user.Email);
-
-                    ModelState.AddModelError(string.Empty, ex.Message);
-                    return View(user);
-                }
-                catch (ArgumentException ex)
-                {
-                    _logger.LogWarning(ex, "Argument validation failed while creating client Email = {Email}", user.Email);
-
-                    ModelState.AddModelError(string.Empty, ex.Message);
-                    return View(user);
+                    await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateException ex)
                 {
-                    _logger.LogError(ex, "Failed to create client Email = {Email}", user.Email);
+                    _logger.LogError(ex, "Failed to create user Email = {Email}", user.Email);
 
                     ModelState.AddModelError("", "Unable to save user.");
                     return View(user);
                 }
             }
-
-            // Non-client path: keep existing direct-create behavior for Staff/Admin.
-            var now = DateTime.UtcNow;
-            user.CreatedAt = now;
-            user.UpdatedAt = now;
-            user.CreatedByUserId = null;
-            user.UpdatedByUserId = null;
-
-            _context.Add(user);
-
-            try
+            catch (Exception ex)
             {
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Failed to create user Email = {Email}", user.Email);
-
-                ModelState.AddModelError("", "Unable to save user.");
+                _logger.LogError(ex, "Unexpected error creating user Email = {Email}", user?.Email);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the user.");
                 return View(user);
             }
         }
@@ -353,24 +365,33 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    return NotFound();
+                }
+
+                // Retrieve the requested non-deleted user for editing.
+                var user = await _context.DomainUsers
+                    .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
+
+                // Return not found when the user does not exist.
+                if (user == null)
+                {
+                    _logger.LogWarning("User {UserId} not found for edit.", id);
+                    return NotFound();
+                }
+
+                return View(user);
             }
-
-            // Retrieve the requested non-deleted user for editing.
-            var user = await _context.DomainUsers
-                .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
-
-            // Return not found when the user does not exist.
-            if (user == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("User {UserId} not found for edit.", id);
-                return NotFound();
+                _logger.LogError(ex, "Failed to load edit form for UserId={UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(user);
         }
 
         // POST: Users/Edit/5
@@ -381,89 +402,99 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] DomainUser formModel)
         {
-            _logger.LogInformation("Updating user UserId={UserId}", id);
-
-            // Ensure the route id matches the posted model id.
-            if (id != formModel.Id)
-            {
-                _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
-                return NotFound();
-            }
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(DomainUser.CreatedByUser));
-            ModelState.Remove(nameof(DomainUser.UpdatedByUser));
-            ModelState.Remove(nameof(DomainUser.ClientProfile));
-
-            // Normalize incoming values before business-rule validation.
-            NormalizeDomainUser(formModel);
-            await ApplyDomainUserValidationAsync(formModel, formModel.Id);
-
-            // Return the form when validation fails.
-            if (!ModelState.IsValid)
-            {
-                return View(formModel);
-            }
-
-            // Retrieve the existing non-deleted domain user record.
-            var existing = await _context.DomainUsers
-                .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
-
-            // Return not found when the target record no longer exists.
-            if (existing == null)
-            {
-                return NotFound();
-            }
-
-            // Copy validated form values into the tracked entity.
-            existing.Email = formModel.Email;
-            existing.PhoneNumber = formModel.PhoneNumber;
-            existing.FirstName = formModel.FirstName;
-            existing.LastName = formModel.LastName;
-            existing.AddressLine1 = formModel.AddressLine1;
-            existing.AddressLine2 = formModel.AddressLine2;
-            existing.City = formModel.City;
-            existing.State = formModel.State;
-            existing.PostalCode = formModel.PostalCode;
-            existing.DateOfBirth = formModel.DateOfBirth;
-            existing.DefaultPreference = formModel.DefaultPreference;
-            existing.UserType = formModel.UserType;
-            existing.IsActive = formModel.IsActive;
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Updating user UserId={UserId}", id);
 
-                // Sync linked Identity role and lockout status after saving domain changes.
-                await SyncIdentityAccessForDomainUserAsync(existing);
-
-                _logger.LogInformation("User updated successfully. UserId={UserId}", id);
-
-                return RedirectToAction(nameof(Index));
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Check whether the record was deleted during the edit attempt.
-                if (!await UserExists(formModel.Id))
+                // Ensure the route id matches the posted model id.
+                if (id != formModel.Id)
                 {
-                    _logger.LogError("User doesn't exist.");
+                    _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
                     return NotFound();
                 }
 
-                throw;
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(DomainUser.CreatedByUser));
+                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+                ModelState.Remove(nameof(DomainUser.ClientProfile));
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeDomainUser(formModel);
+                await ApplyDomainUserValidationAsync(formModel, formModel.Id);
+
+                // Return the form when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    return View(formModel);
+                }
+
+                // Retrieve the existing non-deleted domain user record.
+                var existing = await _context.DomainUsers
+                    .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.Email = formModel.Email;
+                existing.PhoneNumber = formModel.PhoneNumber;
+                existing.FirstName = formModel.FirstName;
+                existing.LastName = formModel.LastName;
+                existing.AddressLine1 = formModel.AddressLine1;
+                existing.AddressLine2 = formModel.AddressLine2;
+                existing.City = formModel.City;
+                existing.State = formModel.State;
+                existing.PostalCode = formModel.PostalCode;
+                existing.DateOfBirth = formModel.DateOfBirth;
+                existing.DefaultPreference = formModel.DefaultPreference;
+                existing.UserType = formModel.UserType;
+                existing.IsActive = formModel.IsActive;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    // Sync linked Identity role and lockout status after saving domain changes.
+                    await SyncIdentityAccessForDomainUserAsync(existing);
+
+                    _logger.LogInformation("User updated successfully. UserId={UserId}", id);
+
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    // Check whether the record was deleted during the edit attempt.
+                    if (!await UserExists(formModel.Id))
+                    {
+                        _logger.LogError("User doesn't exist.");
+                        return NotFound();
+                    }
+
+                    _logger.LogError(ex, "Concurrency error updating UserId={UserId}", id);
+                    throw;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    ModelState.AddModelError("", ex.Message);
+                    _logger.LogError("{Message}", ex.Message);
+                    return View(formModel);
+                }
+                catch (DbUpdateException ex)
+                {
+                    ModelState.AddModelError("", "Unable to save changes.");
+                    _logger.LogError("{Message}", ex.Message);
+                    return View(formModel);
+                }
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                ModelState.AddModelError("", ex.Message);
-                _logger.LogError("{Message}", ex.Message);
-                return View(formModel);
-            }
-            catch (DbUpdateException ex)
-            {
-                ModelState.AddModelError("", "Unable to save changes.");
-                _logger.LogError("{Message}", ex.Message);
+                _logger.LogError(ex, "Unexpected error updating user UserId={UserId}", id);
+                ModelState.AddModelError("", "An unexpected error occurred while updating the user.");
                 return View(formModel);
             }
         }
@@ -474,26 +505,35 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogInformation("{Id} not found.", id);
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogInformation("{Id} not found.", id);
+                    return NotFound();
+                }
+
+                // Retrieve the requested non-deleted user for delete confirmation.
+                var user = await _context.DomainUsers
+                    .Where(u => u.DeletedAt == null)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the user does not exist.
+                if (user == null)
+                {
+                    _logger.LogInformation("User not found.");
+                    return NotFound();
+                }
+
+                return View(user);
             }
-
-            // Retrieve the requested non-deleted user for delete confirmation.
-            var user = await _context.DomainUsers
-                .Where(u => u.DeletedAt == null)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            // Return not found when the user does not exist.
-            if (user == null)
+            catch (Exception ex)
             {
-                _logger.LogInformation("User not found.");
-                return NotFound();
+                _logger.LogError(ex, "Failed to load delete page for UserId={UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(user);
         }
 
         // POST: Users/Delete/5
@@ -504,36 +544,45 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            // Retrieve the active domain user targeted for soft delete.
-            var user = await _context.DomainUsers
-                .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
-
-            _logger.LogInformation("Soft deleting user UserId={UserId}", id);
-
-            // Return not found when the user does not exist.
-            if (user == null)
-            {
-                _logger.LogInformation("UserId={UserId} not found.", id);
-                return NotFound();
-            }
-
-            // Apply soft-delete and audit values.
-            user.DeletedAt = DateTime.UtcNow;
-            user.UpdatedAt = DateTime.UtcNow;
-            user.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                // Retrieve the active domain user targeted for soft delete.
+                var user = await _context.DomainUsers
+                    .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
+
+                _logger.LogInformation("Soft deleting user UserId={UserId}", id);
+
+                // Return not found when the user does not exist.
+                if (user == null)
+                {
+                    _logger.LogInformation("UserId={UserId} not found.", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                user.DeletedAt = DateTime.UtcNow;
+                user.UpdatedAt = DateTime.UtcNow;
+                user.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException ex)
+                {
+                    TempData["ErrorMessage"] = "Unable to delete user.";
+                    _logger.LogWarning(ex, "Failed to delete user UserId={UserId}", id);
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Unable to delete user.";
-                _logger.LogWarning(ex, "Failed to delete user UserId={UserId}", id);
+                _logger.LogError(ex, "Unexpected error deleting user UserId={UserId}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the user.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>

@@ -29,20 +29,29 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Index()
         {
-            _logger.LogInformation("Fetching category list");
+            try
+            {
+                _logger.LogInformation("Fetching category list");
 
-            // Retrieve active categories with related category group and parent data.
-            var categories = await _context.Categories
-                .Where(c => c.DeletedAt == null)
-                .Include(c => c.CategoryGroup)
-                .Include(c => c.Parent)
-                .OrderBy(c => c.CategoryGroup.Name)
-                .ThenBy(c => c.Name)
-                .ToListAsync();
+                // Retrieve active categories with related category group and parent data.
+                var categories = await _context.Categories
+                    .Where(c => c.DeletedAt == null)
+                    .Include(c => c.CategoryGroup)
+                    .Include(c => c.Parent)
+                    .OrderBy(c => c.CategoryGroup.Name)
+                    .ThenBy(c => c.Name)
+                    .ToListAsync();
 
-            _logger.LogInformation("Fetched {Count} categories", categories.Count);
+                _logger.LogInformation("Fetched {Count} categories", categories.Count);
 
-            return View(categories);
+                return View(categories);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading category list");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading categories.";
+                return RedirectToAction("Index", "Home");
+            }
         }
 
         // GET: Categories/Details/5
@@ -51,30 +60,39 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Details(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Category Details requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Category Details requested with null id");
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Fetching details for CategoryId {Id}", id);
+
+                // Retrieve the requested active category with related category group and parent data.
+                var category = await _context.Categories
+                    .Where(c => c.DeletedAt == null)
+                    .Include(c => c.CategoryGroup)
+                    .Include(c => c.Parent)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the category does not exist.
+                if (category == null)
+                {
+                    _logger.LogWarning("Category {Id} not found", id);
+                    return NotFound();
+                }
+
+                return View(category);
             }
-
-            _logger.LogInformation("Fetching details for CategoryId {Id}", id);
-
-            // Retrieve the requested active category with related category group and parent data.
-            var category = await _context.Categories
-                .Where(c => c.DeletedAt == null)
-                .Include(c => c.CategoryGroup)
-                .Include(c => c.Parent)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            // Return not found when the category does not exist.
-            if (category == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Category {Id} not found", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading details for CategoryId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading category details.";
+                return RedirectToAction(nameof(Index));
             }
-
-            return View(category);
         }
 
         // GET: Categories/Create
@@ -83,11 +101,20 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Create()
         {
-            _logger.LogInformation("Loading Create Category page");
+            try
+            {
+                _logger.LogInformation("Loading Create Category page");
 
-            // Populate dropdown values for the create form.
-            await PopulateDropdowns();
-            return View();
+                // Populate dropdown values for the create form.
+                await PopulateDropdowns();
+                return View();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading Create Category page");
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the create form.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // POST: Categories/Create
@@ -98,54 +125,65 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("CategoryGroupId,ParentId,Name,IsActive")] Category category)
         {
-            _logger.LogInformation(
-                "Attempting to create category {Name} in CategoryGroupId {GroupId}",
-                category.Name,
-                category.CategoryGroupId);
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(Category.CategoryGroup));
-            ModelState.Remove(nameof(Category.Parent));
-            ModelState.Remove(nameof(Category.Children));
-            ModelState.Remove(nameof(Category.CreatedByUser));
-            ModelState.Remove(nameof(Category.UpdatedByUser));
-
-            // Normalize incoming values before business-rule validation.
-            NormalizeCategory(category);
-            await ApplyCategoryValidationAsync(category);
-
-            // Return the form with dropdowns restored when validation fails.
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Create Category failed validation");
-                await PopulateDropdowns(category.CategoryGroupId, category.ParentId);
-                return View(category);
-            }
-
-            // Set audit fields for the new category record.
-            var now = DateTime.UtcNow;
-            category.CreatedAt = now;
-            category.UpdatedAt = now;
-            category.CreatedByUserId = null;
-            category.UpdatedByUserId = null;
-
-            // Queue the new category for insert.
-            _context.Add(category);
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation(
+                    "Attempting to create category {Name} in CategoryGroupId {GroupId}",
+                    category.Name,
+                    category.CategoryGroupId);
 
-                _logger.LogInformation("Category {Name} created successfully (Id {Id})", category.Name, category.Id);
-                return RedirectToAction(nameof(Index));
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(Category.CategoryGroup));
+                ModelState.Remove(nameof(Category.Parent));
+                ModelState.Remove(nameof(Category.Children));
+                ModelState.Remove(nameof(Category.CreatedByUser));
+                ModelState.Remove(nameof(Category.UpdatedByUser));
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeCategory(category);
+                await ApplyCategoryValidationAsync(category);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Create Category failed validation");
+                    await PopulateDropdowns(category.CategoryGroupId, category.ParentId);
+                    return View(category);
+                }
+
+                // Set audit fields for the new category record.
+                var now = DateTime.UtcNow;
+                category.CreatedAt = now;
+                category.UpdatedAt = now;
+                category.CreatedByUserId = null;
+                category.UpdatedByUserId = null;
+
+                // Queue the new category for insert.
+                _context.Add(category);
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Category {Name} created successfully (Id {Id})", category.Name, category.Id);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error creating category {Name}", category.Name);
+
+                    ModelState.AddModelError("", "Unable to save. The category name may already exist in that category group.");
+                    await PopulateDropdowns(category.CategoryGroupId, category.ParentId);
+                    return View(category);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating category {Name}", category.Name);
+                _logger.LogError(ex, "Unexpected error loading create/save for category {Name}", category?.Name);
+                ModelState.AddModelError("", "An unexpected error occurred while creating the category.");
 
-                ModelState.AddModelError("", "Unable to save. The category name may already exist in that category group.");
-                await PopulateDropdowns(category.CategoryGroupId, category.ParentId);
-                return View(category);
+                await PopulateDropdowns(category?.CategoryGroupId, category?.ParentId);
+                return View(category ?? new Category());
             }
         }
 
@@ -155,30 +193,39 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Edit(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Edit requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Edit requested with null id");
+                    return NotFound();
+                }
+
+                // Retrieve the requested active category for editing.
+                var category = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
+
+                // Return not found when the category does not exist.
+                if (category == null)
+                {
+                    _logger.LogWarning("Category {Id} not found for edit", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Loading Edit page for CategoryId {Id}", id);
+
+                // Populate dropdown values using the current record selections.
+                await PopulateDropdowns(category.CategoryGroupId, category.ParentId, excludeCategoryId: category.Id);
+
+                return View(category);
             }
-
-            // Retrieve the requested active category for editing.
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
-
-            // Return not found when the category does not exist.
-            if (category == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Category {Id} not found for edit", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading edit page for CategoryId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
+                return RedirectToAction(nameof(Index));
             }
-
-            _logger.LogInformation("Loading Edit page for CategoryId {Id}", id);
-
-            // Populate dropdown values using the current record selections.
-            await PopulateDropdowns(category.CategoryGroupId, category.ParentId, excludeCategoryId: category.Id);
-
-            return View(category);
         }
 
         // POST: Categories/Edit/5
@@ -189,65 +236,76 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(ulong id, [Bind("Id,CategoryGroupId,ParentId,Name,IsActive")] Category formModel)
         {
-            _logger.LogInformation("Attempting to edit CategoryId {Id}", id);
-
-            // Ensure the route id matches the posted model id.
-            if (id != formModel.Id)
-            {
-                _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
-                return NotFound();
-            }
-
-            // Remove navigation properties that are not posted by the form.
-            ModelState.Remove(nameof(Category.CategoryGroup));
-            ModelState.Remove(nameof(Category.Parent));
-            ModelState.Remove(nameof(Category.Children));
-            ModelState.Remove(nameof(Category.CreatedByUser));
-            ModelState.Remove(nameof(Category.UpdatedByUser));
-
-            // Normalize incoming values before business-rule validation.
-            NormalizeCategory(formModel);
-            await ApplyCategoryValidationAsync(formModel, formModel.Id);
-
-            // Return the form with dropdowns restored when validation fails.
-            if (!ModelState.IsValid)
-            {
-                _logger.LogWarning("Edit CategoryId {Id} failed validation", id);
-                await PopulateDropdowns(formModel.CategoryGroupId, formModel.ParentId, excludeCategoryId: formModel.Id);
-                return View(formModel);
-            }
-
-            // Retrieve the existing active category record.
-            var existing = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
-
-            // Return not found when the target record no longer exists.
-            if (existing == null)
-            {
-                _logger.LogWarning("Category {Id} not found during edit save", id);
-                return NotFound();
-            }
-
-            // Copy validated form values into the tracked entity.
-            existing.CategoryGroupId = formModel.CategoryGroupId;
-            existing.ParentId = formModel.ParentId;
-            existing.Name = formModel.Name;
-            existing.IsActive = formModel.IsActive;
-            existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogInformation("Attempting to edit CategoryId {Id}", id);
 
-                _logger.LogInformation("Category {Id} updated successfully", id);
-                return RedirectToAction(nameof(Index));
+                // Ensure the route id matches the posted model id.
+                if (id != formModel.Id)
+                {
+                    _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
+                    return NotFound();
+                }
+
+                // Remove navigation properties that are not posted by the form.
+                ModelState.Remove(nameof(Category.CategoryGroup));
+                ModelState.Remove(nameof(Category.Parent));
+                ModelState.Remove(nameof(Category.Children));
+                ModelState.Remove(nameof(Category.CreatedByUser));
+                ModelState.Remove(nameof(Category.UpdatedByUser));
+
+                // Normalize incoming values before business-rule validation.
+                NormalizeCategory(formModel);
+                await ApplyCategoryValidationAsync(formModel, formModel.Id);
+
+                // Return the form with dropdowns restored when validation fails.
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Edit CategoryId {Id} failed validation", id);
+                    await PopulateDropdowns(formModel.CategoryGroupId, formModel.ParentId, excludeCategoryId: formModel.Id);
+                    return View(formModel);
+                }
+
+                // Retrieve the existing active category record.
+                var existing = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
+
+                // Return not found when the target record no longer exists.
+                if (existing == null)
+                {
+                    _logger.LogWarning("Category {Id} not found during edit save", id);
+                    return NotFound();
+                }
+
+                // Copy validated form values into the tracked entity.
+                existing.CategoryGroupId = formModel.CategoryGroupId;
+                existing.ParentId = formModel.ParentId;
+                existing.Name = formModel.Name;
+                existing.IsActive = formModel.IsActive;
+                existing.UpdatedAt = DateTime.UtcNow;
+                existing.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Category {Id} updated successfully", id);
+                    return RedirectToAction(nameof(Index));
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error updating CategoryId {Id}", id);
+
+                    ModelState.AddModelError("", "Unable to save changes. The category name may already exist in that category group.");
+                    await PopulateDropdowns(formModel.CategoryGroupId, formModel.ParentId, excludeCategoryId: formModel.Id);
+                    return View(formModel);
+                }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating CategoryId {Id}", id);
+                _logger.LogError(ex, "Unexpected error editing CategoryId {Id}", id);
 
-                ModelState.AddModelError("", "Unable to save changes. The category name may already exist in that category group.");
+                ModelState.AddModelError("", "An unexpected error occurred while updating the category.");
                 await PopulateDropdowns(formModel.CategoryGroupId, formModel.ParentId, excludeCategoryId: formModel.Id);
                 return View(formModel);
             }
@@ -259,30 +317,39 @@ namespace A_New_Hope.Controllers
         /// </summary>
         public async Task<IActionResult> Delete(ulong? id)
         {
-            // Reject requests with no id.
-            if (id == null)
+            try
             {
-                _logger.LogWarning("Delete requested with null id");
-                return NotFound();
+                // Reject requests with no id.
+                if (id == null)
+                {
+                    _logger.LogWarning("Delete requested with null id");
+                    return NotFound();
+                }
+
+                // Retrieve the requested active category with related category group and parent data.
+                var category = await _context.Categories
+                    .Where(c => c.DeletedAt == null)
+                    .Include(c => c.CategoryGroup)
+                    .Include(c => c.Parent)
+                    .FirstOrDefaultAsync(m => m.Id == id);
+
+                // Return not found when the category does not exist.
+                if (category == null)
+                {
+                    _logger.LogWarning("Category {Id} not found for delete", id);
+                    return NotFound();
+                }
+
+                _logger.LogWarning("Loading Delete confirmation for CategoryId {Id}", id);
+
+                return View(category);
             }
-
-            // Retrieve the requested active category with related category group and parent data.
-            var category = await _context.Categories
-                .Where(c => c.DeletedAt == null)
-                .Include(c => c.CategoryGroup)
-                .Include(c => c.Parent)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            // Return not found when the category does not exist.
-            if (category == null)
+            catch (Exception ex)
             {
-                _logger.LogWarning("Category {Id} not found for delete", id);
-                return NotFound();
+                _logger.LogError(ex, "Error loading delete page for CategoryId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while loading the delete page.";
+                return RedirectToAction(nameof(Index));
             }
-
-            _logger.LogWarning("Loading Delete confirmation for CategoryId {Id}", id);
-
-            return View(category);
         }
 
         // POST: Categories/Delete/5
@@ -293,39 +360,48 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(ulong id)
         {
-            _logger.LogWarning("Soft deleting CategoryId {Id}", id);
-
-            // Retrieve the active category targeted for soft delete.
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
-
-            // Return not found when the category does not exist.
-            if (category == null)
-            {
-                _logger.LogWarning("Category {Id} not found during delete", id);
-                return NotFound();
-            }
-
-            // Apply soft-delete and audit values.
-            category.DeletedAt = DateTime.UtcNow;
-            category.UpdatedAt = DateTime.UtcNow;
-            category.UpdatedByUserId = null;
-
             try
             {
-                await _context.SaveChangesAsync();
+                _logger.LogWarning("Soft deleting CategoryId {Id}", id);
 
-                _logger.LogInformation("Category {Id} soft deleted", id);
+                // Retrieve the active category targeted for soft delete.
+                var category = await _context.Categories
+                    .FirstOrDefaultAsync(c => c.Id == id && c.DeletedAt == null);
+
+                // Return not found when the category does not exist.
+                if (category == null)
+                {
+                    _logger.LogWarning("Category {Id} not found during delete", id);
+                    return NotFound();
+                }
+
+                // Apply soft-delete and audit values.
+                category.DeletedAt = DateTime.UtcNow;
+                category.UpdatedAt = DateTime.UtcNow;
+                category.UpdatedByUserId = null;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Category {Id} soft deleted", id);
+                }
+                catch (DbUpdateException ex)
+                {
+                    _logger.LogError(ex, "Error soft deleting CategoryId {Id}", id);
+
+                    TempData["ErrorMessage"] = "Unable to delete category.";
+                    return RedirectToAction(nameof(Delete), new { id });
+                }
+
+                return RedirectToAction(nameof(Index));
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error soft deleting CategoryId {Id}", id);
-
-                TempData["ErrorMessage"] = "Unable to delete category.";
+                _logger.LogError(ex, "Unexpected error deleting CategoryId {Id}", id);
+                TempData["ErrorMessage"] = "An unexpected error occurred while deleting the category.";
                 return RedirectToAction(nameof(Delete), new { id });
             }
-
-            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
