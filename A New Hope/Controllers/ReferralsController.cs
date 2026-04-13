@@ -3,11 +3,12 @@ using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
 using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Services.Interfaces;
+using A_New_Hope.Utilities;
+using A_New_Hope.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
-using A_New_Hope.Services.Interfaces;
 
 namespace A_New_Hope.Controllers
 {
@@ -25,16 +26,6 @@ namespace A_New_Hope.Controllers
 
         private const string ReferralWizardSessionKey = "ReferralWizard.Step1";
         private const string ReferralEntrySessionKey = "ReferralEntry.Draft";
-
-        // Store the allowed 2-letter US state codes for validation.
-        private static readonly HashSet<string> ValidUsStateCodes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA",
-            "HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-            "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-            "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-            "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC"
-        };
 
         /// <summary>
         /// Creates the controller with the required database context and logger.
@@ -1406,18 +1397,17 @@ namespace A_New_Hope.Controllers
             vm.NewOrganization ??= new ReferringOrganizationEntryInput();
             vm.NewOrganization.SelectedServiceCategoryIds ??= new List<ulong>();
 
-            vm.NewOrganization.Name = NullIfWhiteSpace(vm.NewOrganization.Name);
-            vm.NewOrganization.PrimaryContactName = NullIfWhiteSpace(vm.NewOrganization.PrimaryContactName);
-            vm.NewOrganization.Email = NullIfWhiteSpace(vm.NewOrganization.Email);
-            vm.NewOrganization.PhoneNumber = NullIfWhiteSpace(vm.NewOrganization.PhoneNumber);
-            vm.NewOrganization.AddressLine1 = NullIfWhiteSpace(vm.NewOrganization.AddressLine1);
-            vm.NewOrganization.AddressLine2 = NullIfWhiteSpace(vm.NewOrganization.AddressLine2);
-            vm.NewOrganization.City = NullIfWhiteSpace(vm.NewOrganization.City);
-            vm.NewOrganization.State = NullIfWhiteSpace(vm.NewOrganization.State)?.ToUpperInvariant();
-            vm.NewOrganization.PostalCode = NullIfWhiteSpace(vm.NewOrganization.PostalCode);
-            vm.NewOrganization.Notes = NullIfWhiteSpace(vm.NewOrganization.Notes);
+            vm.NewOrganization.Name = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.Name);
+            vm.NewOrganization.PrimaryContactName = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.PrimaryContactName);
+            vm.NewOrganization.Email = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.Email);
+            vm.NewOrganization.PhoneNumber = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.PhoneNumber);
+            vm.NewOrganization.AddressLine1 = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.AddressLine1);
+            vm.NewOrganization.AddressLine2 = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.AddressLine2);
+            vm.NewOrganization.City = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.City);
+            vm.NewOrganization.State = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.State)?.ToUpperInvariant();
+            vm.NewOrganization.PostalCode = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.PostalCode);
+            vm.NewOrganization.Notes = InputNormalization.NullIfWhiteSpace(vm.NewOrganization.Notes);
         }
-
         /// <summary>
         /// Applies business-rule validation for the organization step.
         /// </summary>
@@ -1457,7 +1447,7 @@ namespace A_New_Hope.Controllers
             }
             else
             {
-                if (!ContainsLetterOrDigit(vm.NewOrganization.Name))
+                if (!AddressValidation.ContainsLetterOrDigit(vm.NewOrganization.Name))
                 {
                     ModelState.AddModelError("NewOrganization.Name", "Organization name must contain letters or numbers.");
                 }
@@ -1496,49 +1486,49 @@ namespace A_New_Hope.Controllers
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.PrimaryContactName) &&
-                !IsValidPersonName(vm.NewOrganization.PrimaryContactName))
+                !PersonValidation.IsValidPersonName(vm.NewOrganization.PrimaryContactName))
             {
                 ModelState.AddModelError("NewOrganization.PrimaryContactName", "Contact person name contains invalid characters.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.PhoneNumber) &&
-                !IsValidPhoneNumber(vm.NewOrganization.PhoneNumber))
+                !ContactValidation.IsValidPhoneNumber(vm.NewOrganization.PhoneNumber))
             {
                 ModelState.AddModelError("NewOrganization.PhoneNumber", "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.Email) &&
-                !IsValidEmail(vm.NewOrganization.Email))
+                !ContactValidation.IsValidEmail(vm.NewOrganization.Email))
             {
                 ModelState.AddModelError("NewOrganization.Email", "Email format is invalid.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.AddressLine1) &&
-                !ContainsLetterOrDigit(vm.NewOrganization.AddressLine1))
+                !AddressValidation.ContainsLetterOrDigit(vm.NewOrganization.AddressLine1))
             {
                 ModelState.AddModelError("NewOrganization.AddressLine1", "Address Line 1 must contain letters or numbers.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.AddressLine2) &&
-                !ContainsLetterOrDigit(vm.NewOrganization.AddressLine2))
+                !AddressValidation.ContainsLetterOrDigit(vm.NewOrganization.AddressLine2))
             {
                 ModelState.AddModelError("NewOrganization.AddressLine2", "Address Line 2 must contain letters or numbers.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.City) &&
-                !IsValidCity(vm.NewOrganization.City))
+                !AddressValidation.IsValidCity(vm.NewOrganization.City))
             {
                 ModelState.AddModelError("NewOrganization.City", "City contains invalid characters.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.State) &&
-                !IsValidUsStateCode(vm.NewOrganization.State))
+                !AddressValidation.IsValidUsStateCode(vm.NewOrganization.State))
             {
                 ModelState.AddModelError("NewOrganization.State", "Enter a valid 2-letter US state code.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewOrganization.PostalCode) &&
-                !IsValidUsPostalCode(vm.NewOrganization.PostalCode))
+                !AddressValidation.IsValidUsPostalCode(vm.NewOrganization.PostalCode))
             {
                 ModelState.AddModelError("NewOrganization.PostalCode", "Enter a valid US ZIP code or ZIP+4.");
             }
@@ -1557,21 +1547,21 @@ namespace A_New_Hope.Controllers
         {
             vm.NewClient ??= new ClientEntryInput();
 
-            vm.NewClient.FirstName = NullIfWhiteSpace(vm.NewClient.FirstName);
-            vm.NewClient.LastName = NullIfWhiteSpace(vm.NewClient.LastName);
-            vm.NewClient.Email = NullIfWhiteSpace(vm.NewClient.Email);
-            vm.NewClient.PhoneNumber = NullIfWhiteSpace(vm.NewClient.PhoneNumber);
-            vm.NewClient.AddressLine1 = NullIfWhiteSpace(vm.NewClient.AddressLine1);
-            vm.NewClient.AddressLine2 = NullIfWhiteSpace(vm.NewClient.AddressLine2);
-            vm.NewClient.City = NullIfWhiteSpace(vm.NewClient.City);
-            vm.NewClient.State = NullIfWhiteSpace(vm.NewClient.State)?.ToUpperInvariant();
-            vm.NewClient.PostalCode = NullIfWhiteSpace(vm.NewClient.PostalCode);
+            vm.NewClient.FirstName = InputNormalization.NullIfWhiteSpace(vm.NewClient.FirstName);
+            vm.NewClient.LastName = InputNormalization.NullIfWhiteSpace(vm.NewClient.LastName);
+            vm.NewClient.Email = InputNormalization.NullIfWhiteSpace(vm.NewClient.Email);
+            vm.NewClient.PhoneNumber = InputNormalization.NullIfWhiteSpace(vm.NewClient.PhoneNumber);
+            vm.NewClient.AddressLine1 = InputNormalization.NullIfWhiteSpace(vm.NewClient.AddressLine1);
+            vm.NewClient.AddressLine2 = InputNormalization.NullIfWhiteSpace(vm.NewClient.AddressLine2);
+            vm.NewClient.City = InputNormalization.NullIfWhiteSpace(vm.NewClient.City);
+            vm.NewClient.State = InputNormalization.NullIfWhiteSpace(vm.NewClient.State)?.ToUpperInvariant();
+            vm.NewClient.PostalCode = InputNormalization.NullIfWhiteSpace(vm.NewClient.PostalCode);
 
             vm.NewClient.Incomes ??= new List<ClientIncomeEntryInput>();
 
             foreach (var income in vm.NewClient.Incomes)
             {
-                income.Notes = NullIfWhiteSpace(income.Notes);
+                income.Notes = InputNormalization.NullIfWhiteSpace(income.Notes);
             }
         }
 
@@ -1616,7 +1606,7 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError("NewClient.FirstName", "First name is required.");
             }
-            else if (!IsValidPersonName(vm.NewClient.FirstName))
+            else if (!PersonValidation.IsValidPersonName(vm.NewClient.FirstName))
             {
                 ModelState.AddModelError("NewClient.FirstName", "First name contains invalid characters.");
             }
@@ -1625,51 +1615,51 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError("NewClient.LastName", "Last name is required.");
             }
-            else if (!IsValidPersonName(vm.NewClient.LastName))
+            else if (!PersonValidation.IsValidPersonName(vm.NewClient.LastName))
             {
                 ModelState.AddModelError("NewClient.LastName", "Last name contains invalid characters.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.Email))
             {
-                if (!IsValidEmail(vm.NewClient.Email))
+                if (!ContactValidation.IsValidEmail(vm.NewClient.Email))
                 {
                     ModelState.AddModelError("NewClient.Email", "Email format is invalid.");
                 }
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.PhoneNumber) &&
-                !IsValidPhoneNumber(vm.NewClient.PhoneNumber))
+                !ContactValidation.IsValidPhoneNumber(vm.NewClient.PhoneNumber))
             {
                 ModelState.AddModelError("NewClient.PhoneNumber", "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.AddressLine1) &&
-                !ContainsLetterOrDigit(vm.NewClient.AddressLine1))
+                !AddressValidation.ContainsLetterOrDigit(vm.NewClient.AddressLine1))
             {
                 ModelState.AddModelError("NewClient.AddressLine1", "Address Line 1 must contain letters or numbers.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.AddressLine2) &&
-                !ContainsLetterOrDigit(vm.NewClient.AddressLine2))
+                !AddressValidation.ContainsLetterOrDigit(vm.NewClient.AddressLine2))
             {
                 ModelState.AddModelError("NewClient.AddressLine2", "Address Line 2 must contain letters or numbers.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.City) &&
-                !IsValidCity(vm.NewClient.City))
+                !AddressValidation.IsValidCity(vm.NewClient.City))
             {
                 ModelState.AddModelError("NewClient.City", "City contains invalid characters.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.State) &&
-                !IsValidUsStateCode(vm.NewClient.State))
+                !AddressValidation.IsValidUsStateCode(vm.NewClient.State))
             {
                 ModelState.AddModelError("NewClient.State", "Enter a valid 2-letter US state code.");
             }
 
             if (!string.IsNullOrWhiteSpace(vm.NewClient.PostalCode) &&
-                !IsValidUsPostalCode(vm.NewClient.PostalCode))
+                !AddressValidation.IsValidUsPostalCode(vm.NewClient.PostalCode))
             {
                 ModelState.AddModelError("NewClient.PostalCode", "Enter a valid US ZIP code or ZIP+4.");
             }
@@ -1743,8 +1733,8 @@ namespace A_New_Hope.Controllers
 
             foreach (var member in vm.HouseholdMembers)
             {
-                member.FirstName = NullIfWhiteSpace(member.FirstName);
-                member.LastName = NullIfWhiteSpace(member.LastName);
+                member.FirstName = InputNormalization.NullIfWhiteSpace(member.FirstName);
+                member.LastName = InputNormalization.NullIfWhiteSpace(member.LastName);
             }
         }
 
@@ -1771,7 +1761,7 @@ namespace A_New_Hope.Controllers
                 {
                     ModelState.AddModelError($"HouseholdMembers[{i}].FirstName", "First name is required.");
                 }
-                else if (!IsValidPersonName(member.FirstName))
+                else if (!PersonValidation.IsValidPersonName(member.FirstName))
                 {
                     ModelState.AddModelError($"HouseholdMembers[{i}].FirstName", "First name contains invalid characters.");
                 }
@@ -1780,7 +1770,7 @@ namespace A_New_Hope.Controllers
                 {
                     ModelState.AddModelError($"HouseholdMembers[{i}].LastName", "Last name is required.");
                 }
-                else if (!IsValidPersonName(member.LastName))
+                else if (!PersonValidation.IsValidPersonName(member.LastName))
                 {
                     ModelState.AddModelError($"HouseholdMembers[{i}].LastName", "Last name contains invalid characters.");
                 }
@@ -1811,7 +1801,7 @@ namespace A_New_Hope.Controllers
         private void NormalizeReferralDetails(ReferralDetailsViewModel vm)
         {
             vm.Referral ??= new ReferralDetailsInput();
-            vm.Referral.Notes = NullIfWhiteSpace(vm.Referral.Notes);
+            vm.Referral.Notes = InputNormalization.NullIfWhiteSpace(vm.Referral.Notes);
         }
 
         /// <summary>
@@ -2002,7 +1992,7 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private static void NormalizeReferral(Referral model)
         {
-            model.Notes = NullIfWhiteSpace(model.Notes);
+            model.Notes = InputNormalization.NullIfWhiteSpace(model.Notes);
         }
 
         /// <summary>
@@ -2061,138 +2051,6 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(Referral.Notes), "Notes cannot exceed 2000 characters.");
             }
-        }
-
-        /// <summary>
-        /// Returns null when the value is blank; otherwise returns the trimmed value.
-        /// </summary>
-        private static string? NullIfWhiteSpace(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
-
-        /// <summary>
-        /// Returns true when the phone number matches the allowed US format rules.
-        /// </summary>
-        private static bool IsValidPhoneNumber(string phoneNumber)
-        {
-            if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
-            {
-                return false;
-            }
-
-            var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
-
-            if (digitsOnly.Length == 10)
-            {
-                return true;
-            }
-
-            if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Returns true when the value contains at least one letter or digit.
-        /// </summary>
-        private static bool ContainsLetterOrDigit(string value)
-        {
-            return value.Any(char.IsLetterOrDigit);
-        }
-
-        /// <summary>
-        /// Returns true when the city value matches the allowed character rules.
-        /// </summary>
-        private static bool IsValidCity(string city)
-        {
-            return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
-        }
-
-        /// <summary>
-        /// Returns true when the state value is a valid 2-letter US state code.
-        /// </summary>
-        private static bool IsValidUsStateCode(string state)
-        {
-            return state.Length == 2 && ValidUsStateCodes.Contains(state);
-        }
-
-        /// <summary>
-        /// Returns true when the postal code matches US ZIP or ZIP+4 format.
-        /// </summary>
-        private static bool IsValidUsPostalCode(string postalCode)
-        {
-            return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
-        }
-
-        /// <summary>
-        /// Returns true when the email matches the allowed format rules.
-        /// </summary>
-        private static bool IsValidEmail(string email)
-        {
-            if (email.Contains(' '))
-            {
-                return false;
-            }
-
-            if (email.Count(c => c == '@') != 1)
-            {
-                return false;
-            }
-
-            if (email.Contains(".."))
-            {
-                return false;
-            }
-
-            var parts = email.Split('@');
-            if (parts.Length != 2)
-            {
-                return false;
-            }
-
-            var localPart = parts[0];
-            var domainPart = parts[1];
-
-            if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
-            {
-                return false;
-            }
-
-            if (localPart.StartsWith('.') || localPart.EndsWith('.'))
-            {
-                return false;
-            }
-
-            if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
-            {
-                return false;
-            }
-
-            if (!domainPart.Contains('.'))
-            {
-                return false;
-            }
-
-            var domainLabels = domainPart.Split('.');
-            if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
-            {
-                return false;
-            }
-
-            return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
-                && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
-        }
-
-        /// <summary>
-        /// Returns true when the person name matches the allowed character rules.
-        /// </summary>
-        private static bool IsValidPersonName(string name)
-        {
-            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
     }
 }

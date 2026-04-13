@@ -3,13 +3,14 @@ using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
 using A_New_Hope.Models.ViewModels.Users;
+using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Services.Interfaces;
+using A_New_Hope.Utilities;
+using A_New_Hope.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
-using A_New_Hope.Models.ViewModels.Referrals;
-using A_New_Hope.Services.Interfaces;
 
 namespace A_New_Hope.Controllers
 {
@@ -668,13 +669,13 @@ namespace A_New_Hope.Controllers
             model.FirstName = model.FirstName?.Trim() ?? string.Empty;
             model.LastName = model.LastName?.Trim() ?? string.Empty;
 
-            model.Email = NullIfWhiteSpace(model.Email);
-            model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
-            model.AddressLine1 = NullIfWhiteSpace(model.AddressLine1);
-            model.AddressLine2 = NullIfWhiteSpace(model.AddressLine2);
-            model.City = NullIfWhiteSpace(model.City);
-            model.State = NullIfWhiteSpace(model.State)?.ToUpperInvariant();
-            model.PostalCode = NullIfWhiteSpace(model.PostalCode);
+            model.Email = InputNormalization.NullIfWhiteSpace(model.Email);
+            model.PhoneNumber = InputNormalization.NullIfWhiteSpace(model.PhoneNumber);
+            model.AddressLine1 = InputNormalization.NullIfWhiteSpace(model.AddressLine1);
+            model.AddressLine2 = InputNormalization.NullIfWhiteSpace(model.AddressLine2);
+            model.City = InputNormalization.NullIfWhiteSpace(model.City);
+            model.State = InputNormalization.NullIfWhiteSpace(model.State)?.ToUpperInvariant();
+            model.PostalCode = InputNormalization.NullIfWhiteSpace(model.PostalCode);
         }
 
         /// <summary>
@@ -682,12 +683,14 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyDomainUserValidationAsync(DomainUser model, ulong? currentId = null)
         {
-            if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
+            if (!string.IsNullOrWhiteSpace(model.Email) &&
+                !ContactValidation.IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(DomainUser.Email), "Email format is invalid.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber) &&
+                !ContactValidation.IsValidPhoneNumber(model.PhoneNumber))
             {
                 ModelState.AddModelError(nameof(DomainUser.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
@@ -696,7 +699,7 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First name is required.");
             }
-            else if (!IsValidPersonName(model.FirstName))
+            else if (!PersonValidation.IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First Name contains invalid characters.");
             }
@@ -705,12 +708,13 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last name is required.");
             }
-            else if (!IsValidPersonName(model.LastName))
+            else if (!PersonValidation.IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last Name contains invalid characters.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
+            if (!string.IsNullOrWhiteSpace(model.City) &&
+                !AddressValidation.IsValidCity(model.City))
             {
                 ModelState.AddModelError(nameof(DomainUser.City), "City contains invalid characters.");
             }
@@ -720,7 +724,8 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(DomainUser.State), "State must be WI.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
+            if (!string.IsNullOrWhiteSpace(model.PostalCode) &&
+                !AddressValidation.IsValidUsPostalCode(model.PostalCode))
             {
                 ModelState.AddModelError(nameof(DomainUser.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
             }
@@ -750,140 +755,6 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(DomainUser.UserType), "Select a valid user type.");
             }
-        }
-
-        /// <summary>
-        /// Returns null when the value is blank; otherwise returns the trimmed value.
-        /// </summary>
-        private static string? NullIfWhiteSpace(string? value)
-        {
-            // Convert blank strings to null after trimming.
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
-
-        /// <summary>
-        /// Validates a practical US-style phone number.
-        /// </summary>
-        private static bool IsValidPhoneNumber(string phoneNumber)
-        {
-            // Reject characters outside the allowed phone number pattern.
-            if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
-            {
-                return false;
-            }
-
-            // Strip formatting characters to validate digit count.
-            var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
-
-            // Accept standard 10-digit US phone numbers.
-            if (digitsOnly.Length == 10)
-            {
-                return true;
-            }
-
-            // Accept 11-digit US phone numbers only when starting with 1.
-            if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Validates a practical email format for this project.
-        /// </summary>
-        private static bool IsValidEmail(string email)
-        {
-            // Reject spaces in email addresses.
-            if (email.Contains(' '))
-            {
-                return false;
-            }
-
-            // Require exactly one @ symbol.
-            if (email.Count(c => c == '@') != 1)
-            {
-                return false;
-            }
-
-            // Reject consecutive periods.
-            if (email.Contains(".."))
-            {
-                return false;
-            }
-
-            // Split the email into local and domain parts.
-            var parts = email.Split('@');
-            if (parts.Length != 2)
-            {
-                return false;
-            }
-
-            var localPart = parts[0];
-            var domainPart = parts[1];
-
-            // Require non-empty local and domain parts.
-            if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
-            {
-                return false;
-            }
-
-            // Reject local parts starting or ending with a period.
-            if (localPart.StartsWith('.') || localPart.EndsWith('.'))
-            {
-                return false;
-            }
-
-            // Reject domain parts starting or ending with a period.
-            if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
-            {
-                return false;
-            }
-
-            // Require a dot in the domain portion.
-            if (!domainPart.Contains('.'))
-            {
-                return false;
-            }
-
-            // Reject empty domain labels.
-            var domainLabels = domainPart.Split('.');
-            if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
-            {
-                return false;
-            }
-
-            // Validate local and domain characters using project regex rules.
-            return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
-                && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
-        }
-
-        /// <summary>
-        /// Validates a person name using a practical character set.
-        /// </summary>
-        private static bool IsValidPersonName(string name)
-        {
-            // Allow letters plus common punctuation for personal names.
-            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
-        }
-
-        /// <summary>
-        /// Validates a city name using a practical character set.
-        /// </summary>
-        private static bool IsValidCity(string city)
-        {
-            // Allow letters plus common punctuation for city names.
-            return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
-        }
-
-        /// <summary>
-        /// Validates a US ZIP code or ZIP+4.
-        /// </summary>
-        private static bool IsValidUsPostalCode(string postalCode)
-        {
-            // Accept 5-digit ZIP codes and ZIP+4 values.
-            return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
 
         /// <summary>

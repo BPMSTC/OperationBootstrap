@@ -1,5 +1,6 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -503,7 +504,8 @@ namespace A_New_Hope.Controllers
             }
 
             // Require at least one letter or number in the inventory item name.
-            if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
+            if (!string.IsNullOrWhiteSpace(model.Name) &&
+                !AddressValidation.ContainsLetterOrDigit(model.Name))
             {
                 ModelState.AddModelError(nameof(InventoryItem.Name), "Inventory item name must contain letters or numbers.");
             }
@@ -525,15 +527,6 @@ namespace A_New_Hope.Controllers
                     ModelState.AddModelError(nameof(InventoryItem.Name), "An inventory item with this name already exists in the selected category.");
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns true when the value contains at least one letter or digit.
-        /// </summary>
-        private static bool ContainsLetterOrDigit(string value)
-        {
-            // Require at least one alphanumeric character in the value.
-            return value.Any(char.IsLetterOrDigit);
         }
     }
 }

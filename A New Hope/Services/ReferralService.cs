@@ -2,6 +2,7 @@
 using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Services.Interfaces;
+using A_New_Hope.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Services
@@ -95,7 +96,7 @@ namespace A_New_Hope.Services
 
         private static void Normalize(ReferralDetailsInput input)
         {
-            input.Notes = NullIfWhiteSpace(input.Notes);
+            input.Notes = InputNormalization.NullIfWhiteSpace(input.Notes);
         }
 
         private static void ValidateRequiredFields(ReferralDetailsInput input)
@@ -109,11 +110,6 @@ namespace A_New_Hope.Services
             {
                 throw new ArgumentException("Referral status is required.", nameof(input));
             }
-        }
-
-        private static string? NullIfWhiteSpace(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 }
