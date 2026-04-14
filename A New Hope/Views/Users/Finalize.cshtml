@@ -1,0 +1,175 @@
+﻿@model A_New_Hope.Models.DomainUser
+
+@{
+    var incomes = ViewBag.Incomes as List<UserIncomeInput>
+              ?? new List<UserIncomeInput>();
+
+    var members = ViewBag.HouseholdMembers as List<A_New_Hope.Models.HouseholdMember>
+                  ?? new List<A_New_Hope.Models.HouseholdMember>();
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-9 col-lg-10">
+
+            <div class="card wizard-card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <div class="mb-4">
+                        <h2 class="mb-1">Review User Setup</h2>
+                        <p class="text-muted mb-0">
+                            Review all entered information before finalizing.
+                        </p>
+                    </div>
+
+                    <!-- ================= USER INFO ================= -->
+                    <div class="card wizard-card shadow-sm border-0 mb-4">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">User Information</h5>
+                                <a asp-action="CreateWizard"
+                                       class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                    Edit
+                                </a>
+                            </div>
+
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">First Name</dt>
+                                <dd class="col-sm-8">@Model.FirstName</dd>
+
+                                <dt class="col-sm-4">Last Name</dt>
+                                <dd class="col-sm-8">@Model.LastName</dd>
+
+                                <dt class="col-sm-4">Email</dt>
+                                <dd class="col-sm-8">@Model.Email</dd>
+
+                                <dt class="col-sm-4">User Type</dt>
+                                <dd class="col-sm-8">@Model.UserType</dd>
+                            </dl>
+
+                        </div>
+                    </div>
+
+                    <!-- ================= HOUSEHOLD ================= -->
+                    <div class="card wizard-card shadow-sm border-0 mb-4">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">Household Members</h5>
+
+                                <a asp-action="HouseholdMembers"
+                                       class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                    Edit
+                                </a>
+                            </div>
+
+                            @if (members.Any())
+                            {
+                                for (int i = 0; i < members.Count; i++)
+                                {
+                                    var m = members[i];
+
+                                    <div class="border rounded p-3 mb-3">
+                                        <div class="mb-2 fw-semibold">
+                                            Household Member @(i + 1)
+                                        </div>
+
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4">First Name</dt>
+                                            <dd class="col-sm-8">@m.FirstName</dd>
+
+                                            <dt class="col-sm-4">Last Name</dt>
+                                            <dd class="col-sm-8">@m.LastName</dd>
+
+                                            <dt class="col-sm-4">Date of Birth</dt>
+                                            <dd class="col-sm-8">@m.DateOfBirth?.ToString("MM/dd/yyyy")</dd>
+
+                                            <dt class="col-sm-4">Age</dt>
+                                            <dd class="col-sm-8">@m.ApproximateAge</dd>
+                                        </dl>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0">
+                                    No household members were added.
+                                </p>
+                            }
+
+                        </div>
+                    </div>
+
+                    <!-- ================= INCOME ================= -->
+                    <div class="card wizard-card shadow-sm border-0 mb-4">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title mb-0">Income</h5>
+
+                                <a asp-action="CreateWizard"
+                                       class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                    Edit
+                                </a>
+                            </div>
+
+                            @if (incomes.Any())
+                            {
+                                foreach (var inc in incomes)
+                                {
+                                    <div class="border rounded p-3 mb-3">
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4">Income Type</dt>
+                                            <dd class="col-sm-8">@inc.IncomeType</dd>
+
+                                            <dt class="col-sm-4">Monthly Amount</dt>
+                                            <dd class="col-sm-8">
+                                                @((inc.MonthlyAmount ?? 0).ToString("C"))
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted mb-0">
+                                    No income information was added.
+                                </p>
+                            }
+
+                        </div>
+                    </div>
+
+                    <!-- ================= FINAL FORM ================= -->
+                    <form asp-action="FinalizeConfirm" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="d-flex justify-content-between pt-2">
+
+                            <a asp-action="HouseholdMembers"
+                                   class="btn btn-outline-secondary">
+                                Back
+                            </a>
+
+                            <button type="submit" class="btn btn-success">
+                                Finish Setup
+                            </button>
+
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@{
+    <text>
+        Household: @members.Count<br />
+        Income: @incomes.Count
+    </text>
+}

@@ -1,15 +1,18 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.Enums;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
+using A_New_Hope.Models.ViewModels.ClientViewModels;
+using A_New_Hope.Models.ViewModels.Referrals;
 using A_New_Hope.Models.ViewModels.Users;
+using A_New_Hope.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using System.Text.RegularExpressions;
-using A_New_Hope.Models.ViewModels.Referrals;
-using A_New_Hope.Services.Interfaces;
 
 namespace A_New_Hope.Controllers
 {
@@ -148,6 +151,38 @@ namespace A_New_Hope.Controllers
                 return View("Error");
             }
         }
+
+
+        private const string WizardDraftKey = "WizardDraft";
+
+        private void SaveDraft(DomainUser user, List<HouseholdMember> members)
+        {
+            var draft = new
+            {
+                User = user,
+                Household = members
+            };
+
+            HttpContext.Session.SetString(
+                WizardDraftKey,
+                System.Text.Json.JsonSerializer.Serialize(draft)
+            );
+        }
+
+        private (DomainUser user, List<HouseholdMember> household)? LoadDraft()
+        {
+            var json = HttpContext.Session.GetString(WizardDraftKey);
+
+            if (string.IsNullOrEmpty(json))
+                return null;
+
+            var draft = System.Text.Json.JsonSerializer.Deserialize<dynamic>(json);
+
+            return null; // (we’ll simplify below in controller usage)
+        }
+
+
+
 
         // GET: Users/Details/5
         /// <summary>
@@ -584,6 +619,313 @@ namespace A_New_Hope.Controllers
                 return RedirectToAction(nameof(Delete), new { id });
             }
         }
+
+
+
+        // =========================================================
+        // CREATE WIZARD
+        // =========================================================
+
+
+        public IActionResult CreateWizard()
+        {
+            var json = HttpContext.Session.GetString("WizardUser");
+            var extrasJson = HttpContext.Session.GetString("WizardUserExtras");
+
+            var vm = new UserWizardViewModel();
+
+            // ================= USER =================
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                vm.User = JsonSerializer.Deserialize<DomainUser>(json) ?? new DomainUser();
+            }
+
+            // ================= FULL RESTORE =================
+            if (!string.IsNullOrWhiteSpace(extrasJson))
+            {
+                vm = JsonSerializer.Deserialize<UserWizardViewModel>(extrasJson)
+                     ?? new UserWizardViewModel();
+            }
+
+            // ================= ENSURE AT LEAST ONE INCOME ROW =================
+            if (vm.Incomes == null || vm.Incomes.Count == 0)
+            {
+                vm.Incomes = new List<UserIncomeInput>
+        {
+            new UserIncomeInput()
+        };
+            }
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult CreateWizard(UserWizardViewModel vm)
+        {
+            try
+            {
+                ModelState.Remove(nameof(DomainUser.CreatedByUser));
+                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+                ModelState.Remove(nameof(DomainUser.ClientProfile));
+
+                NormalizeDomainUser(vm.User);
+                ApplyDomainUserValidationAsync(vm.User).Wait();
+
+                if (!User.IsInRole("Admin"))
+                {
+                    vm.User.UserType = UserType.Client;
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return View(vm);
+                }
+                //_logger.LogInformation("Income count on POST: {Count}", vm.Incomes?.Count);
+                HttpContext.Session.SetString(
+                    "WizardUser",
+                    JsonSerializer.Serialize(vm.User)
+
+                );
+                //_logger.LogInformation("Income count on POST: {Count}", vm.Incomes?.Count);
+                HttpContext.Session.SetString(
+                    "WizardUserExtras",
+                    JsonSerializer.Serialize(vm)
+                );
+                //_logger.LogInformation("Income count on POST: {Count}", vm.Incomes?.Count);
+                return RedirectToAction(nameof(HouseholdMembers));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateWizard failed");
+                ModelState.AddModelError("", "Error creating user draft.");
+                return View(vm);
+            }
+        }
+
+        // =========================================================
+        // HOUSEHOLD MEMBERS (NO VIEWMODEL VERSION - WORKING)
+        // =========================================================
+
+        public IActionResult HouseholdMembers()
+        {
+            var userJson = HttpContext.Session.GetString("WizardUser");
+
+            if (string.IsNullOrEmpty(userJson))
+                return RedirectToAction(nameof(CreateWizard));
+
+            var model = JsonSerializer.Deserialize<DomainUser>(userJson);
+
+            var householdJson = HttpContext.Session.GetString("WizardHousehold");
+
+            var members = string.IsNullOrWhiteSpace(householdJson)
+                ? new List<HouseholdMember>()
+                : JsonSerializer.Deserialize<List<HouseholdMember>>(householdJson) ?? new List<HouseholdMember>();
+
+            // If empty, show one blank row
+            if (members.Count == 0)
+                members.Add(new HouseholdMember());
+
+            ViewBag.HouseholdMembers = members;
+
+            // ================= AUTO SET YES/NO =================
+            ViewBag.HasHouseholdMembers =
+                members.Any(m =>
+                    !string.IsNullOrWhiteSpace(m.FirstName) ||
+                    !string.IsNullOrWhiteSpace(m.LastName) ||
+                    m.DateOfBirth != null ||
+                    m.ApproximateAge != null
+                )
+                ? "Yes"
+                : "No";
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult HouseholdMembers(string HasHouseholdMembers, IFormCollection form)
+        {
+            var userJson = HttpContext.Session.GetString("WizardUser");
+
+            if (string.IsNullOrEmpty(userJson))
+                return RedirectToAction(nameof(CreateWizard));
+
+            // ================= HANDLE "NO HOUSEHOLD" =================
+            if (HasHouseholdMembers == "No")
+            {
+                HttpContext.Session.Remove("WizardHousehold");
+                HttpContext.Session.SetString("HasHouseholdMembers", "No");
+                return RedirectToAction(nameof(Finalize));
+            }
+
+            var members = new List<HouseholdMember>();
+            int index = 0;
+
+            while (true)
+            {
+                var key = $"HouseholdMembers[{index}].FirstName";
+
+                if (!form.ContainsKey(key))
+                    break;
+
+                var firstName = form[key];
+
+                if (string.IsNullOrWhiteSpace(firstName))
+                {
+                    index++;
+                    continue;
+                }
+
+                members.Add(new HouseholdMember
+                {
+                    FirstName = firstName,
+                    LastName = form[$"HouseholdMembers[{index}].LastName"],
+                    DateOfBirth = DateTime.TryParse(form[$"HouseholdMembers[{index}].DateOfBirth"], out var dob) ? dob : null,
+                    ApproximateAge = int.TryParse(form[$"HouseholdMembers[{index}].ApproximateAge"], out var age) ? age : null
+                });
+
+                index++;
+            }
+
+            // ALWAYS persist (this is the key fix)
+            HttpContext.Session.SetString(
+                "WizardHousehold",
+                JsonSerializer.Serialize(members)
+            );
+
+            HttpContext.Session.SetString("HasHouseholdMembers", "Yes");
+
+            return RedirectToAction(nameof(Finalize));
+        }
+
+
+        // =========================================================
+        // FINALIZE (REVIEW PAGE)
+        // =========================================================
+
+        public IActionResult Finalize()
+        {
+            // ================= LOAD WIZARD STATE =================
+            var stateJson = HttpContext.Session.GetString("WizardUserExtras");
+
+            if (string.IsNullOrWhiteSpace(stateJson))
+                return RedirectToAction(nameof(CreateWizard));
+
+            var vm = JsonSerializer.Deserialize<UserWizardViewModel>(stateJson)
+                     ?? new UserWizardViewModel();
+
+            // ================= USER FALLBACK =================
+            var userJson = HttpContext.Session.GetString("WizardUser");
+
+            if (!string.IsNullOrWhiteSpace(userJson))
+            {
+                vm.User = JsonSerializer.Deserialize<DomainUser>(userJson)
+                          ?? vm.User;
+            }
+
+            vm.User ??= new DomainUser();
+
+            // ================= HOUSEHOLD =================
+            var householdJson = HttpContext.Session.GetString("WizardHousehold");
+
+            ViewBag.HouseholdMembers =
+                string.IsNullOrWhiteSpace(householdJson)
+                    ? new List<HouseholdMember>()
+                    : JsonSerializer.Deserialize<List<HouseholdMember>>(householdJson)
+                      ?? new List<HouseholdMember>();
+
+            // ================= INCOME =================
+            var incomes = vm.Incomes ?? new List<UserIncomeInput>();
+
+            _logger.LogInformation("Income count loaded in Finalize: {Count}", incomes.Count);
+
+            ViewBag.Incomes = incomes;
+
+            return View(vm.User);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FinalizeConfirm()
+        {
+            try
+            {
+                var userJson = HttpContext.Session.GetString("WizardUser");
+
+                if (string.IsNullOrWhiteSpace(userJson))
+                    return RedirectToAction(nameof(CreateWizard));
+
+                var user = JsonSerializer.Deserialize<DomainUser>(userJson);
+
+                if (user == null)
+                    return RedirectToAction(nameof(CreateWizard));
+
+                var householdJson = HttpContext.Session.GetString("WizardHousehold");
+
+                var household = string.IsNullOrWhiteSpace(householdJson)
+                    ? new List<HouseholdMember>()
+                    : JsonSerializer.Deserialize<List<HouseholdMember>>(householdJson)
+                      ?? new List<HouseholdMember>();
+
+                // OPTIONAL: income restore (NO DB mapping yet)
+                var extrasJson = HttpContext.Session.GetString("WizardUserExtras");
+                List<UserIncomeInput> incomes = new();
+
+                if (!string.IsNullOrWhiteSpace(extrasJson))
+                {
+                    using var doc = JsonDocument.Parse(extrasJson);
+
+                    if (doc.RootElement.TryGetProperty("Incomes", out var inc))
+                    {
+                        incomes = JsonSerializer.Deserialize<List<UserIncomeInput>>(inc.GetRawText())
+                                  ?? new List<UserIncomeInput>();
+                    }
+                }
+
+                // ================= USER SETUP =================
+                user.CreatedAt = DateTime.UtcNow;
+                user.UpdatedAt = DateTime.UtcNow;
+                user.IsActive = true;
+                user.Id = 0;
+
+                _context.DomainUsers.Add(user);
+                await _context.SaveChangesAsync();
+
+                // ================= HOUSEHOLD =================
+                foreach (var h in household)
+                {
+                    h.ClientUserId = user.Id;
+                    h.Id = 0;
+                }
+
+                if (household.Count > 0)
+                    _context.HouseholdMembers.AddRange(household);
+
+                await _context.SaveChangesAsync();
+
+                // ================= CLEANUP =================
+                HttpContext.Session.Remove("WizardUser");
+                HttpContext.Session.Remove("WizardHousehold");
+                HttpContext.Session.Remove("WizardUserExtras");
+                HttpContext.Session.Remove("HasHouseholdMembers");
+
+                return RedirectToAction(nameof(Details), new { id = user.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FinalizeConfirm failed");
+
+                TempData["ErrorMessage"] =
+                    "An unexpected error occurred while saving the user. Please try again.";
+
+                return RedirectToAction(nameof(CreateWizard));
+            }
+        }
+
+
+
+
 
         /// <summary>
         /// Keeps a linked Identity account in sync with the domain user's role and active status.

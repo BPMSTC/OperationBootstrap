@@ -1,0 +1,326 @@
+﻿@model A_New_Hope.Models.ViewModels.ClientViewModels.UserWizardViewModel
+@using A_New_Hope.Models.Enums
+
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card wizard-card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <!-- HEADER -->
+                    <div class="mb-4">
+                        <h2 class="mb-1">Create User</h2>
+                        <p class="text-muted mb-0">
+                            Enter user details and select user type.
+                        </p>
+                    </div>
+
+                    <form asp-action="CreateWizard" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- ================= USER TYPE ================= -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+
+                                <h5 class="card-title mb-3">User Type</h5>
+
+                                <select asp-for="User.UserType"
+                                        class="form-select"
+                                        asp-items="Html.GetEnumSelectList<UserType>()">
+                                    <option value="">-- Select User Type --</option>
+                                </select>
+
+                                <span asp-validation-for="User.UserType" class="text-danger"></span>
+
+                            </div>
+                        </div>
+
+                        <!-- ================= USER INFO ================= -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+
+                                <h5 class="card-title mb-3">User Information</h5>
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.FirstName" class="form-label"></label>
+                                        <input asp-for="User.FirstName" class="form-control" />
+                                        <span asp-validation-for="User.FirstName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.LastName" class="form-label"></label>
+                                        <input asp-for="User.LastName" class="form-control" />
+                                        <span asp-validation-for="User.LastName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.Email" class="form-label"></label>
+                                        <input asp-for="User.Email" class="form-control" />
+                                        <span asp-validation-for="User.Email" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.PhoneNumber" class="form-label"></label>
+                                        <input asp-for="User.PhoneNumber" class="form-control" />
+                                        <span asp-validation-for="User.PhoneNumber" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label asp-for="User.DateOfBirth" class="form-label"></label>
+                                        <input asp-for="User.DateOfBirth" type="date" class="form-control" />
+                                        <span asp-validation-for="User.DateOfBirth" class="text-danger"></span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ================= UNHOUSED ================= -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+
+                                <div class="form-check">
+                                    <input asp-for="IsUnhoused"
+                                           class="form-check-input"
+                                           id="isUnhousedToggle" />
+
+                                    <label class="form-check-label" for="isUnhousedToggle">
+                                        Unhoused
+                                    </label>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ================= ADDRESS ================= -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4" id="addressCard">
+                            <div class="card-body">
+
+                                <h5 class="card-title mb-3">Address</h5>
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-12">
+                                        <label asp-for="User.AddressLine1" class="form-label"></label>
+                                        <input asp-for="User.AddressLine1" class="form-control" />
+                                    </div>
+
+                                    <div class="col-md-12">
+                                        <label asp-for="User.AddressLine2" class="form-label"></label>
+                                        <input asp-for="User.AddressLine2" class="form-control" />
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <label asp-for="User.City" class="form-label"></label>
+                                        <input asp-for="User.City" class="form-control" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label asp-for="User.State" class="form-label"></label>
+                                        <input asp-for="User.State" class="form-control" maxlength="2" />
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label asp-for="User.PostalCode" class="form-label"></label>
+                                        <input asp-for="User.PostalCode" class="form-control" />
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- ================= INCOME ================= -->
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">Monthly Income</h5>
+                                <p class="text-muted mb-0">Add one or more income types.</p>
+                            </div>
+
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm rounded-pill"
+                                    id="addIncomeRowBtn">
+                                Add Income Type
+                            </button>
+                        </div>
+
+                        <div id="incomeRowsContainer">
+                            @for (int i = 0; i < (Model.Incomes?.Count ?? 0); i++)
+                            {
+                                <div class="border rounded p-3 mb-3 income-row">
+                                    <div class="row g-3 align-items-end">
+
+                                        <div class="col-md-6">
+                                            <label asp-for="Incomes[i].IncomeType" class="form-label"></label>
+                                            <select asp-for="Incomes[i].IncomeType"
+                                                    asp-items="Html.GetEnumSelectList<IncomeType>()"
+                                                    class="form-select">
+                                                <option value="">-- Select income type --</option>
+                                            </select>
+                                            <span asp-validation-for="Incomes[i].IncomeType" class="text-danger"></span>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label asp-for="Incomes[i].MonthlyAmount" class="form-label"></label>
+                                            <input asp-for="Incomes[i].MonthlyAmount"
+                                                   class="form-control"
+                                                   type="number"
+                                                   step="0.01"
+                                                   min="0" />
+                                            <span asp-validation-for="Incomes[i].MonthlyAmount" class="text-danger"></span>
+                                        </div>
+
+                                        <div class="col-md-2">
+                                            <button type="button"
+                                                    class="btn btn-outline-danger btn-sm w-100 remove-income-row">
+                                                Remove
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- TEMPLATE -->
+                        <template id="incomeRowTemplate">
+                            <div class="border rounded p-3 mb-3 income-row">
+                                <div class="row g-3 align-items-end">
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Income Type</label>
+                                        <select class="form-select income-type">
+                                            <option value="">-- Select income type --</option>
+                                            @foreach (var option in Html.GetEnumSelectList<IncomeType>())
+                                            {
+                                                <option value="@option.Value">@option.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label">Monthly Amount</label>
+                                        <input class="form-control income-amount"
+                                               type="number"
+                                               step="0.01"
+                                               min="0" />
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <button type="button"
+                                                class="btn btn-outline-danger btn-sm w-100 remove-income-row">
+                                            Remove
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- ================= FOOTER ================= -->
+                        <div class="d-flex justify-content-between pt-2">
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Next</button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        (function () {
+
+            const toggle = document.getElementById("isUnhousedToggle");
+            const addressCard = document.getElementById("addressCard");
+
+            function updateAddress() {
+                if (!toggle || !addressCard) return;
+
+                const inputs = addressCard.querySelectorAll("input");
+
+                if (toggle.checked) {
+                    addressCard.classList.add("d-none");
+                    inputs.forEach(i => i.disabled = true);
+                } else {
+                    addressCard.classList.remove("d-none");
+                    inputs.forEach(i => i.disabled = false);
+                }
+            }
+
+            if (toggle) {
+                toggle.addEventListener("change", updateAddress);
+            }
+
+            updateAddress();
+
+        })();
+
+                const incomeRowsContainer = document.getElementById("incomeRowsContainer");
+        const incomeTemplate = document.getElementById("incomeRowTemplate");
+        const addIncomeRowBtn = document.getElementById("addIncomeRowBtn");
+
+        function reindexIncomeRows() {
+            const rows = incomeRowsContainer.querySelectorAll(".income-row");
+
+            rows.forEach((row, index) => {
+
+                const type = row.querySelector("select");
+                const amount = row.querySelector("input");
+
+                if (type) {
+                    type.name = `Incomes[${index}].IncomeType`;
+                    type.id = `Incomes_${index}__IncomeType`;
+                }
+
+                if (amount) {
+                    amount.name = `Incomes[${index}].MonthlyAmount`;
+                    amount.id = `Incomes_${index}__MonthlyAmount`;
+                }
+            });
+        }
+
+        function addIncomeRow() {
+            const clone = incomeTemplate.content.cloneNode(true);
+            incomeRowsContainer.appendChild(clone);
+            reindexIncomeRows();
+        }
+
+        if (addIncomeRowBtn) {
+            addIncomeRowBtn.addEventListener("click", addIncomeRow);
+        }
+
+        incomeRowsContainer.addEventListener("click", function (e) {
+            const btn = e.target.closest(".remove-income-row");
+            if (!btn) return;
+
+            btn.closest(".income-row").remove();
+            reindexIncomeRows();
+        });
+
+                document.querySelector("form").addEventListener("submit", function () {
+            reindexIncomeRows();
+        });
+    </script>
+}

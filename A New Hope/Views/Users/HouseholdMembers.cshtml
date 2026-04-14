@@ -1,0 +1,250 @@
+﻿@model A_New_Hope.Models.DomainUser
+
+@{
+    ViewData["Title"] = "Household Members";
+
+    var members = ViewBag.HouseholdMembers as List<HouseholdMember> ?? new List<HouseholdMember>();
+
+    var hasHousehold = ViewBag.HasHouseholdMembers as string ?? "No";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card wizard-card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <div class="mb-4">
+                        <h2 class="mb-1">Household Members</h2>
+                        <p class="text-muted mb-0">
+                            Does this client have household members?
+                        </p>
+                    </div>
+
+                    <form asp-action="HouseholdMembers" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" name="id" value="@Model.Id" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- YES / NO TOGGLE -->
+                        <div class="mb-4">
+                            <div class="d-flex flex-wrap gap-2">
+
+                                <input type="radio"
+                                       class="btn-check"
+                                       id="householdYesOption"
+                                       name="HasHouseholdMembers"
+                                       value="Yes"
+                                @(hasHousehold == "Yes" ? "checked" : "") />
+
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="householdYesOption">
+                                    Yes
+                                </label>
+
+                                <input type="radio"
+                                       class="btn-check"
+                                       id="householdNoOption"
+                                       name="HasHouseholdMembers"
+                                       value="No"
+                                @(hasHousehold == "No" ? "checked" : "") />
+
+                                <label class="btn btn-outline-primary rounded-pill px-4"
+                                       for="householdNoOption">
+                                    No
+                                </label>
+
+                            </div>
+                        </div>
+
+                        <!-- HOUSEHOLD SECTION -->
+                        <div id="householdEntrySection" class="d-none">
+
+                            <div id="householdMembersContainer">
+
+                                @if (members.Any())
+                                {
+                                    for (int i = 0; i < members.Count; i++)
+                                    {
+                                        <div class="card wizard-card shadow-sm border-0 mb-4 household-member-card">
+                                            <div class="card-body">
+
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <h5 class="card-title mb-0">
+                                                        Household Member @(i + 1)
+                                                    </h5>
+
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-sm rounded-pill px-3 remove-household-member"
+                                                        @(i == 0 ? "style='display:none;'" : "")>
+                                                        Remove
+                                                    </button>
+                                                </div>
+
+                                                <div class="row g-3">
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">First Name</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="HouseholdMembers[@i].FirstName"
+                                                               value="@members[i].FirstName" />
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Last Name</label>
+                                                        <input type="text"
+                                                               class="form-control"
+                                                               name="HouseholdMembers[@i].LastName"
+                                                               value="@members[i].LastName" />
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Date of Birth</label>
+                                                        <input type="date"
+                                                               class="form-control"
+                                                               name="HouseholdMembers[@i].DateOfBirth"
+                                                               value="@(members[i].DateOfBirth?.ToString("yyyy-MM-dd"))" />
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Age</label>
+                                                        <input type="number"
+                                                               class="form-control"
+                                                               name="HouseholdMembers[@i].ApproximateAge"
+                                                               value="@members[i].ApproximateAge" />
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    }
+                                }
+
+                            </div>
+
+                            <div class="mb-4">
+                                <button type="button"
+                                        id="addHouseholdMemberBtn"
+                                        class="btn btn-outline-primary rounded-pill px-4">
+                                    Add Another Household Member
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <!-- NAV BUTTONS -->
+                        <div class="d-flex justify-content-between pt-2">
+                            <a asp-action="CreateWizard" class="btn btn-outline-secondary">Back</a>
+                            <button type="submit" class="btn btn-primary">Next</button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- TEMPLATE -->
+<template id="householdMemberTemplate">
+    <div class="card wizard-card shadow-sm border-0 mb-4 household-member-card">
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title mb-0">Household Member __INDEX__</h5>
+
+                <button type="button"
+                        class="btn btn-outline-danger btn-sm rounded-pill px-3 remove-household-member">
+                    Remove
+                </button>
+            </div>
+
+            <div class="row g-3">
+
+                <div class="col-md-6">
+                    <label class="form-label">First Name</label>
+                    <input type="text" class="form-control" name="HouseholdMembers[__INDEX__].FirstName" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" class="form-control" name="HouseholdMembers[__INDEX__].LastName" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" name="HouseholdMembers[__INDEX__].DateOfBirth" />
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Age</label>
+                    <input type="number" class="form-control" name="HouseholdMembers[__INDEX__].ApproximateAge" />
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        (function () {
+
+            const container = document.getElementById("householdMembersContainer");
+            const addBtn = document.getElementById("addHouseholdMemberBtn");
+            const template = document.getElementById("householdMemberTemplate");
+
+            const section = document.getElementById("householdEntrySection");
+            const yes = document.getElementById("householdYesOption");
+            const no = document.getElementById("householdNoOption");
+
+            function show() {
+                section.classList.remove("d-none");
+            }
+
+            function hide() {
+                section.classList.add("d-none");
+            }
+
+            function updateInitialState() {
+                if (yes && yes.checked) {
+                    show();
+                } else {
+                    hide();
+                }
+            }
+
+            if (yes) yes.addEventListener("change", () => yes.checked && show());
+            if (no) no.addEventListener("change", () => hide());
+
+            updateInitialState();
+
+            if (addBtn) {
+                addBtn.addEventListener("click", function () {
+
+                    const index = container.querySelectorAll(".household-member-card").length;
+
+                    const html = template.innerHTML.replaceAll("__INDEX__", index);
+
+                    const wrapper = document.createElement("div");
+                    wrapper.innerHTML = html.trim();
+
+                    container.appendChild(wrapper.firstElementChild);
+                });
+            }
+
+        })();
+    </script>
+}
