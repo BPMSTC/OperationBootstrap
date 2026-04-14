@@ -152,9 +152,13 @@
                                 Back
                             </a>
 
-                            <button type="submit" class="btn btn-success">
-                                Finish Setup
-                            </button>
+                            <div class="d-flex justify-content-between pt-2">
+                                <a asp-action="PreviousStep" class="btn btn-outline-secondary">Back</a>
+
+                                <button type="submit" class="btn btn-primary">
+                                    Confirm User
+                                </button>
+                            </div>
 
                         </div>
                     </form>
@@ -167,9 +171,12 @@
 </div>
 
 
-@{
+@* @{
     <text>
         Household: @members.Count<br />
         Income: @incomes.Count
     </text>
-}
+} *@   
+
+
+                                @* testing *@

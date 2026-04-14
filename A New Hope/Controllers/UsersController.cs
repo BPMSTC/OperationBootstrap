@@ -658,19 +658,36 @@ namespace A_New_Hope.Controllers
 
             return View(vm);
         }
-
+        //this was so painful to make work
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult CreateWizard(UserWizardViewModel vm)
+        public async Task<IActionResult> CreateWizard(UserWizardViewModel vm)
         {
             try
             {
+                // Remove validation for fields not used in this step
                 ModelState.Remove(nameof(DomainUser.CreatedByUser));
                 ModelState.Remove(nameof(DomainUser.UpdatedByUser));
                 ModelState.Remove(nameof(DomainUser.ClientProfile));
 
+                // 🔴 CRITICAL FIX: remove ALL income validation for this step
+                foreach (var key in ModelState.Keys
+                    .Where(k => k.StartsWith("Incomes"))
+                    .ToList())
+                {
+                    ModelState.Remove(key);
+                }
+
+                foreach (var kvp in ModelState)
+                {
+                    foreach (var error in kvp.Value.Errors)
+                    {
+                        Console.WriteLine($"{kvp.Key}: {error.ErrorMessage}");
+                    }
+                }
+
                 NormalizeDomainUser(vm.User);
-                ApplyDomainUserValidationAsync(vm.User).Wait();
+                await ApplyDomainUserValidationAsync(vm.User);
 
                 if (!User.IsInRole("Admin"))
                 {
@@ -681,20 +698,22 @@ namespace A_New_Hope.Controllers
                 {
                     return View(vm);
                 }
-                //_logger.LogInformation("Income count on POST: {Count}", vm.Incomes?.Count);
+
+                // Save user
                 HttpContext.Session.SetString(
                     "WizardUser",
                     JsonSerializer.Serialize(vm.User)
-
                 );
-                //_logger.LogInformation("Income count on POST: {Count}", vm.Incomes?.Count);
+
+                // Save entire wizard state
                 HttpContext.Session.SetString(
                     "WizardUserExtras",
                     JsonSerializer.Serialize(vm)
                 );
-                //_logger.LogInformation("Income count on POST: {Count}", vm.Incomes?.Count);
+
                 return RedirectToAction(nameof(HouseholdMembers));
             }
+
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateWizard failed");
@@ -704,7 +723,7 @@ namespace A_New_Hope.Controllers
         }
 
         // =========================================================
-        // HOUSEHOLD MEMBERS (NO VIEWMODEL VERSION - WORKING)
+        // HOUSEHOLD MEMBERS 
         // =========================================================
 
         public IActionResult HouseholdMembers()
