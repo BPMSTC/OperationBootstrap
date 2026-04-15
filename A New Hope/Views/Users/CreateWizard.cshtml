@@ -31,10 +31,20 @@
 
                                 <h5 class="card-title mb-3">User Type</h5>
 
-                                <select asp-for="User.UserType"
-                                        class="form-select"
-                                        asp-items="Html.GetEnumSelectList<UserType>()">
-                                    <option value="">-- Select User Type --</option>
+                                <select asp-for="User.UserType" class="form-select">
+
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <option value="">-- Select User Type --</option>
+                                        <option value="Client">Client</option>
+                                        <option value="Staff">Staff</option>
+                                        <option value="Admin">Admin</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="Client" selected>Client</option>
+                                    }
+
                                 </select>
 
                                 <span asp-validation-for="User.UserType" class="text-danger"></span>
