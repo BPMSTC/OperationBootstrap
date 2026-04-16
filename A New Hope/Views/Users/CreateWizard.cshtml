@@ -150,6 +150,33 @@
                             </div>
                         </div>
 
+                        <div class="col-md-4">
+                            <label asp-for="EmploymentStatus" class="form-label"></label>
+                            <select asp-for="EmploymentStatus"
+                                    asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
+                                    class="form-select new-client-field">
+                                <option value="">-- Select employment status --</option>
+                            </select>
+                            <span asp-validation-for="EmploymentStatus" class="text-danger"></span>
+                        </div>
+
+                        @* <hr class="my-4" /> *@
+
+                        @* <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">Monthly Income</h5>
+                                <p class="text-muted mb-0">Add one or more income types.</p>
+                            </div>
+
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm rounded-pill"
+                                    id="addIncomeRowBtn">
+                                Add Income Type
+                            </button>
+                        </div> *@
+
+                        
+
                         <!-- ================= INCOME ================= -->
                         <hr class="my-4" />
 

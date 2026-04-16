@@ -32,8 +32,6 @@
                 <th>Referring Organization</th>
                 <th>@Html.DisplayNameFor(model => model.ReferredOn)</th>
                 <th>@Html.DisplayNameFor(model => model.Status)</th>
-                <th>@Html.DisplayNameFor(model => model.ValidTo)</th>
-                <th>@Html.DisplayNameFor(model => model.UpdatedAt)</th>
                 <th class="text-end text-nowrap">Actions</th>
             </tr>
         </thead>
@@ -56,9 +54,11 @@
                             @(item.ReferringOrganization != null ? item.ReferringOrganization.Name : "")
                         </td>
 
+                        <td>@item.ValidTo</td>
+
                         <td>@item.Status</td>
 
-                        <td>@item.ValidTo</td>
+                        
 
                         <td class="text-end text-nowrap">
                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
