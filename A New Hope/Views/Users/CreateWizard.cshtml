@@ -12,7 +12,6 @@
             <div class="card wizard-card shadow-sm border-0">
                 <div class="card-body p-4">
 
-                    <!-- HEADER -->
                     <div class="mb-4">
                         <h2 class="mb-1">Create User</h2>
                         <p class="text-muted mb-0">
@@ -23,15 +22,19 @@
                     <form asp-action="CreateWizard" method="post" novalidate>
                         @Html.AntiForgeryToken()
 
+                        <input type="hidden" id="nextRoute" name="NextRoute" value="HouseholdMembers" />
+
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-                        <!-- ================= USER TYPE ================= -->
+                        <!-- USER TYPE -->
                         <div class="card wizard-card shadow-sm border-0 mb-4">
                             <div class="card-body">
 
                                 <h5 class="card-title mb-3">User Type</h5>
 
-                                <select asp-for="User.UserType" class="form-select">
+                                <select asp-for="User.UserType"
+                                        class="form-select"
+                                        onchange="updateWizardMode()">
 
                                     @if (User.IsInRole("Admin"))
                                     {
@@ -52,8 +55,8 @@
                             </div>
                         </div>
 
-                        <!-- ================= USER INFO ================= -->
-                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                        <!-- USER INFO -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4" id="userInfoCard">
                             <div class="card-body">
 
                                 <h5 class="card-title mb-3">User Information</h5>
@@ -84,19 +87,13 @@
                                         <span asp-validation-for="User.PhoneNumber" class="text-danger"></span>
                                     </div>
 
-                                    <div class="col-md-12">
-                                        <label asp-for="User.DateOfBirth" class="form-label"></label>
-                                        <input asp-for="User.DateOfBirth" type="date" class="form-control" />
-                                        <span asp-validation-for="User.DateOfBirth" class="text-danger"></span>
-                                    </div>
-
                                 </div>
 
                             </div>
                         </div>
 
-                        <!-- ================= UNHOUSED ================= -->
-                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                        <!-- UNHOUSED -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4" id="unhousedCard">
                             <div class="card-body">
 
                                 <div class="form-check">
@@ -112,7 +109,7 @@
                             </div>
                         </div>
 
-                        <!-- ================= ADDRESS ================= -->
+                        <!-- ADDRESS -->
                         <div class="card wizard-card shadow-sm border-0 mb-4" id="addressCard">
                             <div class="card-body">
 
@@ -150,37 +147,38 @@
                             </div>
                         </div>
 
-                        <div class="col-md-4">
-                            <label asp-for="EmploymentStatus" class="form-label"></label>
-                            <select asp-for="EmploymentStatus"
-                                    asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
-                                    class="form-select new-client-field">
-                                <option value="">-- Select employment status --</option>
-                            </select>
-                            <span asp-validation-for="EmploymentStatus" class="text-danger"></span>
+                        <div id="extraClientFields" class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-5">
+                                        <label asp-for="User.DateOfBirth" class="form-label"></label>
+                                        <input asp-for="User.DateOfBirth" type="date" class="form-control" />
+                                        <span asp-validation-for="User.DateOfBirth" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label asp-for="EmploymentStatus" class="form-label"></label>
+                                        <select asp-for="EmploymentStatus"
+                                                asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
+                                                class="form-select">
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                        <span asp-validation-for="EmploymentStatus" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-4"></div>
+
+                                </div>
+
+                            </div>
                         </div>
 
-                        @* <hr class="my-4" /> *@
-
-                        @* <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h5 class="mb-1">Monthly Income</h5>
-                                <p class="text-muted mb-0">Add one or more income types.</p>
-                            </div>
-
-                            <button type="button"
-                                    class="btn btn-outline-primary btn-sm rounded-pill"
-                                    id="addIncomeRowBtn">
-                                Add Income Type
-                            </button>
-                        </div> *@
-
-                        
-
-                        <!-- ================= INCOME ================= -->
+                        <!-- INCOME -->
                         <hr class="my-4" />
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3" id="incomeHeader">
                             <div>
                                 <h5 class="mb-1">Monthly Income</h5>
                                 <p class="text-muted mb-0">Add one or more income types.</p>
@@ -193,52 +191,15 @@
                             </button>
                         </div>
 
-                        <div id="incomeRowsContainer">
-                            @for (int i = 0; i < (Model.Incomes?.Count ?? 0); i++)
-                            {
-                                <div class="border rounded p-3 mb-3 income-row">
-                                    <div class="row g-3 align-items-end">
+                        <div id="incomeRowsContainer"></div>
 
-                                        <div class="col-md-6">
-                                            <label asp-for="Incomes[i].IncomeType" class="form-label"></label>
-                                            <select asp-for="Incomes[i].IncomeType"
-                                                    asp-items="Html.GetEnumSelectList<IncomeType>()"
-                                                    class="form-select">
-                                                <option value="">-- Select income type --</option>
-                                            </select>
-                                            <span asp-validation-for="Incomes[i].IncomeType" class="text-danger"></span>
-                                        </div>
-
-                                        <div class="col-md-4">
-                                            <label asp-for="Incomes[i].MonthlyAmount" class="form-label"></label>
-                                            <input asp-for="Incomes[i].MonthlyAmount"
-                                                   class="form-control"
-                                                   type="number"
-                                                   step="0.01"
-                                                   min="0" />
-                                            <span asp-validation-for="Incomes[i].MonthlyAmount" class="text-danger"></span>
-                                        </div>
-
-                                        <div class="col-md-2">
-                                            <button type="button"
-                                                    class="btn btn-outline-danger btn-sm w-100 remove-income-row">
-                                                Remove
-                                            </button>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <!-- TEMPLATE -->
                         <template id="incomeRowTemplate">
                             <div class="border rounded p-3 mb-3 income-row">
                                 <div class="row g-3 align-items-end">
 
                                     <div class="col-md-6">
                                         <label class="form-label">Income Type</label>
-                                        <select class="form-select income-type">
+                                        <select class="form-select">
                                             <option value="">-- Select income type --</option>
                                             @foreach (var option in Html.GetEnumSelectList<IncomeType>())
                                             {
@@ -249,7 +210,7 @@
 
                                     <div class="col-md-4">
                                         <label class="form-label">Monthly Amount</label>
-                                        <input class="form-control income-amount"
+                                        <input class="form-control"
                                                type="number"
                                                step="0.01"
                                                min="0" />
@@ -266,7 +227,7 @@
                             </div>
                         </template>
 
-                        <!-- ================= FOOTER ================= -->
+                        <!-- FOOTER -->
                         <div class="d-flex justify-content-between pt-2">
                             <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
                             <button type="submit" class="btn btn-primary">Next</button>
@@ -281,83 +242,164 @@
     </div>
 </div>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+<script>
+
+    function updateWizardMode() {
+
+        const type = document.querySelector('[name="User.UserType"]')?.value;
+        const isStaffOrAdmin = type === "Staff" || type === "Admin";
+
+        const nextRoute = document.getElementById("nextRoute");
+
+        const addressCard = document.getElementById("addressCard");
+        const unhousedCard = document.getElementById("unhousedCard");
+        const incomeHeader = document.getElementById("incomeHeader");
+        const incomeRowsContainer = document.getElementById("incomeRowsContainer");
+        const extraClientFields = document.getElementById("extraClientFields");
+
+        // FIELD REFERENCES
+        const firstName = document.querySelector('[name="User.FirstName"]')?.closest(".col-md-6");
+        const lastName = document.querySelector('[name="User.LastName"]')?.closest(".col-md-6");
+        const email = document.querySelector('[name="User.Email"]')?.closest(".col-md-6");
+        const phone = document.querySelector('[name="User.PhoneNumber"]')?.closest(".col-md-6");
+
+        const allFields = [firstName, lastName, email, phone];
+
+        if (isStaffOrAdmin) {
+
+            if (nextRoute) nextRoute.value = "Finalize";
+
+            addressCard?.classList.add("d-none");
+            unhousedCard?.classList.add("d-none");
+            incomeHeader?.classList.add("d-none");
+            incomeRowsContainer?.classList.add("d-none");
+            extraClientFields?.classList.add("d-none");
+
+            allFields.forEach(f => f?.classList.add("d-none"));
+
+            firstName?.classList.remove("d-none");
+            lastName?.classList.remove("d-none");
+            email?.classList.remove("d-none");
+
+        } else {
+
+            if (nextRoute) nextRoute.value = "HouseholdMembers";
+
+            addressCard?.classList.remove("d-none");
+            unhousedCard?.classList.remove("d-none");
+            incomeHeader?.classList.remove("d-none");
+            incomeRowsContainer?.classList.remove("d-none");
+            extraClientFields?.classList.remove("d-none");
+
+            allFields.forEach(f => f?.classList.remove("d-none"));
+        }
+
+        // 🔥 FORCE VALIDATION REFRESH AFTER UI CHANGES
+        refreshValidation();
     }
 
-    <script>
-        (function () {
+    // ======================================================
+    // REAL-TIME VALIDATION SUPPORT (NEW)
+    // ======================================================
 
-            const toggle = document.getElementById("isUnhousedToggle");
-            const addressCard = document.getElementById("addressCard");
+    function refreshValidation() {
 
-            function updateAddress() {
-                if (!toggle || !addressCard) return;
+        if (!window.jQuery || !$.validator) return;
 
-                const inputs = addressCard.querySelectorAll("input");
+        const form = $("form");
 
-                if (toggle.checked) {
-                    addressCard.classList.add("d-none");
-                    inputs.forEach(i => i.disabled = true);
-                } else {
-                    addressCard.classList.remove("d-none");
-                    inputs.forEach(i => i.disabled = false);
-                }
+        // re-parse unobtrusive validation rules
+        $.validator.unobtrusive.parse(form);
+
+        // trigger validation refresh
+        form.find("input, select, textarea").each(function () {
+            $(this).valid();
+        });
+    }
+
+    function enableRealTimeValidation() {
+
+        if (!window.jQuery || !$.validator) return;
+
+        const form = $("form");
+
+        // Validate on typing
+        form.on("input", "input, textarea", function () {
+            $(this).valid();
+        });
+
+        // Validate on dropdown change
+        form.on("change", "select", function () {
+            $(this).valid();
+        });
+
+        // Optional: validate on blur too (feels more "instant")
+        form.on("blur", "input, textarea", function () {
+            $(this).valid();
+        });
+    }
+
+    // init wizard mode
+    document.querySelector('[name="User.UserType"]')
+        ?.addEventListener("change", updateWizardMode);
+
+    updateWizardMode();
+    enableRealTimeValidation();
+
+    // -------------------------
+    // INCOME LOGIC
+    // -------------------------
+
+    const incomeRowsContainer = document.getElementById("incomeRowsContainer");
+    const incomeTemplate = document.getElementById("incomeRowTemplate");
+    const addIncomeRowBtn = document.getElementById("addIncomeRowBtn");
+
+    function reindexIncomeRows() {
+
+        if (!incomeRowsContainer) return;
+
+        const rows = incomeRowsContainer.querySelectorAll(".income-row");
+
+        rows.forEach((row, index) => {
+
+            const type = row.querySelector("select");
+            const amount = row.querySelector("input");
+
+            if (type) {
+                type.name = `Incomes[${index}].IncomeType`;
+                type.id = `Incomes_${index}__IncomeType`;
             }
 
-            if (toggle) {
-                toggle.addEventListener("change", updateAddress);
+            if (amount) {
+                amount.name = `Incomes[${index}].MonthlyAmount`;
+                amount.id = `Incomes_${index}__MonthlyAmount`;
             }
+        });
+    }
 
-            updateAddress();
+    function addIncomeRow() {
+        const clone = incomeTemplate.content.cloneNode(true);
+        incomeRowsContainer.appendChild(clone);
+        reindexIncomeRows();
+        refreshValidation(); // 🔥 important for new dynamic fields
+    }
 
-        })();
+    incomeRowsContainer?.addEventListener("click", function (e) {
+        const btn = e.target.closest(".remove-income-row");
+        if (!btn) return;
 
-                const incomeRowsContainer = document.getElementById("incomeRowsContainer");
-        const incomeTemplate = document.getElementById("incomeRowTemplate");
-        const addIncomeRowBtn = document.getElementById("addIncomeRowBtn");
+        btn.closest(".income-row").remove();
+        reindexIncomeRows();
+    });
 
-        function reindexIncomeRows() {
-            const rows = incomeRowsContainer.querySelectorAll(".income-row");
+    addIncomeRowBtn?.addEventListener("click", addIncomeRow);
 
-            rows.forEach((row, index) => {
-
-                const type = row.querySelector("select");
-                const amount = row.querySelector("input");
-
-                if (type) {
-                    type.name = `Incomes[${index}].IncomeType`;
-                    type.id = `Incomes_${index}__IncomeType`;
-                }
-
-                if (amount) {
-                    amount.name = `Incomes[${index}].MonthlyAmount`;
-                    amount.id = `Incomes_${index}__MonthlyAmount`;
-                }
-            });
-        }
-
-        function addIncomeRow() {
-            const clone = incomeTemplate.content.cloneNode(true);
-            incomeRowsContainer.appendChild(clone);
-            reindexIncomeRows();
-        }
-
-        if (addIncomeRowBtn) {
-            addIncomeRowBtn.addEventListener("click", addIncomeRow);
-        }
-
-        incomeRowsContainer.addEventListener("click", function (e) {
-            const btn = e.target.closest(".remove-income-row");
-            if (!btn) return;
-
-            btn.closest(".income-row").remove();
+    document.querySelector("form")
+        ?.addEventListener("submit", function () {
             reindexIncomeRows();
         });
 
-                document.querySelector("form").addEventListener("submit", function () {
-            reindexIncomeRows();
-        });
-    </script>
-}
+    reindexIncomeRows();
+    addIncomeRow();
+
+</script>

@@ -35,38 +35,108 @@
                             </div>
 
                             <dl class="row mb-0">
-                                <dt class="col-sm-4">First Name</dt>
-                                <dd class="col-sm-8">@Model.FirstName</dd>
 
-                                <dt class="col-sm-4">Last Name</dt>
-                                <dd class="col-sm-8">@Model.LastName</dd>
+                                @if (!string.IsNullOrWhiteSpace(Model.FirstName))
+                                {
+                                    <dt class="col-sm-4">First Name</dt>
+                                    <dd class="col-sm-8">@Model.FirstName</dd>
+                                }
 
-                                <dt class="col-sm-4">Email</dt>
-                                <dd class="col-sm-8">@Model.Email</dd>
+                                @if (!string.IsNullOrWhiteSpace(Model.LastName))
+                                {
+                                    <dt class="col-sm-4">Last Name</dt>
+                                    <dd class="col-sm-8">@Model.LastName</dd>
+                                }
 
-                                <dt class="col-sm-4">User Type</dt>
-                                <dd class="col-sm-8">@Model.UserType</dd>
+                                @if (!string.IsNullOrWhiteSpace(Model.Email))
+                                {
+                                    <dt class="col-sm-4">Email</dt>
+                                    <dd class="col-sm-8">@Model.Email</dd>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
+                                {
+                                    <dt class="col-sm-4">Phone Number</dt>
+                                    <dd class="col-sm-8">@Model.PhoneNumber</dd>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(Model.AddressLine1))
+                                {
+                                    <dt class="col-sm-4">Address</dt>
+                                    <dd class="col-sm-8">
+                                        @Model.AddressLine1
+                                        @if (!string.IsNullOrWhiteSpace(Model.AddressLine2))
+                                        {
+                                            <br />
+                                            @Model.AddressLine2
+                                        }
+                                    </dd>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(Model.City) ||
+                                     !string.IsNullOrWhiteSpace(Model.State) ||
+                                     !string.IsNullOrWhiteSpace(Model.PostalCode))
+                                {
+                                    <dt class="col-sm-4">Location</dt>
+                                    <dd class="col-sm-8">
+                                        @Model.City
+                                        @if (!string.IsNullOrWhiteSpace(Model.City) &&
+                                             !string.IsNullOrWhiteSpace(Model.State))
+                                        {
+                                            <text>, </text>
+                                        }
+                                        @Model.State
+                                        @if (!string.IsNullOrWhiteSpace(Model.PostalCode))
+                                        {
+                                            <text> </text>
+                                            @Model.PostalCode
+                                        }
+                                    </dd>
+                                }
+
+                                @if (Model.DateOfBirth != null)
+                                {
+                                    <dt class="col-sm-4">Date of Birth</dt>
+                                    <dd class="col-sm-8">
+                                        @Model.DateOfBirth?.ToString("MM/dd/yyyy")
+                                    </dd>
+                                }
+
+                                @if (Model.ClientProfile != null)
+                                {
+                                    <dt class="col-sm-4">Employment Status</dt>
+                                    <dd class="col-sm-8">
+                                        @Model.ClientProfile.EmploymentStatus
+                                    </dd>
+                                }
+
+                                @if (Model.UserType != null)
+                                {
+                                    <dt class="col-sm-4">User Type</dt>
+                                    <dd class="col-sm-8">@Model.UserType</dd>
+                                }
+
                             </dl>
 
                         </div>
                     </div>
 
                     <!-- ================= HOUSEHOLD ================= -->
-                    <div class="card wizard-card shadow-sm border-0 mb-4">
-                        <div class="card-body">
+                    @if (members?.Any() == true)
+                    {
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
 
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h5 class="card-title mb-0">Household Members</h5>
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">Household Members</h5>
 
-                                <a asp-action="HouseholdMembers"
-                                       class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                                    Edit
-                                </a>
-                            </div>
+                                    <a asp-action="HouseholdMembers"
+                                           class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        Edit
+                                    </a>
+                                </div>
 
-                            @if (members.Any())
-                            {
-                                for (int i = 0; i < members.Count; i++)
+                                @for (int i = 0; i < members.Count; i++)
                                 {
                                     var m = members[i];
 
@@ -90,33 +160,27 @@
                                         </dl>
                                     </div>
                                 }
-                            }
-                            else
-                            {
-                                <p class="text-muted mb-0">
-                                    No household members were added.
-                                </p>
-                            }
 
+                            </div>
                         </div>
-                    </div>
+                    }
 
                     <!-- ================= INCOME ================= -->
-                    <div class="card wizard-card shadow-sm border-0 mb-4">
-                        <div class="card-body">
+                    @if (incomes?.Any() == true)
+                    {
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
 
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h5 class="card-title mb-0">Income</h5>
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">Income</h5>
 
-                                <a asp-action="CreateWizard"
-                                       class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                                    Edit
-                                </a>
-                            </div>
+                                    <a asp-action="CreateWizard"
+                                           class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        Edit
+                                    </a>
+                                </div>
 
-                            @if (incomes.Any())
-                            {
-                                foreach (var inc in incomes)
+                                @foreach (var inc in incomes)
                                 {
                                     <div class="border rounded p-3 mb-3">
                                         <dl class="row mb-0">
@@ -130,16 +194,10 @@
                                         </dl>
                                     </div>
                                 }
-                            }
-                            else
-                            {
-                                <p class="text-muted mb-0">
-                                    No income information was added.
-                                </p>
-                            }
 
+                            </div>
                         </div>
-                    </div>
+                    }
 
                     <!-- ================= FINAL FORM ================= -->
                     <form asp-action="FinalizeConfirm" method="post">

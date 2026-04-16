@@ -658,62 +658,84 @@ namespace A_New_Hope.Controllers
 
             return View(vm);
         }
-        //this was so painful to make work
+
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateWizard(UserWizardViewModel vm)
         {
             try
             {
-                // Remove validation for fields not used in this step
-                ModelState.Remove(nameof(DomainUser.CreatedByUser));
-                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
-                ModelState.Remove(nameof(DomainUser.ClientProfile));
-
-                // 🔴 CRITICAL FIX: remove ALL income validation for this step
-                foreach (var key in ModelState.Keys
-                    .Where(k => k.StartsWith("Incomes"))
-                    .ToList())
-                {
-                    ModelState.Remove(key);
-                }
-
-                foreach (var kvp in ModelState)
-                {
-                    foreach (var error in kvp.Value.Errors)
-                    {
-                        Console.WriteLine($"{kvp.Key}: {error.ErrorMessage}");
-                    }
-                }
-
                 NormalizeDomainUser(vm.User);
                 await ApplyDomainUserValidationAsync(vm.User);
 
+                // ROLE RULE FIRST
                 if (!User.IsInRole("Admin"))
                 {
                     vm.User.UserType = UserType.Client;
                 }
 
+                // 🔴 HARD RULE: wipe income BEFORE persistence
+                if (vm.User.UserType is UserType.Admin or UserType.Staff)
+                {
+                    vm.Incomes = new List<UserIncomeInput>();
+                }
+
+                // =========================
+                // MODELSTATE CLEANUP
+                // =========================
+
+                ModelState.Remove(nameof(DomainUser.CreatedByUser));
+                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+                ModelState.Remove(nameof(DomainUser.ClientProfile));
+
+                // Remove ALL income-related validation errors
+                foreach (var key in ModelState.Keys
+                    .Where(k => k.Contains("Income"))
+                    .ToList())
+                {
+                    ModelState.Remove(key);
+                }
+
+                // Debug validation issues (keep for now)
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        _logger.LogWarning("ModelState error {Key}: {Error}",
+                            state.Key, error.ErrorMessage);
+                    }
+                }
+
+                // =========================
+                // FINAL VALIDATION CHECK
+                // =========================
                 if (!ModelState.IsValid)
                 {
                     return View(vm);
                 }
 
-                // Save user
+                // =========================
+                // SESSION PERSISTENCE
+                // =========================
+
                 HttpContext.Session.SetString(
                     "WizardUser",
                     JsonSerializer.Serialize(vm.User)
                 );
 
-                // Save entire wizard state
                 HttpContext.Session.SetString(
                     "WizardUserExtras",
                     JsonSerializer.Serialize(vm)
                 );
 
-                return RedirectToAction(nameof(HouseholdMembers));
+                // =========================
+                // NAVIGATION
+                // =========================
+                return vm.User.UserType is UserType.Admin or UserType.Staff
+                    ? RedirectToAction("Finalize")
+                    : RedirectToAction(nameof(HouseholdMembers));
             }
-
             catch (Exception ex)
             {
                 _logger.LogError(ex, "CreateWizard failed");

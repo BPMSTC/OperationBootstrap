@@ -40,16 +40,16 @@ namespace A_New_Hope.Models
         /// <summary>
         /// Optional first name.
         /// </summary>
-        [Required(ErrorMessage = "First name is required.")]
-        [MaxLength(100)]
-        public string FirstName { get; set; } = string.Empty;
+        [Required]
+        [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Invalid characters in name.")]
+        public string FirstName { get; set; }
 
         /// <summary>
         /// Optional last name.
         /// </summary>
-        [Required(ErrorMessage = "Last name is required.")]
-        [MaxLength(100)]
-        public string LastName { get; set; } = string.Empty;
+        [Required]
+        [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Invalid characters in name.")]
+        public string LastName { get; set; }
 
         /// <summary>
         /// Optional address line 1.
