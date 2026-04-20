@@ -1,4 +1,4 @@
-﻿@model IEnumerable<A_New_Hope.Models.DomainUser>
+﻿@model IEnumerable<A_New_Hope.Models.ViewModels.Users.DomainUserIndexRowViewModel>
 
 @{
     ViewData["Title"] = "Users";
@@ -10,14 +10,11 @@
 
 <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
 
-    <!-- LEFT: Create -->
     <div class="d-flex align-items-center gap-2">
-        <a asp-action="CreateWizard" class="btn btn-primary">Create New</a>
+        <a asp-action="StaffCreate" class="btn btn-primary">Create New</a>
     </div>
 
-    <!-- RIGHT: Search -->
     <form asp-action="StaffListIndex" method="get" class="d-flex gap-2">
-
         <input type="text"
                name="searchTerm"
                value="@(ViewData["CurrentFilter"])"
@@ -25,7 +22,6 @@
                placeholder="Search staff..." />
 
         <button type="submit" class="btn btn-outline-secondary">Search</button>
-
         <a asp-action="StaffListIndex" class="btn btn-outline-secondary">Clear</a>
     </form>
 </div>
@@ -65,15 +61,31 @@
 
                     <td class="text-end text-nowrap">
 
-                        <!-- FIXED: NO HasLoginAccount -->
-                        <a asp-controller="UserAccounts"
-                               asp-action="Create"
-                               asp-route-domainUserId="@item.Id"
-                               class="btn btn-sm btn-outline-primary">
-                            Create Login
-                        </a>
+                        <!-- 🔥 SAME LOGIC AS USERS PAGE -->
+                        @if (item.UserType == A_New_Hope.Models.UserType.Staff ||
+                             item.UserType == A_New_Hope.Models.UserType.Admin)
+                        {
+                            @if (item.HasLoginAccount)
+                            {
+                                <a asp-controller="UserAccounts"
+                                       asp-action="Manage"
+                                       asp-route-domainUserId="@item.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                    Manage Login
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="UserAccounts"
+                                       asp-action="Create"
+                                       asp-route-domainUserId="@item.Id"
+                                       class="btn btn-sm btn-outline-primary">
+                                    Create Login
+                                </a>
+                            }
 
-                        <span> | </span>
+                            <span> | </span>
+                        }
 
                         <a asp-action="StaffDetails"
                                asp-route-id="@item.Id"

@@ -1,0 +1,82 @@
+﻿@model A_New_Hope.Models.ViewModels.StaffCreateViewModel    
+
+@{
+    ViewData["Title"] = "Create Staff/Admin";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-6 col-lg-8">
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <div class="mb-4">
+                        <h2 class="mb-1">Create Staff/Admin</h2>
+                        <p class="text-muted mb-0">
+                            Enter basic account details.
+                        </p>
+                    </div>
+
+                    <form asp-action="StaffCreate" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- USER TYPE -->
+                        <div class="mb-3">
+                            <label asp-for="UserType" class="form-label"></label>
+                            <select asp-for="UserType" class="form-select">
+                                <option value="">-- Select Type --</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                            <span asp-validation-for="UserType" class="text-danger"></span>
+                        </div>
+
+                        <!-- NAME -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="FirstName" class="form-label"></label>
+                                <input asp-for="FirstName" class="form-control" />
+                                <span asp-validation-for="FirstName" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="LastName" class="form-label"></label>
+                                <input asp-for="LastName" class="form-control" />
+                                <span asp-validation-for="LastName" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- EMAIL -->
+                        <div class="mt-3">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+
+                        <!-- PASSWORD -->
+                        <div class="mt-3">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input asp-for="Password" class="form-control" type="password" />
+                            <div class="form-text">
+                                Leave blank to use default password.
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <!-- FOOTER -->
+                        <div class="d-flex justify-content-between pt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Next</button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
