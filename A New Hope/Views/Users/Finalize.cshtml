@@ -203,20 +203,17 @@
                     <form asp-action="FinalizeConfirm" method="post">
                         @Html.AntiForgeryToken()
 
-                        <div class="d-flex justify-content-between pt-2">
+                        <div class="d-flex justify-content-between align-items-stretch pt-2">
 
                             <a asp-action="HouseholdMembers"
-                                   class="btn btn-outline-secondary">
+                                   class="btn btn-outline-secondary d-flex align-items-center">
                                 Back
                             </a>
 
-                            <div class="d-flex justify-content-between pt-2">
-                                <a asp-action="PreviousStep" class="btn btn-outline-secondary">Back</a>
-
-                                <button type="submit" class="btn btn-primary">
-                                    Confirm User
-                                </button>
-                            </div>
+                            <button type="submit"
+                                    class="btn btn-primary">
+                                Confirm User
+                            </button>
 
                         </div>
                     </form>

@@ -67,54 +67,53 @@
                             </div>
                         </div>
 
-                        <!-- UNHOUSED -->
-                        <div class="card wizard-card shadow-sm border-0 mb-4" id="unhousedCard">
+                        <div class="card wizard-card shadow-sm border-0 mb-4" id="addressCard">
+
                             <div class="card-body">
 
-                                <div class="form-check">
+                                <!-- HEADER ROW -->
+                                <div class="form-check m-0 mb-3 d-flex align-items-center gap-2">
+
                                     <input asp-for="IsUnhoused"
                                            class="form-check-input"
                                            id="isUnhousedToggle" />
 
-                                    <label class="form-check-label" for="isUnhousedToggle">
+                                    <label class="form-check-label mb-0" for="isUnhousedToggle">
                                         Unhoused
                                     </label>
+
                                 </div>
 
-                            </div>
-                        </div>
+                                <!-- ADDRESS FIELDS -->
+                                <div id="addressFields">
 
-                        <!-- ADDRESS -->
-                        <div class="card wizard-card shadow-sm border-0 mb-4" id="addressCard">
-                            <div class="card-body">
+                                    <div class="row g-3">
 
-                                <h5 class="card-title mb-3">Address</h5>
+                                        <div class="col-md-12">
+                                            <label asp-for="User.AddressLine1" class="form-label"></label>
+                                            <input asp-for="User.AddressLine1" class="form-control" />
+                                        </div>
 
-                                <div class="row g-3">
+                                        <div class="col-md-12">
+                                            <label asp-for="User.AddressLine2" class="form-label"></label>
+                                            <input asp-for="User.AddressLine2" class="form-control" />
+                                        </div>
 
-                                    <div class="col-md-12">
-                                        <label asp-for="User.AddressLine1" class="form-label"></label>
-                                        <input asp-for="User.AddressLine1" class="form-control" />
-                                    </div>
+                                        <div class="col-md-5">
+                                            <label asp-for="User.City" class="form-label"></label>
+                                            <input asp-for="User.City" class="form-control" />
+                                        </div>
 
-                                    <div class="col-md-12">
-                                        <label asp-for="User.AddressLine2" class="form-label"></label>
-                                        <input asp-for="User.AddressLine2" class="form-control" />
-                                    </div>
+                                        <div class="col-md-3">
+                                            <label asp-for="User.State" class="form-label"></label>
+                                            <input asp-for="User.State" class="form-control" maxlength="2" />
+                                        </div>
 
-                                    <div class="col-md-5">
-                                        <label asp-for="User.City" class="form-label"></label>
-                                        <input asp-for="User.City" class="form-control" />
-                                    </div>
+                                        <div class="col-md-4">
+                                            <label asp-for="User.PostalCode" class="form-label"></label>
+                                            <input asp-for="User.PostalCode" class="form-control" />
+                                        </div>
 
-                                    <div class="col-md-3">
-                                        <label asp-for="User.State" class="form-label"></label>
-                                        <input asp-for="User.State" class="form-control" maxlength="2" />
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <label asp-for="User.PostalCode" class="form-label"></label>
-                                        <input asp-for="User.PostalCode" class="form-control" />
                                     </div>
 
                                 </div>
@@ -218,6 +217,26 @@
 </div>
 
 <script>
+            function toggleAddress() {
+
+        const checkbox = document.getElementById("isUnhousedToggle");
+        const addressFields = document.getElementById("addressFields");
+
+        if (!checkbox || !addressFields) return;
+
+        function update() {
+            addressFields.classList.toggle("d-none", checkbox.checked);
+        }
+
+        checkbox.addEventListener("change", update);
+
+        // run on page load (important for edit screens)
+        update();
+    }
+
+    toggleAddress();
+
+    toggleAddress();
 
     function updateWizardMode() {
 

@@ -18,7 +18,7 @@
     <div class="d-flex align-items-center gap-2">
         <a asp-action="CreateWizard" class="btn btn-primary">Create New</a>
 
-        @if (User.IsInRole("Admin"))
+        @* @if (User.IsInRole("Admin"))
         {
             <div class="d-flex align-items-center gap-1 ms-2">
                 <small class="text-muted me-1">View:</small>
@@ -46,7 +46,7 @@
                     </a>
                 </div>
             </div>
-        }
+        } *@
     </div>
 
     <!-- RIGHT: Search -->
@@ -79,9 +79,9 @@
             @foreach (var item in Model)
             {
                 // Hide Admin + Staff unless current user is Admin
-                if (!User.IsInRole("Admin") &&
-                    (item.UserType == A_New_Hope.Models.UserType.Admin ||
-                     item.UserType == A_New_Hope.Models.UserType.Staff))
+                // ALWAYS hide Admin + Staff
+                if (item.UserType == A_New_Hope.Models.UserType.Admin ||
+                    item.UserType == A_New_Hope.Models.UserType.Staff)
                 {
                     continue;
                 }
