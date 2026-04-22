@@ -2,6 +2,7 @@
 using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Services.Interfaces;
+using A_New_Hope.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Services
@@ -85,7 +86,7 @@ namespace A_New_Hope.Services
                         IncomeType = income.IncomeType!.Value,
                         MonthlyAmount = income.MonthlyAmount ?? 0m,
                         IsActive = income.IsActive,
-                        Notes = string.IsNullOrWhiteSpace(income.Notes) ? null : income.Notes.Trim(),
+                        Notes = InputNormalization.NullIfWhiteSpace(income.Notes),
                         CreatedAt = now,
                         UpdatedAt = now,
                         CreatedByUserId = actingUserId,
@@ -140,23 +141,23 @@ namespace A_New_Hope.Services
 
         private static void NormalizeClient(ClientEntryInput input)
         {
-            input.FirstName = NullIfWhiteSpace(input.FirstName);
-            input.LastName = NullIfWhiteSpace(input.LastName);
-            input.Email = NullIfWhiteSpace(input.Email);
-            input.PhoneNumber = NullIfWhiteSpace(input.PhoneNumber);
-            input.AddressLine1 = NullIfWhiteSpace(input.AddressLine1);
-            input.AddressLine2 = NullIfWhiteSpace(input.AddressLine2);
-            input.City = NullIfWhiteSpace(input.City);
-            input.State = NullIfWhiteSpace(input.State)?.ToUpperInvariant();
-            input.PostalCode = NullIfWhiteSpace(input.PostalCode);
+            input.FirstName = InputNormalization.NullIfWhiteSpace(input.FirstName);
+            input.LastName = InputNormalization.NullIfWhiteSpace(input.LastName);
+            input.Email = InputNormalization.NullIfWhiteSpace(input.Email);
+            input.PhoneNumber = InputNormalization.NullIfWhiteSpace(input.PhoneNumber);
+            input.AddressLine1 = InputNormalization.NullIfWhiteSpace(input.AddressLine1);
+            input.AddressLine2 = InputNormalization.NullIfWhiteSpace(input.AddressLine2);
+            input.City = InputNormalization.NullIfWhiteSpace(input.City);
+            input.State = InputNormalization.NullIfWhiteSpace(input.State)?.ToUpperInvariant();
+            input.PostalCode = InputNormalization.NullIfWhiteSpace(input.PostalCode);
         }
 
         private static void NormalizeHousehold(List<HouseholdMemberEntryInput> householdInputs)
         {
             foreach (var member in householdInputs)
             {
-                member.FirstName = NullIfWhiteSpace(member.FirstName);
-                member.LastName = NullIfWhiteSpace(member.LastName);
+                member.FirstName = InputNormalization.NullIfWhiteSpace(member.FirstName);
+                member.LastName = InputNormalization.NullIfWhiteSpace(member.LastName);
             }
         }
 
@@ -178,11 +179,6 @@ namespace A_New_Hope.Services
             }
         }
 
-        private static string? NullIfWhiteSpace(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
-
         private static void NormalizeIncomes(List<ClientIncomeEntryInput>? incomes)
         {
             if (incomes == null)
@@ -192,7 +188,7 @@ namespace A_New_Hope.Services
 
             foreach (var income in incomes)
             {
-                income.Notes = NullIfWhiteSpace(income.Notes);
+                income.Notes = InputNormalization.NullIfWhiteSpace(income.Notes);
             }
         }
     }

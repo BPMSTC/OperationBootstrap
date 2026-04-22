@@ -672,6 +672,10 @@ namespace A_New_Hope.Data
             {
                 entity.HasKey(e => new { e.ReferringOrganizationId, e.ServiceCategoryId });
 
+                entity.HasQueryFilter(e =>
+                    e.ReferringOrganization.DeletedAt == null &&
+                    e.ServiceCategory.DeletedAt == null);
+
                 entity.HasOne(e => e.ReferringOrganization)
                     .WithMany(o => o.ReferringOrganizationServiceCategories)
                     .HasForeignKey(e => e.ReferringOrganizationId)
