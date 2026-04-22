@@ -207,8 +207,7 @@ namespace A_New_Hope.Controllers
             var identityUser = new ApplicationUser
             {
                 UserName = vm.Email,
-                Email = vm.Email,
-                DomainUserId = null // will set after domain user is created
+                Email = vm.Email
             };
 
             var result = await _userManager.CreateAsync(identityUser, password);
@@ -235,17 +234,16 @@ namespace A_New_Hope.Controllers
             _context.DomainUsers.Add(domainUser);
             await _context.SaveChangesAsync();
 
-            // LINK BACK
+            // LINK USERS
             identityUser.DomainUserId = domainUser.Id;
             await _userManager.UpdateAsync(identityUser);
 
             // ROLE
             await _userManager.AddToRoleAsync(identityUser, vm.UserType.ToString());
-            
+
             TempData.Remove("StaffCreateData");
 
             return RedirectToAction(nameof(StaffDetails), new { id = domainUser.Id });
-
         }
     }
 }

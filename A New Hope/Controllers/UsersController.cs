@@ -669,17 +669,8 @@ namespace A_New_Hope.Controllers
                 NormalizeDomainUser(vm.User);
                 await ApplyDomainUserValidationAsync(vm.User);
 
-                // ROLE RULE FIRST
-                if (!User.IsInRole("Admin"))
-                {
-                    vm.User.UserType = UserType.Client;
-                }
-
-                // 🔴 HARD RULE: wipe income BEFORE persistence
-                if (vm.User.UserType is UserType.Admin or UserType.Staff)
-                {
-                    vm.Incomes = new List<UserIncomeInput>();
-                }
+                // 🔴 HARD RULE: always Client
+                vm.User.UserType = UserType.Client;
 
                 // =========================
                 // MODELSTATE CLEANUP
@@ -689,7 +680,6 @@ namespace A_New_Hope.Controllers
                 ModelState.Remove(nameof(DomainUser.UpdatedByUser));
                 ModelState.Remove(nameof(DomainUser.ClientProfile));
 
-                // Remove ALL income-related validation errors
                 foreach (var key in ModelState.Keys
                     .Where(k => k.Contains("Income"))
                     .ToList())
@@ -697,7 +687,6 @@ namespace A_New_Hope.Controllers
                     ModelState.Remove(key);
                 }
 
-                // Debug validation issues (keep for now)
                 foreach (var state in ModelState)
                 {
                     foreach (var error in state.Value.Errors)
@@ -707,9 +696,6 @@ namespace A_New_Hope.Controllers
                     }
                 }
 
-                // =========================
-                // FINAL VALIDATION CHECK
-                // =========================
                 if (!ModelState.IsValid)
                 {
                     return View(vm);
@@ -732,9 +718,8 @@ namespace A_New_Hope.Controllers
                 // =========================
                 // NAVIGATION
                 // =========================
-                return vm.User.UserType is UserType.Admin or UserType.Staff
-                    ? RedirectToAction("Finalize")
-                    : RedirectToAction(nameof(HouseholdMembers));
+
+                return RedirectToAction(nameof(HouseholdMembers));
             }
             catch (Exception ex)
             {
