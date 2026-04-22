@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace A_New_Hope.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260422053022_FixDomainUserFandLNameLongTexttoVarchar")]
-    partial class FixDomainUserFandLNameLongTexttoVarchar
+    [Migration("20260422061238_FixingMigrations")]
+    partial class FixingMigrations
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
