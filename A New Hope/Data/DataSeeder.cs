@@ -81,6 +81,19 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
+                // Staff user
+                var staff = new DomainUser
+                {
+                    Email = "staff@anewhope.local",
+                    FirstName = "Sample",
+                    LastName = "Staff",
+                    UserType = UserType.Staff,
+                    DefaultPreference = PreferenceOption.Ask,
+                    IsActive = true,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
                 // Client #1
                 var client1 = new DomainUser
                 {
@@ -116,7 +129,7 @@ namespace A_New_Hope.Data
                 };
 
                 // AddRange stages the inserts; SaveChangesAsync commits them to the DB.
-                context.DomainUsers.AddRange(admin, client1, client2);
+                context.DomainUsers.AddRange(admin, staff, client1, client2);
                 await context.SaveChangesAsync();
             }
 
