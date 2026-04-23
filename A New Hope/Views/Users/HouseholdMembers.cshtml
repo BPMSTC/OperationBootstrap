@@ -210,6 +210,9 @@
             const yes = document.getElementById("householdYesOption");
             const no = document.getElementById("householdNoOption");
 
+            // -------------------------
+            // SHOW / HIDE SECTION
+            // -------------------------
             function show() {
                 section.classList.remove("d-none");
             }
@@ -231,6 +234,9 @@
 
             updateInitialState();
 
+            // -------------------------
+            // ADD MEMBER
+            // -------------------------
             if (addBtn) {
                 addBtn.addEventListener("click", function () {
 
@@ -242,9 +248,58 @@
                     wrapper.innerHTML = html.trim();
 
                     container.appendChild(wrapper.firstElementChild);
+
+                    reindexHouseholdMembers();
+                });
+            }
+
+            // -------------------------
+            // REMOVE MEMBER (FIXED)
+            // -------------------------
+            document.addEventListener("click", function (e) {
+
+                const btn = e.target.closest(".remove-household-member");
+                if (!btn) return;
+
+                const card = btn.closest(".household-member-card");
+                if (!card) return;
+
+                card.remove();
+
+                reindexHouseholdMembers();
+            });
+
+            // -------------------------
+            // REINDEX (CLEAN REBUILD - FIXES YOUR ISSUE)
+            // -------------------------
+            function reindexHouseholdMembers() {
+
+                const cards = container.querySelectorAll(".household-member-card");
+
+                cards.forEach((card, index) => {
+
+                    // update title
+                    const title = card.querySelector(".card-title");
+                    if (title) {
+                        title.textContent = `Household Member ${index + 1}`;
+                    }
+
+                    // rebuild ALL input names cleanly
+                    const inputs = card.querySelectorAll("input");
+
+                    inputs.forEach(input => {
+
+                        const nameParts = input.name.split('.');
+
+                        if (nameParts.length > 1) {
+                            const field = nameParts[1];
+                            input.name = `HouseholdMembers[${index}].${field}`;
+                        }
+                    });
                 });
             }
 
         })();
     </script>
+}
 }

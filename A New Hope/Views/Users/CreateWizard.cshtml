@@ -2,7 +2,7 @@
 @using A_New_Hope.Models.Enums
 
 @{
-    ViewData["Title"] = "Create User";
+    ViewData["Title"] = "Create Client";
 }
 
 <div class="container py-4">
@@ -136,7 +136,8 @@
                                         <label asp-for="EmploymentStatus" class="form-label"></label>
                                         <select asp-for="EmploymentStatus"
                                                 asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
-                                                class="form-select">
+                                                class="form-select"
+                                                required>
                                             <option value="">-- Select --</option>
                                         </select>
                                         <span asp-validation-for="EmploymentStatus" class="text-danger"></span>

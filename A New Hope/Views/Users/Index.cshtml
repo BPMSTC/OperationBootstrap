@@ -7,7 +7,7 @@
 <div class="page-header">
     <h1>
         @(User.Identity?.IsAuthenticated == true && User.IsInRole("Admin")
-            ? "Users"
+            ? "Clients"
             : "Clients")
     </h1>
 </div>
@@ -57,7 +57,7 @@
                name="searchTerm"
                value="@(ViewData["CurrentFilter"])"
                class="form-control w-auto"
-               placeholder="Search users..." />
+               placeholder="Search Clients..." />
 
         <button type="submit" class="btn btn-outline-secondary">Search</button>
 

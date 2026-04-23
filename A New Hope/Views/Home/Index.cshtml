@@ -19,17 +19,17 @@
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            @(isAdmin ? "Users" : "Clients")
+                            @(isAdmin ? "Clients" : "Clients")
                         </div>
 
                         <p class="workflow-text">
-                            Manage and view @(isAdmin ? "user accounts and roles." : "client records and information.").
+                            Manage and view @(isAdmin ? "Client records and information." : "client records and information.").
                         </p>
 
                         <a asp-controller="Users"
                                asp-action="Index"
                                class="btn neutral-btn-primary mt-auto">
-                            @(isAdmin ? "Users" : "Clients")
+                            @(isAdmin ? "Clients" : "Clients")
                             <i class="bi bi-people"></i>
                         </a>
 

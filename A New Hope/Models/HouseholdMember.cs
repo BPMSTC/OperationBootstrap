@@ -32,6 +32,7 @@ namespace A_New_Hope.Models
         /// </summary>
         [Required(ErrorMessage = "First name is required.")]
         [MaxLength(100, ErrorMessage = "First name cannot exceed 100 characters.")]
+        [RegularExpression(@"^[A-Za-z\s'-]+$", ErrorMessage = "First name can only contain letters, spaces, apostrophes, and hyphens.")]
         public string FirstName { get; set; } = string.Empty;
 
         /// <summary>
@@ -39,6 +40,7 @@ namespace A_New_Hope.Models
         /// </summary>
         [Required(ErrorMessage = "Last name is required.")]
         [MaxLength(100, ErrorMessage = "Last name cannot exceed 100 characters.")]
+        [RegularExpression(@"^[A-Za-z\s'-]+$", ErrorMessage = "Last name can only contain letters, spaces, apostrophes, and hyphens.")]
         public string LastName { get; set; } = string.Empty;
 
         /// <summary>
