@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Review Staff/Admin";
+
     var passwordDisplay = string.IsNullOrWhiteSpace(Model.Password)
         ? "Default will be used"
         : "Provided";
@@ -11,7 +12,9 @@
     <div class="row justify-content-center">
         <div class="col-xl-6 col-lg-8">
 
-            <div class="card shadow-sm border-0">
+            <!-- IMPORTANT: wizard-card restores dark mode styling -->
+            <div class="card wizard-card shadow-sm border-0">
+
                 <div class="card-body p-4">
 
                     <div class="mb-4">
@@ -35,6 +38,45 @@
                         <dt class="col-sm-4">Email</dt>
                         <dd class="col-sm-8">@Model.Email</dd>
 
+                        @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber))
+                        {
+                            <dt class="col-sm-4">Phone</dt>
+                            <dd class="col-sm-8">@Model.PhoneNumber</dd>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.AddressLine1) ||
+                             !string.IsNullOrWhiteSpace(Model.City) ||
+                             !string.IsNullOrWhiteSpace(Model.State) ||
+                             !string.IsNullOrWhiteSpace(Model.PostalCode))
+                        {
+                            <dt class="col-sm-4">Address</dt>
+                            <dd class="col-sm-8">
+
+                                @if (!string.IsNullOrWhiteSpace(Model.AddressLine1))
+                                {
+                                    <div>@Model.AddressLine1</div>
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(Model.AddressLine2))
+                                {
+                                    <div>@Model.AddressLine2</div>
+                                }
+
+                                <div>
+                                    @Model.City
+                                    @if (!string.IsNullOrWhiteSpace(Model.State))
+                                    {
+                                        <text>, @Model.State</text>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(Model.PostalCode))
+                                    {
+                                        <text> @Model.PostalCode</text>
+                                    }
+                                </div>
+
+                            </dd>
+                        }
+
                         <dt class="col-sm-4">Password</dt>
                         <dd class="col-sm-8">@passwordDisplay</dd>
 
@@ -44,7 +86,7 @@
                         @Html.AntiForgeryToken()
 
                         <div class="d-flex justify-content-between">
-                            <a asp-action="StaffCreate" class="btn btn-outline-secondary">Back</a>
+                            <a asp-action="StaffCreate" class="btn btn-secondary">Back</a>
                             <button type="submit" class="btn btn-success">
                                 Confirm & Create
                             </button>

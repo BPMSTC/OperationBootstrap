@@ -122,38 +122,51 @@
                     </div>
 
                     <!-- ================= HOUSEHOLD ================= -->
-                    @for (int i = 0; i < members.Count; i++)
-{
-    var m = members[i];
+                    @if (members?.Any() == true)
+                    {
+                        <div class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
 
-    <div class="border rounded p-3 mb-3">
-        <div class="mb-2 fw-semibold">
-            Household Member @(i + 1)
-        </div>
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title mb-0">Household</h5>
+                                </div>
 
-        <dl class="row mb-0">
+                                @for (int i = 0; i < members.Count; i++)
+                                {
+                                    var m = members[i];
 
-            <dt class="col-sm-4">First Name</dt>
-            <dd class="col-sm-8">@m.FirstName</dd>
+                                    <div class="border rounded p-3 mb-3">
+                                        <div class="mb-2 fw-semibold">
+                                            Household Member @(i + 1)
+                                        </div>
 
-            <dt class="col-sm-4">Last Name</dt>
-            <dd class="col-sm-8">@m.LastName</dd>
+                                        <dl class="row mb-0">
 
-            @if (m.DateOfBirth.HasValue)
-            {
-                <dt class="col-sm-4">Date of Birth</dt>
-                <dd class="col-sm-8">@m.DateOfBirth?.ToString("MM/dd/yyyy")</dd>
-            }
+                                            <dt class="col-sm-4">First Name</dt>
+                                            <dd class="col-sm-8">@m.FirstName</dd>
 
-            @if (m.ApproximateAge.HasValue)
-            {
-                <dt class="col-sm-4">Age</dt>
-                <dd class="col-sm-8">@m.ApproximateAge</dd>
-            }
+                                            <dt class="col-sm-4">Last Name</dt>
+                                            <dd class="col-sm-8">@m.LastName</dd>
 
-        </dl>
-    </div>
-}
+                                            @if (m.DateOfBirth.HasValue)
+                                            {
+                                                <dt class="col-sm-4">Date of Birth</dt>
+                                                <dd class="col-sm-8">@m.DateOfBirth?.ToString("MM/dd/yyyy")</dd>
+                                            }
+
+                                            @if (m.ApproximateAge.HasValue)
+                                            {
+                                                <dt class="col-sm-4">Age</dt>
+                                                <dd class="col-sm-8">@m.ApproximateAge</dd>
+                                            }
+
+                                        </dl>
+                                    </div>
+                                }
+
+                            </div>
+                        </div>
+                    }
 
                     <!-- ================= INCOME ================= -->
                     @if (incomes?.Any() == true)
