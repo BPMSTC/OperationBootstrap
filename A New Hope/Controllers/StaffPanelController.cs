@@ -188,11 +188,11 @@ namespace A_New_Hope.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmCreateStaff()
         {
-            if (TempData["StaffCreateData"] is not string json ||
-                string.IsNullOrWhiteSpace(json))
-            {
+            // 🔁 KEEP TempData alive
+            var json = TempData.Peek("StaffCreateData") as string;
+
+            if (string.IsNullOrWhiteSpace(json))
                 return RedirectToAction(nameof(StaffCreate));
-            }
 
             var vm = JsonSerializer.Deserialize<StaffCreateViewModel>(json);
 
@@ -203,7 +203,9 @@ namespace A_New_Hope.Controllers
                 ? "ChangeMe123"
                 : vm.Password;
 
+            // =========================
             // CREATE IDENTITY USER
+            // =========================
             var identityUser = new ApplicationUser
             {
                 UserName = vm.Email,
@@ -214,33 +216,49 @@ namespace A_New_Hope.Controllers
 
             if (!result.Succeeded)
             {
+                // ❗ Put TempData BACK so user doesn’t lose data
+                TempData["StaffCreateData"] = json;
+
                 foreach (var error in result.Errors)
                 {
                     ModelState.AddModelError("", error.Description);
                 }
 
-                return RedirectToAction(nameof(StaffCreate));
+                return View("StaffReview", vm); // stay on review page with errors
             }
 
+            // =========================
             // CREATE DOMAIN USER
+            // =========================
             var domainUser = new DomainUser
             {
                 FirstName = vm.FirstName,
                 LastName = vm.LastName,
                 Email = vm.Email,
+                PhoneNumber = vm.PhoneNumber,
+                AddressLine1 = vm.AddressLine1,
+                AddressLine2 = vm.AddressLine2,
+                City = vm.City,
+                State = vm.State,
+                PostalCode = vm.PostalCode,
                 UserType = vm.UserType
             };
 
             _context.DomainUsers.Add(domainUser);
             await _context.SaveChangesAsync();
 
+            // =========================
             // LINK USERS
+            // =========================
             identityUser.DomainUserId = domainUser.Id;
             await _userManager.UpdateAsync(identityUser);
 
+            // =========================
             // ROLE
+            // =========================
             await _userManager.AddToRoleAsync(identityUser, vm.UserType.ToString());
 
+            // 🧹 CLEAR TempData ONLY on success
             TempData.Remove("StaffCreateData");
 
             return RedirectToAction(nameof(StaffDetails), new { id = domainUser.Id });

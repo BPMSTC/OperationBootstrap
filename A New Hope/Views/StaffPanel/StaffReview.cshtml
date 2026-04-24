@@ -24,6 +24,11 @@
                         </p>
                     </div>
 
+                    <!-- ✅ VALIDATION ERRORS (NEW) -->
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert validation-box mb-3">
+                    </div>
+
                     <dl class="row mb-4">
 
                         <dt class="col-sm-4">User Type</dt>
@@ -86,7 +91,10 @@
                         @Html.AntiForgeryToken()
 
                         <div class="d-flex justify-content-between">
-                            <a asp-action="StaffCreate" class="btn btn-secondary">Back</a>
+                            <a asp-action="StaffCreate" class="btn btn-secondary">
+                                Back
+                            </a>
+
                             <button type="submit" class="btn btn-success">
                                 Confirm & Create
                             </button>

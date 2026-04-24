@@ -217,27 +217,33 @@
     </div>
 </div>
 
+
+
 <script>
-            function toggleAddress() {
+    /* =========================================================
+       ADDRESS TOGGLE
+    ========================================================= */
+
+    function toggleAddress() {
 
         const checkbox = document.getElementById("isUnhousedToggle");
         const addressFields = document.getElementById("addressFields");
 
         if (!checkbox || !addressFields) return;
 
-        function update() {
+        const update = () => {
             addressFields.classList.toggle("d-none", checkbox.checked);
-        }
+        };
 
         checkbox.addEventListener("change", update);
-
-        // run on page load (important for edit screens)
         update();
     }
 
     toggleAddress();
 
-    toggleAddress();
+    /* =========================================================
+       WIZARD MODE
+    ========================================================= */
 
     function updateWizardMode() {
 
@@ -247,12 +253,10 @@
         const nextRoute = document.getElementById("nextRoute");
 
         const addressCard = document.getElementById("addressCard");
-        const unhousedCard = document.getElementById("unhousedCard");
         const incomeHeader = document.getElementById("incomeHeader");
         const incomeRowsContainer = document.getElementById("incomeRowsContainer");
         const extraClientFields = document.getElementById("extraClientFields");
 
-        // FIELD REFERENCES
         const firstName = document.querySelector('[name="User.FirstName"]')?.closest(".col-md-6");
         const lastName = document.querySelector('[name="User.LastName"]')?.closest(".col-md-6");
         const email = document.querySelector('[name="User.Email"]')?.closest(".col-md-6");
@@ -265,7 +269,6 @@
             if (nextRoute) nextRoute.value = "Finalize";
 
             addressCard?.classList.add("d-none");
-            unhousedCard?.classList.add("d-none");
             incomeHeader?.classList.add("d-none");
             incomeRowsContainer?.classList.add("d-none");
             extraClientFields?.classList.add("d-none");
@@ -281,7 +284,6 @@
             if (nextRoute) nextRoute.value = "HouseholdMembers";
 
             addressCard?.classList.remove("d-none");
-            unhousedCard?.classList.remove("d-none");
             incomeHeader?.classList.remove("d-none");
             incomeRowsContainer?.classList.remove("d-none");
             extraClientFields?.classList.remove("d-none");
@@ -289,13 +291,12 @@
             allFields.forEach(f => f?.classList.remove("d-none"));
         }
 
-        // 🔥 FORCE VALIDATION REFRESH AFTER UI CHANGES
         refreshValidation();
     }
 
-    // ======================================================
-    // REAL-TIME VALIDATION SUPPORT (NEW)
-    // ======================================================
+    /* =========================================================
+       VALIDATION
+    ========================================================= */
 
     function refreshValidation() {
 
@@ -303,10 +304,8 @@
 
         const form = $("form");
 
-        // re-parse unobtrusive validation rules
         $.validator.unobtrusive.parse(form);
 
-        // trigger validation refresh
         form.find("input, select, textarea").each(function () {
             $(this).valid();
         });
@@ -318,40 +317,34 @@
 
         const form = $("form");
 
-        // Validate on typing
         form.on("input", "input, textarea", function () {
             $(this).valid();
         });
 
-        // Validate on dropdown change
         form.on("change", "select", function () {
             $(this).valid();
         });
 
-        // Optional: validate on blur too (feels more "instant")
         form.on("blur", "input, textarea", function () {
             $(this).valid();
         });
     }
 
-    // init wizard mode
-    document.querySelector('[name="User.UserType"]')
-        ?.addEventListener("change", updateWizardMode);
-
-    updateWizardMode();
-    enableRealTimeValidation();
-
-    // -------------------------
-    // INCOME LOGIC
-    // -------------------------
+    /* =========================================================
+       INCOME SYSTEM (FIXED + SIMPLE + STABLE)
+    ========================================================= */
 
     const incomeRowsContainer = document.getElementById("incomeRowsContainer");
     const incomeTemplate = document.getElementById("incomeRowTemplate");
     const addIncomeRowBtn = document.getElementById("addIncomeRowBtn");
 
-    function reindexIncomeRows() {
+    /* safe incoming model from Razor */
+        const existingIncomes = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(Model.Incomes)
+        );
 
-        if (!incomeRowsContainer) return;
+    /* update names for model binding */
+    function reindexIncomeRows() {
 
         const rows = incomeRowsContainer.querySelectorAll(".income-row");
 
@@ -372,29 +365,77 @@
         });
     }
 
-    function addIncomeRow() {
+    /* create row */
+    function addIncomeRow(prefill = null) {
+
         const clone = incomeTemplate.content.cloneNode(true);
+        const row = clone.querySelector(".income-row");
+
+        const type = row.querySelector("select");
+        const amount = row.querySelector("input");
+
+        if (prefill) {
+            if (type) type.value = prefill.IncomeType ?? "";
+            if (amount) amount.value = prefill.MonthlyAmount ?? "";
+        }
+
         incomeRowsContainer.appendChild(clone);
+
         reindexIncomeRows();
-        refreshValidation(); // 🔥 important for new dynamic fields
     }
 
+    /* INIT: ALWAYS 1 ROW OR RESTORED DATA */
+    function initIncomeRows() {
+
+        if (!incomeRowsContainer) return;
+
+        incomeRowsContainer.innerHTML = "";
+
+        if (Array.isArray(existingIncomes) && existingIncomes.length > 0) {
+
+            existingIncomes.forEach(i => addIncomeRow(i));
+
+        } else {
+
+            addIncomeRow(); // ALWAYS START WITH ONE ROW
+        }
+
+        reindexIncomeRows();
+    }
+
+    /* remove row */
     incomeRowsContainer?.addEventListener("click", function (e) {
+
         const btn = e.target.closest(".remove-income-row");
         if (!btn) return;
+
+        const rows = incomeRowsContainer.querySelectorAll(".income-row");
+
+        if (rows.length === 1) return; // prevent zero rows
 
         btn.closest(".income-row").remove();
         reindexIncomeRows();
     });
 
-    addIncomeRowBtn?.addEventListener("click", addIncomeRow);
+    /* add row button */
+    addIncomeRowBtn?.addEventListener("click", function () {
+        addIncomeRow();
+    });
 
-    document.querySelector("form")
-        ?.addEventListener("submit", function () {
-            reindexIncomeRows();
-        });
+    /* submit safety */
+    document.querySelector("form")?.addEventListener("submit", function () {
+        reindexIncomeRows();
+    });
 
-    reindexIncomeRows();
-    addIncomeRow();
+    /* =========================================================
+       INIT
+    ========================================================= */
+
+    document.querySelector('[name="User.UserType"]')
+        ?.addEventListener("change", updateWizardMode);
+
+    updateWizardMode();
+    enableRealTimeValidation();
+    initIncomeRows();
 
 </script>
