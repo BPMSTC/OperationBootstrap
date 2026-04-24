@@ -692,3 +692,41 @@ body div:has(> dl.row) + div {
     font-size: 1.2rem;
     color: #6c757d; /* subtle gray */
 }
+
+/* =========================
+   STAFF DETAILS TABLE FIX
+========================= */
+.staff-table td {
+    background-color: transparent !important;
+}
+
+.dark-mode .staff-table td {
+    background-color: var(--bg-surface) !important;
+    color: var(--text-main) !important;
+}
+
+.dark-mode .staff-table tbody tr:hover td {
+    background-color: var(--table-hover) !important;
+}
+
+.validation-box {
+    background-color: var(--bg-muted) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+.dark-mode .create-staff-header h2 {
+    color: #ffffff !important;
+}
+
+a.btn-outline-secondary[href*="/Details"],
+a.btn-outline-secondary[href*="/StaffDetails"] {
+    color: var(--action-details) !important;
+    border-color: var(--action-details) !important;
+}
+
+    a.btn-outline-secondary[href*="/Details"]:hover,
+    a.btn-outline-secondary[href*="/StaffDetails"]:hover {
+        background-color: var(--action-details) !important;
+        color: #fff !important;
+    }

@@ -1,16 +1,18 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Models.Enums;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Models.ViewModels;
-using A_New_Hope.Models.ViewModels.Users;
+using A_New_Hope.Models.ViewModels.ClientViewModels;
 using A_New_Hope.Models.ViewModels.Referrals;
+using A_New_Hope.Models.ViewModels.Users;
 using A_New_Hope.Services.Interfaces;
-using A_New_Hope.Utilities;
-using A_New_Hope.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace A_New_Hope.Controllers
 {
@@ -149,6 +151,38 @@ namespace A_New_Hope.Controllers
                 return View("Error");
             }
         }
+
+
+        private const string WizardDraftKey = "WizardDraft";
+
+        private void SaveDraft(DomainUser user, List<HouseholdMember> members)
+        {
+            var draft = new
+            {
+                User = user,
+                Household = members
+            };
+
+            HttpContext.Session.SetString(
+                WizardDraftKey,
+                System.Text.Json.JsonSerializer.Serialize(draft)
+            );
+        }
+
+        private (DomainUser user, List<HouseholdMember> household)? LoadDraft()
+        {
+            var json = HttpContext.Session.GetString(WizardDraftKey);
+
+            if (string.IsNullOrEmpty(json))
+                return null;
+
+            var draft = System.Text.Json.JsonSerializer.Deserialize<dynamic>(json);
+
+            return null; // (we’ll simplify below in controller usage)
+        }
+
+
+
 
         // GET: Users/Details/5
         /// <summary>
@@ -586,6 +620,339 @@ namespace A_New_Hope.Controllers
             }
         }
 
+
+
+        // =========================================================
+        // CREATE WIZARD
+        // =========================================================
+
+
+        public IActionResult CreateWizard()
+        {
+            var json = HttpContext.Session.GetString("WizardUser");
+            var extrasJson = HttpContext.Session.GetString("WizardUserExtras");
+
+            var vm = new UserWizardViewModel();
+
+            // ================= USER =================
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                vm.User = JsonSerializer.Deserialize<DomainUser>(json) ?? new DomainUser();
+            }
+
+            // ================= FULL RESTORE =================
+            if (!string.IsNullOrWhiteSpace(extrasJson))
+            {
+                vm = JsonSerializer.Deserialize<UserWizardViewModel>(extrasJson)
+                     ?? new UserWizardViewModel();
+            }
+
+            // ================= ENSURE AT LEAST ONE INCOME ROW =================
+            if (vm.Incomes == null || vm.Incomes.Count == 0)
+            {
+                vm.Incomes = new List<UserIncomeInput>
+        {
+            new UserIncomeInput()
+        };
+            }
+
+            return View(vm);
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateWizard(UserWizardViewModel vm)
+        {
+            try
+            {
+                NormalizeDomainUser(vm.User);
+                await ApplyDomainUserValidationAsync(vm.User);
+
+                // 🔴 HARD RULE: always Client
+                vm.User.UserType = UserType.Client;
+
+                // =========================
+                // MODELSTATE CLEANUP
+                // =========================
+
+                ModelState.Remove(nameof(DomainUser.CreatedByUser));
+                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
+                ModelState.Remove(nameof(DomainUser.ClientProfile));
+
+                foreach (var key in ModelState.Keys
+                    .Where(k => k.Contains("Income"))
+                    .ToList())
+                {
+                    ModelState.Remove(key);
+                }
+
+                foreach (var state in ModelState)
+                {
+                    foreach (var error in state.Value.Errors)
+                    {
+                        _logger.LogWarning("ModelState error {Key}: {Error}",
+                            state.Key, error.ErrorMessage);
+                    }
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return View(vm);
+                }
+
+                // =========================
+                // SESSION PERSISTENCE
+                // =========================
+
+                HttpContext.Session.SetString(
+                    "WizardUser",
+                    JsonSerializer.Serialize(vm.User)
+                );
+
+                HttpContext.Session.SetString(
+                    "WizardUserExtras",
+                    JsonSerializer.Serialize(vm)
+                );
+
+                // =========================
+                // NAVIGATION
+                // =========================
+
+                return RedirectToAction(nameof(HouseholdMembers));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CreateWizard failed");
+                ModelState.AddModelError("", "Error creating user draft.");
+                return View(vm);
+            }
+        }
+
+        // =========================================================
+        // HOUSEHOLD MEMBERS 
+        // =========================================================
+
+        public IActionResult HouseholdMembers()
+        {
+            var userJson = HttpContext.Session.GetString("WizardUser");
+
+            if (string.IsNullOrEmpty(userJson))
+                return RedirectToAction(nameof(CreateWizard));
+
+            var model = JsonSerializer.Deserialize<DomainUser>(userJson);
+
+            var householdJson = HttpContext.Session.GetString("WizardHousehold");
+
+            var members = string.IsNullOrWhiteSpace(householdJson)
+                ? new List<HouseholdMember>()
+                : JsonSerializer.Deserialize<List<HouseholdMember>>(householdJson) ?? new List<HouseholdMember>();
+
+            // If empty, show one blank row
+            if (members.Count == 0)
+                members.Add(new HouseholdMember());
+
+            ViewBag.HouseholdMembers = members;
+
+            // ================= AUTO SET YES/NO =================
+            ViewBag.HasHouseholdMembers =
+                members.Any(m =>
+                    !string.IsNullOrWhiteSpace(m.FirstName) ||
+                    !string.IsNullOrWhiteSpace(m.LastName) ||
+                    m.DateOfBirth != null ||
+                    m.ApproximateAge != null
+                )
+                ? "Yes"
+                : "No";
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult HouseholdMembers(string HasHouseholdMembers, IFormCollection form)
+        {
+            var userJson = HttpContext.Session.GetString("WizardUser");
+
+            if (string.IsNullOrEmpty(userJson))
+                return RedirectToAction(nameof(CreateWizard));
+
+            // ================= HANDLE "NO HOUSEHOLD" =================
+            if (HasHouseholdMembers == "No")
+            {
+                HttpContext.Session.Remove("WizardHousehold");
+                HttpContext.Session.SetString("HasHouseholdMembers", "No");
+                return RedirectToAction(nameof(Finalize));
+            }
+
+            var members = new List<HouseholdMember>();
+            int index = 0;
+
+            while (true)
+            {
+                var key = $"HouseholdMembers[{index}].FirstName";
+
+                if (!form.ContainsKey(key))
+                    break;
+
+                var firstName = form[key];
+
+                if (string.IsNullOrWhiteSpace(firstName))
+                {
+                    index++;
+                    continue;
+                }
+
+                members.Add(new HouseholdMember
+                {
+                    FirstName = firstName,
+                    LastName = form[$"HouseholdMembers[{index}].LastName"],
+                    DateOfBirth = DateTime.TryParse(form[$"HouseholdMembers[{index}].DateOfBirth"], out var dob) ? dob : null,
+                    ApproximateAge = int.TryParse(form[$"HouseholdMembers[{index}].ApproximateAge"], out var age) ? age : null
+                });
+
+                index++;
+            }
+
+            // ALWAYS persist (this is the key fix)
+            HttpContext.Session.SetString(
+                "WizardHousehold",
+                JsonSerializer.Serialize(members)
+            );
+
+            HttpContext.Session.SetString("HasHouseholdMembers", "Yes");
+
+            return RedirectToAction(nameof(Finalize));
+        }
+
+
+        // =========================================================
+        // FINALIZE (REVIEW PAGE)
+        // =========================================================
+
+        public IActionResult Finalize()
+        {
+            // ================= LOAD WIZARD STATE =================
+            var stateJson = HttpContext.Session.GetString("WizardUserExtras");
+
+            if (string.IsNullOrWhiteSpace(stateJson))
+                return RedirectToAction(nameof(CreateWizard));
+
+            var vm = JsonSerializer.Deserialize<UserWizardViewModel>(stateJson)
+                     ?? new UserWizardViewModel();
+
+            // ================= USER FALLBACK =================
+            var userJson = HttpContext.Session.GetString("WizardUser");
+
+            if (!string.IsNullOrWhiteSpace(userJson))
+            {
+                vm.User = JsonSerializer.Deserialize<DomainUser>(userJson)
+                          ?? vm.User;
+            }
+
+            vm.User ??= new DomainUser();
+
+            // ================= HOUSEHOLD =================
+            var householdJson = HttpContext.Session.GetString("WizardHousehold");
+
+            ViewBag.HouseholdMembers =
+                string.IsNullOrWhiteSpace(householdJson)
+                    ? new List<HouseholdMember>()
+                    : JsonSerializer.Deserialize<List<HouseholdMember>>(householdJson)
+                      ?? new List<HouseholdMember>();
+
+            // ================= INCOME =================
+            var incomes = vm.Incomes ?? new List<UserIncomeInput>();
+
+            _logger.LogInformation("Income count loaded in Finalize: {Count}", incomes.Count);
+
+            ViewBag.Incomes = incomes;
+
+            return View(vm.User);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FinalizeConfirm()
+        {
+            try
+            {
+                var userJson = HttpContext.Session.GetString("WizardUser");
+
+                if (string.IsNullOrWhiteSpace(userJson))
+                    return RedirectToAction(nameof(CreateWizard));
+
+                var user = JsonSerializer.Deserialize<DomainUser>(userJson);
+
+                if (user == null)
+                    return RedirectToAction(nameof(CreateWizard));
+
+                var householdJson = HttpContext.Session.GetString("WizardHousehold");
+
+                var household = string.IsNullOrWhiteSpace(householdJson)
+                    ? new List<HouseholdMember>()
+                    : JsonSerializer.Deserialize<List<HouseholdMember>>(householdJson)
+                      ?? new List<HouseholdMember>();
+
+                // OPTIONAL: income restore (NO DB mapping yet)
+                var extrasJson = HttpContext.Session.GetString("WizardUserExtras");
+                List<UserIncomeInput> incomes = new();
+
+                if (!string.IsNullOrWhiteSpace(extrasJson))
+                {
+                    using var doc = JsonDocument.Parse(extrasJson);
+
+                    if (doc.RootElement.TryGetProperty("Incomes", out var inc))
+                    {
+                        incomes = JsonSerializer.Deserialize<List<UserIncomeInput>>(inc.GetRawText())
+                                  ?? new List<UserIncomeInput>();
+                    }
+                }
+
+                // ================= USER SETUP =================
+                user.CreatedAt = DateTime.UtcNow;
+                user.UpdatedAt = DateTime.UtcNow;
+                user.IsActive = true;
+                user.Id = 0;
+
+                _context.DomainUsers.Add(user);
+                await _context.SaveChangesAsync();
+
+                // ================= HOUSEHOLD =================
+                foreach (var h in household)
+                {
+                    h.ClientUserId = user.Id;
+                    h.Id = 0;
+                }
+
+                if (household.Count > 0)
+                    _context.HouseholdMembers.AddRange(household);
+
+                await _context.SaveChangesAsync();
+
+                // ================= CLEANUP =================
+                HttpContext.Session.Remove("WizardUser");
+                HttpContext.Session.Remove("WizardHousehold");
+                HttpContext.Session.Remove("WizardUserExtras");
+                HttpContext.Session.Remove("HasHouseholdMembers");
+
+                return RedirectToAction(nameof(Details), new { id = user.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "FinalizeConfirm failed");
+
+                TempData["ErrorMessage"] =
+                    "An unexpected error occurred while saving the user. Please try again.";
+
+                return RedirectToAction(nameof(CreateWizard));
+            }
+        }
+
+
+
+
+
         /// <summary>
         /// Keeps a linked Identity account in sync with the domain user's role and active status.
         /// </summary>
@@ -669,13 +1036,13 @@ namespace A_New_Hope.Controllers
             model.FirstName = model.FirstName?.Trim() ?? string.Empty;
             model.LastName = model.LastName?.Trim() ?? string.Empty;
 
-            model.Email = InputNormalization.NullIfWhiteSpace(model.Email);
-            model.PhoneNumber = InputNormalization.NullIfWhiteSpace(model.PhoneNumber);
-            model.AddressLine1 = InputNormalization.NullIfWhiteSpace(model.AddressLine1);
-            model.AddressLine2 = InputNormalization.NullIfWhiteSpace(model.AddressLine2);
-            model.City = InputNormalization.NullIfWhiteSpace(model.City);
-            model.State = InputNormalization.NullIfWhiteSpace(model.State)?.ToUpperInvariant();
-            model.PostalCode = InputNormalization.NullIfWhiteSpace(model.PostalCode);
+            model.Email = NullIfWhiteSpace(model.Email);
+            model.PhoneNumber = NullIfWhiteSpace(model.PhoneNumber);
+            model.AddressLine1 = NullIfWhiteSpace(model.AddressLine1);
+            model.AddressLine2 = NullIfWhiteSpace(model.AddressLine2);
+            model.City = NullIfWhiteSpace(model.City);
+            model.State = NullIfWhiteSpace(model.State)?.ToUpperInvariant();
+            model.PostalCode = NullIfWhiteSpace(model.PostalCode);
         }
 
         /// <summary>
@@ -683,14 +1050,12 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyDomainUserValidationAsync(DomainUser model, ulong? currentId = null)
         {
-            if (!string.IsNullOrWhiteSpace(model.Email) &&
-                !ContactValidation.IsValidEmail(model.Email))
+            if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(DomainUser.Email), "Email format is invalid.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.PhoneNumber) &&
-                !ContactValidation.IsValidPhoneNumber(model.PhoneNumber))
+            if (!string.IsNullOrWhiteSpace(model.PhoneNumber) && !IsValidPhoneNumber(model.PhoneNumber))
             {
                 ModelState.AddModelError(nameof(DomainUser.PhoneNumber), "Enter a valid US phone number with 10 digits, or 11 digits starting with 1.");
             }
@@ -699,7 +1064,7 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First name is required.");
             }
-            else if (!PersonValidation.IsValidPersonName(model.FirstName))
+            else if (!IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(DomainUser.FirstName), "First Name contains invalid characters.");
             }
@@ -708,13 +1073,12 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last name is required.");
             }
-            else if (!PersonValidation.IsValidPersonName(model.LastName))
+            else if (!IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(DomainUser.LastName), "Last Name contains invalid characters.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.City) &&
-                !AddressValidation.IsValidCity(model.City))
+            if (!string.IsNullOrWhiteSpace(model.City) && !IsValidCity(model.City))
             {
                 ModelState.AddModelError(nameof(DomainUser.City), "City contains invalid characters.");
             }
@@ -724,8 +1088,7 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(DomainUser.State), "State must be WI.");
             }
 
-            if (!string.IsNullOrWhiteSpace(model.PostalCode) &&
-                !AddressValidation.IsValidUsPostalCode(model.PostalCode))
+            if (!string.IsNullOrWhiteSpace(model.PostalCode) && !IsValidUsPostalCode(model.PostalCode))
             {
                 ModelState.AddModelError(nameof(DomainUser.PostalCode), "Enter a valid US ZIP code or ZIP+4.");
             }
@@ -755,6 +1118,140 @@ namespace A_New_Hope.Controllers
             {
                 ModelState.AddModelError(nameof(DomainUser.UserType), "Select a valid user type.");
             }
+        }
+
+        /// <summary>
+        /// Returns null when the value is blank; otherwise returns the trimmed value.
+        /// </summary>
+        private static string? NullIfWhiteSpace(string? value)
+        {
+            // Convert blank strings to null after trimming.
+            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        /// <summary>
+        /// Validates a practical US-style phone number.
+        /// </summary>
+        private static bool IsValidPhoneNumber(string phoneNumber)
+        {
+            // Reject characters outside the allowed phone number pattern.
+            if (!Regex.IsMatch(phoneNumber, @"^\+?[0-9()\-\s]+$"))
+            {
+                return false;
+            }
+
+            // Strip formatting characters to validate digit count.
+            var digitsOnly = new string(phoneNumber.Where(char.IsDigit).ToArray());
+
+            // Accept standard 10-digit US phone numbers.
+            if (digitsOnly.Length == 10)
+            {
+                return true;
+            }
+
+            // Accept 11-digit US phone numbers only when starting with 1.
+            if (digitsOnly.Length == 11 && digitsOnly.StartsWith("1"))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Validates a practical email format for this project.
+        /// </summary>
+        private static bool IsValidEmail(string email)
+        {
+            // Reject spaces in email addresses.
+            if (email.Contains(' '))
+            {
+                return false;
+            }
+
+            // Require exactly one @ symbol.
+            if (email.Count(c => c == '@') != 1)
+            {
+                return false;
+            }
+
+            // Reject consecutive periods.
+            if (email.Contains(".."))
+            {
+                return false;
+            }
+
+            // Split the email into local and domain parts.
+            var parts = email.Split('@');
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            var localPart = parts[0];
+            var domainPart = parts[1];
+
+            // Require non-empty local and domain parts.
+            if (string.IsNullOrWhiteSpace(localPart) || string.IsNullOrWhiteSpace(domainPart))
+            {
+                return false;
+            }
+
+            // Reject local parts starting or ending with a period.
+            if (localPart.StartsWith('.') || localPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            // Reject domain parts starting or ending with a period.
+            if (domainPart.StartsWith('.') || domainPart.EndsWith('.'))
+            {
+                return false;
+            }
+
+            // Require a dot in the domain portion.
+            if (!domainPart.Contains('.'))
+            {
+                return false;
+            }
+
+            // Reject empty domain labels.
+            var domainLabels = domainPart.Split('.');
+            if (domainLabels.Any(label => string.IsNullOrWhiteSpace(label)))
+            {
+                return false;
+            }
+
+            // Validate local and domain characters using project regex rules.
+            return Regex.IsMatch(localPart, @"^[A-Za-z0-9._+\-]+$")
+                && Regex.IsMatch(domainPart, @"^[A-Za-z0-9.\-]+$");
+        }
+
+        /// <summary>
+        /// Validates a person name using a practical character set.
+        /// </summary>
+        private static bool IsValidPersonName(string name)
+        {
+            // Allow letters plus common punctuation for personal names.
+            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
+        }
+
+        /// <summary>
+        /// Validates a city name using a practical character set.
+        /// </summary>
+        private static bool IsValidCity(string city)
+        {
+            // Allow letters plus common punctuation for city names.
+            return Regex.IsMatch(city, @"^[A-Za-z][A-Za-z\s'.-]*$");
+        }
+
+        /// <summary>
+        /// Validates a US ZIP code or ZIP+4.
+        /// </summary>
+        private static bool IsValidUsPostalCode(string postalCode)
+        {
+            // Accept 5-digit ZIP codes and ZIP+4 values.
+            return Regex.IsMatch(postalCode, @"^\d{5}(-\d{4})?$");
         }
 
         /// <summary>

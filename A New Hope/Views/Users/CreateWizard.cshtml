@@ -1,0 +1,441 @@
+﻿@model A_New_Hope.Models.ViewModels.ClientViewModels.UserWizardViewModel
+@using A_New_Hope.Models.Enums
+
+@{
+    ViewData["Title"] = "Create Client";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-8 col-lg-10">
+
+            <div class="card wizard-card shadow-sm border-0">
+                <div class="card-body p-4">
+
+                    <div class="mb-4">
+                        <h2 class="mb-1">Create User</h2>
+                        @* <p class="text-muted mb-0">
+                            Enter user details and select user type.
+                        </p> *@
+                    </div>
+
+                    <form asp-action="CreateWizard" method="post" novalidate>
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden" id="nextRoute" name="NextRoute" value="HouseholdMembers" />
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- USER TYPE -->
+                            <input type="hidden" asp-for="User.UserType" value="Client" />
+                       
+
+                        <!-- USER INFO -->
+                        <div class="card wizard-card shadow-sm border-0 mb-4" id="userInfoCard">
+                            <div class="card-body">
+
+                                <h5 class="card-title mb-3">User Information</h5>
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.FirstName" class="form-label"></label>
+                                        <input asp-for="User.FirstName" class="form-control" />
+                                        <span asp-validation-for="User.FirstName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.LastName" class="form-label"></label>
+                                        <input asp-for="User.LastName" class="form-control" />
+                                        <span asp-validation-for="User.LastName" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.Email" class="form-label"></label>
+                                        <input asp-for="User.Email" class="form-control" />
+                                        <span asp-validation-for="User.Email" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label asp-for="User.PhoneNumber" class="form-label"></label>
+                                        <input asp-for="User.PhoneNumber" class="form-control" />
+                                        <span asp-validation-for="User.PhoneNumber" class="text-danger"></span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="card wizard-card shadow-sm border-0 mb-4" id="addressCard">
+
+                            <div class="card-body">
+
+                                <!-- HEADER ROW -->
+                                <div class="form-check m-0 mb-3 d-flex align-items-center gap-2">
+
+                                    <input asp-for="IsUnhoused"
+                                           class="form-check-input"
+                                           id="isUnhousedToggle" />
+
+                                    <label class="form-check-label mb-0" for="isUnhousedToggle">
+                                        Unhoused
+                                    </label>
+
+                                </div>
+
+                                <!-- ADDRESS FIELDS -->
+                                <div id="addressFields">
+
+                                    <div class="row g-3">
+
+                                        <div class="col-md-12">
+                                            <label asp-for="User.AddressLine1" class="form-label"></label>
+                                            <input asp-for="User.AddressLine1" class="form-control" />
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <label asp-for="User.AddressLine2" class="form-label"></label>
+                                            <input asp-for="User.AddressLine2" class="form-control" />
+                                        </div>
+
+                                        <div class="col-md-5">
+                                            <label asp-for="User.City" class="form-label"></label>
+                                            <input asp-for="User.City" class="form-control" />
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label asp-for="User.State" class="form-label"></label>
+                                            <input asp-for="User.State" class="form-control" maxlength="2" />
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label asp-for="User.PostalCode" class="form-label"></label>
+                                            <input asp-for="User.PostalCode" class="form-control" />
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div id="extraClientFields" class="card wizard-card shadow-sm border-0 mb-4">
+                            <div class="card-body">
+
+                                <div class="row g-3">
+
+                                    <div class="col-md-5">
+                                        <label asp-for="User.DateOfBirth" class="form-label"></label>
+                                        <input asp-for="User.DateOfBirth" type="date" class="form-control" />
+                                        <span asp-validation-for="User.DateOfBirth" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <label asp-for="EmploymentStatus" class="form-label"></label>
+                                        <select asp-for="EmploymentStatus"
+                                                asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
+                                                class="form-select"
+                                                required>
+                                            <option value="">-- Select --</option>
+                                        </select>
+                                        <span asp-validation-for="EmploymentStatus" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="col-md-4"></div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- INCOME -->
+                        <hr class="my-4" />
+
+                        <div class="d-flex justify-content-between align-items-center mb-3" id="incomeHeader">
+                            <div>
+                                <h5 class="mb-1">Monthly Income</h5>
+                                <p class="text-muted mb-0">Add one or more income types.</p>
+                            </div>
+
+                            <button type="button"
+                                    class="btn btn-outline-primary btn-sm rounded-pill"
+                                    id="addIncomeRowBtn">
+                                Add Income Type
+                            </button>
+                        </div>
+
+                        <div id="incomeRowsContainer"></div>
+
+                        <template id="incomeRowTemplate">
+                            <div class="border rounded p-3 mb-3 income-row">
+                                <div class="row g-3 align-items-end">
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">Income Type</label>
+                                        <select class="form-select">
+                                            <option value="">-- Select income type --</option>
+                                            @foreach (var option in Html.GetEnumSelectList<IncomeType>())
+                                            {
+                                                <option value="@option.Value">@option.Text</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label">Monthly Amount</label>
+                                        <input class="form-control"
+                                               type="number"
+                                               step="0.01"
+                                               min="0" />
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <button type="button"
+                                                class="btn btn-outline-danger btn-sm w-100 remove-income-row">
+                                            Remove
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- FOOTER -->
+                        <div class="d-flex justify-content-between pt-2">
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Next</button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+    /* =========================================================
+       ADDRESS TOGGLE
+    ========================================================= */
+
+    function toggleAddress() {
+
+        const checkbox = document.getElementById("isUnhousedToggle");
+        const addressFields = document.getElementById("addressFields");
+
+        if (!checkbox || !addressFields) return;
+
+        const update = () => {
+            addressFields.classList.toggle("d-none", checkbox.checked);
+        };
+
+        checkbox.addEventListener("change", update);
+        update();
+    }
+
+    toggleAddress();
+
+    /* =========================================================
+       WIZARD MODE
+    ========================================================= */
+
+    function updateWizardMode() {
+
+        const type = document.querySelector('[name="User.UserType"]')?.value;
+        const isStaffOrAdmin = type === "Staff" || type === "Admin";
+
+        const nextRoute = document.getElementById("nextRoute");
+
+        const addressCard = document.getElementById("addressCard");
+        const incomeHeader = document.getElementById("incomeHeader");
+        const incomeRowsContainer = document.getElementById("incomeRowsContainer");
+        const extraClientFields = document.getElementById("extraClientFields");
+
+        const firstName = document.querySelector('[name="User.FirstName"]')?.closest(".col-md-6");
+        const lastName = document.querySelector('[name="User.LastName"]')?.closest(".col-md-6");
+        const email = document.querySelector('[name="User.Email"]')?.closest(".col-md-6");
+        const phone = document.querySelector('[name="User.PhoneNumber"]')?.closest(".col-md-6");
+
+        const allFields = [firstName, lastName, email, phone];
+
+        if (isStaffOrAdmin) {
+
+            if (nextRoute) nextRoute.value = "Finalize";
+
+            addressCard?.classList.add("d-none");
+            incomeHeader?.classList.add("d-none");
+            incomeRowsContainer?.classList.add("d-none");
+            extraClientFields?.classList.add("d-none");
+
+            allFields.forEach(f => f?.classList.add("d-none"));
+
+            firstName?.classList.remove("d-none");
+            lastName?.classList.remove("d-none");
+            email?.classList.remove("d-none");
+
+        } else {
+
+            if (nextRoute) nextRoute.value = "HouseholdMembers";
+
+            addressCard?.classList.remove("d-none");
+            incomeHeader?.classList.remove("d-none");
+            incomeRowsContainer?.classList.remove("d-none");
+            extraClientFields?.classList.remove("d-none");
+
+            allFields.forEach(f => f?.classList.remove("d-none"));
+        }
+
+        refreshValidation();
+    }
+
+    /* =========================================================
+       VALIDATION
+    ========================================================= */
+
+    function refreshValidation() {
+
+        if (!window.jQuery || !$.validator) return;
+
+        const form = $("form");
+
+        $.validator.unobtrusive.parse(form);
+
+        form.find("input, select, textarea").each(function () {
+            $(this).valid();
+        });
+    }
+
+    function enableRealTimeValidation() {
+
+        if (!window.jQuery || !$.validator) return;
+
+        const form = $("form");
+
+        form.on("input", "input, textarea", function () {
+            $(this).valid();
+        });
+
+        form.on("change", "select", function () {
+            $(this).valid();
+        });
+
+        form.on("blur", "input, textarea", function () {
+            $(this).valid();
+        });
+    }
+
+    /* =========================================================
+       INCOME SYSTEM (FIXED + SIMPLE + STABLE)
+    ========================================================= */
+
+    const incomeRowsContainer = document.getElementById("incomeRowsContainer");
+    const incomeTemplate = document.getElementById("incomeRowTemplate");
+    const addIncomeRowBtn = document.getElementById("addIncomeRowBtn");
+
+    /* safe incoming model from Razor */
+        const existingIncomes = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(Model.Incomes)
+        );
+
+    /* update names for model binding */
+    function reindexIncomeRows() {
+
+        const rows = incomeRowsContainer.querySelectorAll(".income-row");
+
+        rows.forEach((row, index) => {
+
+            const type = row.querySelector("select");
+            const amount = row.querySelector("input");
+
+            if (type) {
+                type.name = `Incomes[${index}].IncomeType`;
+                type.id = `Incomes_${index}__IncomeType`;
+            }
+
+            if (amount) {
+                amount.name = `Incomes[${index}].MonthlyAmount`;
+                amount.id = `Incomes_${index}__MonthlyAmount`;
+            }
+        });
+    }
+
+    /* create row */
+    function addIncomeRow(prefill = null) {
+
+        const clone = incomeTemplate.content.cloneNode(true);
+        const row = clone.querySelector(".income-row");
+
+        const type = row.querySelector("select");
+        const amount = row.querySelector("input");
+
+        if (prefill) {
+            if (type) type.value = prefill.IncomeType ?? "";
+            if (amount) amount.value = prefill.MonthlyAmount ?? "";
+        }
+
+        incomeRowsContainer.appendChild(clone);
+
+        reindexIncomeRows();
+    }
+
+    /* INIT: ALWAYS 1 ROW OR RESTORED DATA */
+    function initIncomeRows() {
+
+        if (!incomeRowsContainer) return;
+
+        incomeRowsContainer.innerHTML = "";
+
+        if (Array.isArray(existingIncomes) && existingIncomes.length > 0) {
+
+            existingIncomes.forEach(i => addIncomeRow(i));
+
+        } else {
+
+            addIncomeRow(); // ALWAYS START WITH ONE ROW
+        }
+
+        reindexIncomeRows();
+    }
+
+    /* remove row */
+    incomeRowsContainer?.addEventListener("click", function (e) {
+
+        const btn = e.target.closest(".remove-income-row");
+        if (!btn) return;
+
+        const rows = incomeRowsContainer.querySelectorAll(".income-row");
+
+        if (rows.length === 1) return; // prevent zero rows
+
+        btn.closest(".income-row").remove();
+        reindexIncomeRows();
+    });
+
+    /* add row button */
+    addIncomeRowBtn?.addEventListener("click", function () {
+        addIncomeRow();
+    });
+
+    /* submit safety */
+    document.querySelector("form")?.addEventListener("submit", function () {
+        reindexIncomeRows();
+    });
+
+    /* =========================================================
+       INIT
+    ========================================================= */
+
+    document.querySelector('[name="User.UserType"]')
+        ?.addEventListener("change", updateWizardMode);
+
+    updateWizardMode();
+    enableRealTimeValidation();
+    initIncomeRows();
+
+</script>

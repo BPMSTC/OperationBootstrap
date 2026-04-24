@@ -1,93 +1,147 @@
-﻿@{
+﻿@model dynamic
+@{
     ViewData["Title"] = "Manage Login";
+
     var domainUser = (A_New_Hope.Models.DomainUser)ViewBag.DomainUser;
     var identityUser = (A_New_Hope.Models.ApplicationUser)ViewBag.IdentityUser;
     var roles = (IEnumerable<string>)ViewBag.IdentityRoles;
-    var isLockedOut = identityUser.LockoutEnd.HasValue && identityUser.LockoutEnd > DateTimeOffset.UtcNow;
+
+    var isLockedOut = identityUser.LockoutEnd.HasValue
+        && identityUser.LockoutEnd > DateTimeOffset.UtcNow;
 }
 
-<h1>Manage Login</h1>
-
-@if (TempData["SuccessMessage"] is string successMessage)
-{
-    <div class="alert alert-success">@successMessage</div>
-}
-@if (TempData["ErrorMessage"] is string errorMessage)
-{
-    <div class="alert alert-danger">@errorMessage</div>
-}
-@if (TempData["InfoMessage"] is string infoMessage)
-{
-    <div class="alert alert-info">@infoMessage</div>
-}
-
-<div class="mb-2"><strong>Name:</strong> @domainUser.LastName, @domainUser.FirstName</div>
-<div class="mb-2"><strong>Domain Email:</strong> @domainUser.Email</div>
-<div class="mb-2"><strong>UserType:</strong> @domainUser.UserType</div>
-
-<div class="mb-2">
-    <strong>Domain Status:</strong>
-    @if (domainUser.IsActive)
-    {
-        <span class="text-success">Active</span>
-    }
-    else
-    {
-        <span class="text-secondary">Inactive</span>
-    }
+<div class="section-header mb-3">
+    <h1>Manage Login</h1>
 </div>
 
-<hr />
+<div class="container">
 
-<div class="mb-2"><strong>Identity UserName:</strong> @identityUser.UserName</div>
-<div class="mb-2"><strong>Identity Email:</strong> @identityUser.Email</div>
-<div class="mb-2"><strong>Roles:</strong> @(roles.Any() ? string.Join(", ", roles) : "None")</div>
-<div class="mb-2">
-    <strong>Login Status:</strong>
-    @if (isLockedOut)
-    {
-        <span class="text-danger">Disabled (Locked Out)</span>
-    }
-    else
-    {
-        <span class="text-success">Enabled</span>
-    }
-</div>
+    <div class="card main-card">
 
-<hr />
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
 
-<h4>Reset Password</h4>
-<form asp-action="ResetPassword" method="post" class="mb-3">
-    @Html.AntiForgeryToken()
-    <input type="hidden" name="domainUserId" value="@domainUser.Id" />
+                <thead>
+                    <tr>
+                        <th style="width: 200px;">Field</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
 
-    <div class="mb-2">
-        <label for="newPassword" class="form-label">New Temporary Password</label>
-        <input type="text" name="newPassword" id="newPassword" class="form-control" placeholder="ChangeMe123!" />
-        <div class="form-text">Leave blank to use default temporary password.</div>
+                <tbody>
+
+                    <!-- NAME -->
+                    <tr>
+                        <td class="fw-semibold">Name</td>
+                        <td>
+                            @domainUser.LastName, @domainUser.FirstName
+                        </td>
+                    </tr>
+
+                    <!-- DOMAIN EMAIL -->
+                    <tr>
+                        <td class="fw-semibold">Domain Email</td>
+                        <td>
+                            @domainUser.Email
+                        </td>
+                    </tr>
+
+                    <!-- USER TYPE -->
+                    <tr>
+                        <td class="fw-semibold">User Type</td>
+                        <td>
+                            @domainUser.UserType
+                        </td>
+                    </tr>
+
+                    <!-- DOMAIN STATUS -->
+                    <tr>
+                        <td class="fw-semibold">Domain Status</td>
+                        <td>
+                            @if (domainUser.IsActive)
+                            {
+                                <span class="text-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="text-secondary">Inactive</span>
+                            }
+                        </td>
+                    </tr>
+
+                    <!-- LOGIN STATUS -->
+                    <tr>
+                        <td class="fw-semibold">Login Status</td>
+                        <td>
+                            @if (isLockedOut)
+                            {
+                                <span class="text-danger">Disabled (Locked Out)</span>
+                            }
+                            else
+                            {
+                                <span class="text-success">Enabled</span>
+                            }
+                        </td>
+                    </tr>
+
+                </tbody>
+
+            </table>
+        </div>
+
+        <!-- PASSWORD RESET BAR (NEW ADDITION) -->
+        <div class="mt-3">
+
+            <form asp-action="ResetPassword" method="post" class="d-flex gap-2 align-items-center flex-wrap">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="domainUserId" value="@domainUser.Id" />
+
+                <input type="text"
+                       name="newPassword"
+                       class="form-control"
+                       placeholder="Enter new password"
+                       style="max-width: 320px;" />
+
+                <button type="submit" class="btn btn-warning">
+                    Reset Password
+                </button>
+
+            </form>
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="mt-3 d-flex gap-2 flex-wrap align-items-center">
+
+            @if (isLockedOut)
+            {
+                <form asp-action="EnableLogin" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="domainUserId" value="@domainUser.Id" />
+                    <button type="submit" class="btn btn-success btn-sm">
+                        Enable Login
+                    </button>
+                </form>
+            }
+            else
+            {
+                <form asp-action="DisableLogin" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="domainUserId" value="@domainUser.Id" />
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        Disable Login
+                    </button>
+                </form>
+            }
+
+            <a asp-controller="StaffPanel"
+                   asp-action="StaffListIndex"
+                   class="btn btn-secondary btn-sm align-self-center">
+                Back
+            </a>
+
+        </div>
+
     </div>
-
-    <button type="submit" class="btn btn-warning">Reset Password</button>
-</form>
-
-<h4>Login Access</h4>
-<div class="d-flex gap-2 mb-3">
-    @if (isLockedOut)
-    {
-        <form asp-action="EnableLogin" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="domainUserId" value="@domainUser.Id" />
-            <button type="submit" class="btn btn-success">Enable Login</button>
-        </form>
-    }
-    else
-    {
-        <form asp-action="DisableLogin" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="domainUserId" value="@domainUser.Id" />
-            <button type="submit" class="btn btn-danger">Disable Login</button>
-        </form>
-    }
 </div>
-
-<a asp-controller="Users" asp-action="Index" class="btn btn-outline-secondary">Back to Users</a>

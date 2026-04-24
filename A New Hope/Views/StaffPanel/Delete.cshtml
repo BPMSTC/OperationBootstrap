@@ -1,0 +1,85 @@
+﻿@model A_New_Hope.Models.DomainUser
+
+@{
+    ViewData["Title"] = "Delete Staff";
+}
+
+<div class="section-header mb-3">
+    <h1>Delete Staff</h1>
+</div>
+
+<div class="container">
+
+    <div class="card main-card">
+
+        <form asp-action="Delete" method="post">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" asp-for="Id" />
+
+            <!-- Warning -->
+            <div class="alert alert-danger mb-3">
+                <strong>Warning:</strong> Are you sure you want to delete this staff member?
+                This action cannot be undone.
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">Field</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <!-- FIRST NAME -->
+                        <tr>
+                            <td class="fw-semibold">First Name</td>
+                            <td>
+                                @Model.FirstName
+                            </td>
+                        </tr>
+
+                        <!-- LAST NAME -->
+                        <tr>
+                            <td class="fw-semibold">Last Name</td>
+                            <td>
+                                @Model.LastName
+                            </td>
+                        </tr>
+
+                        <!-- EMAIL -->
+                        <tr>
+                            <td class="fw-semibold">Email</td>
+                            <td>
+                                @Model.Email
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+
+                <!-- DELETE BUTTON -->
+                <button type="submit" class="btn btn-danger">
+                    Delete
+                </button>
+
+                <!-- CANCEL BUTTON -->
+                <a asp-action="StaffListIndex"
+                       class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>

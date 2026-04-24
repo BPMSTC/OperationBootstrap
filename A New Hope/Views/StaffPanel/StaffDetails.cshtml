@@ -1,0 +1,120 @@
+﻿@model A_New_Hope.Models.DomainUser
+
+@{
+    ViewData["Title"] = "Staff Details";
+    var isEdit = Context.Request.Query["edit"] == "true";
+}
+
+<div class="section-header mb-3">
+    <h1>Staff Details</h1>
+</div>
+
+<div class="container">
+
+    <div class="card main-card">
+
+        <form asp-action="StaffDetails" method="post">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" asp-for="Id" />
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">Field</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <!-- FIRST NAME -->
+                        <tr>
+                            <td class="fw-semibold">First Name</td>
+                            <td>
+                                @if (isEdit)
+                                {
+                                    <input asp-for="FirstName" class="form-control" />
+                                }
+                                else
+                                {
+                                    <span class="text-main">@Model.FirstName</span>
+                                }
+                            </td>
+                        </tr>
+
+                        <!-- LAST NAME -->
+                        <tr>
+                            <td class="fw-semibold">Last Name</td>
+                            <td>
+                                @if (isEdit)
+                                {
+                                    <input asp-for="LastName" class="form-control" />
+                                }
+                                else
+                                {
+                                    <span class="text-main">@Model.LastName</span>
+                                }
+                            </td>
+                        </tr>
+
+                        <!-- EMAIL -->
+                        <tr>
+                            <td class="fw-semibold">Email</td>
+                            <td>
+                                @if (isEdit)
+                                {
+                                    <input asp-for="Email" class="form-control" />
+                                }
+                                else
+                                {
+                                    <span class="text-main">@Model.Email</span>
+                                }
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+
+                @if (isEdit)
+                {
+                    <button type="submit" class="btn btn-primary">
+                        Save
+                    </button>
+
+                    <a asp-action="StaffDetails"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-secondary">
+                        Cancel
+                    </a>
+                }
+                else
+                {
+                    <a asp-action="StaffDetails"
+                           asp-route-id="@Model.Id"
+                           asp-route-edit="true"
+                           class="btn btn-primary">
+                        Edit
+                    </a>
+
+                    <a asp-controller="StaffPanel"
+                           asp-action="StaffListIndex"
+                           class="btn btn-secondary">
+                        Back
+                    </a>
+                }
+
+            </div>
+
+        </form>
+
+    </div>
+</div>

@@ -1,13 +1,12 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Services;
+using A_New_Hope.Services.Interfaces;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog; // ADDED
-using A_New_Hope.Services;
-using A_New_Hope.Services.Interfaces;
-using MySql.Data.MySqlClient;
-using System.Net.Sockets;
 
 try
 {
@@ -150,7 +149,7 @@ try
     // Seeding (Domain + Identity)
     // ------------------------------
     // Creates a scoped service provider so DbContext/Identity services resolve correctly.
-    /*using (var scope = app.Services.CreateScope())
+    using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -159,78 +158,23 @@ try
 
         // Seed Identity roles/users (Admin/Staff roles + initial admin login)
         await IdentitySeeder.SeedAsync(scope.ServiceProvider);
-    }*/
-
-    using (var scope = app.Services.CreateScope())
-    {
-        var services = scope.ServiceProvider;
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        var dbContext = services.GetRequiredService<ApplicationDbContext>();
-
-        const int maxAttempts = 12;
-        var delay = TimeSpan.FromSeconds(5);
-
-        static bool IsTransientDatabaseStartupException(Exception? ex)
-        {
-            while (ex != null)
-            {
-                if (ex is MySqlException || ex is SocketException)
-                {
-                    return true;
-                }
-
-                ex = ex.InnerException;
-            }
-
-            return false;
-        }
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
-        {
-            try
-            {
-                logger.LogInformation(
-                    "Database startup attempt {Attempt} of {MaxAttempts}",
-                    attempt,
-                    maxAttempts);
-
-                await dbContext.Database.MigrateAsync();
-                await DataSeeder.SeedAsync(dbContext);
-                await IdentitySeeder.SeedAsync(services);
-
-                logger.LogInformation("Database migration and seeding completed successfully.");
-                break;
-            }
-            catch (Exception ex)
-            {
-                var isTransient = IsTransientDatabaseStartupException(ex);
-
-                if (!isTransient || attempt == maxAttempts)
-                {
-                    logger.LogError(
-                        ex,
-                        "Database startup tasks failed on attempt {Attempt} of {MaxAttempts}.",
-                        attempt,
-                        maxAttempts);
-                    throw;
-                }
-
-                logger.LogWarning(
-                    ex,
-                    "Transient database startup failure on attempt {Attempt} of {MaxAttempts}. Waiting {DelaySeconds} seconds before retrying.",
-                    attempt,
-                    maxAttempts,
-                    delay.TotalSeconds);
-
-                await Task.Delay(delay);
-            }
-        }
     }
+
+    /* USE THIS BLOCK INSTEAD OF THE ABOVE IF YOU WANT TO SEED DATA ONLY IN DEVELOPMENT ENVIRONMENT
+    if (app.Environment.IsDevelopment())
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await DataSeeder.SeedAsync(db);
+        await IdentitySeeder.SeedAsync(scope.ServiceProvider);
+    }
+    */
 
     app.Run(); // Start the web host
 }
 catch (Exception ex)
 {
+    // If startup crashes, log it to Serilog (file sink), then rethrow.
     Log.Fatal(ex, "Application terminated unexpectedly");
     throw;
 }
@@ -238,3 +182,4 @@ finally
 {
     Log.CloseAndFlush();
 }
+

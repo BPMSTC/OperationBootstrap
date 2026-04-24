@@ -1,5 +1,6 @@
 ﻿@{
     ViewData["Title"] = "Home";
+    bool isAdmin = User.IsInRole("Admin");
 }
 
 <div class="container mt-5">
@@ -13,23 +14,22 @@
         <div class="row g-4">
 
             <!-- Clients / Users -->
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 @(isAdmin ? "col-lg-3" : "col-lg-4")">
                 <div class="card workflow-card h-100">
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            
-                            @(User.IsInRole("Admin") ? "Users" : "Clients")
+                            @(isAdmin ? "Clients" : "Clients")
                         </div>
 
                         <p class="workflow-text">
-                            Manage and view @(User.IsInRole("Admin") ? "user accounts and roles." : "client records and information.").
+                            Manage and view @(isAdmin ? "Client records and information." : "client records and information.").
                         </p>
 
                         <a asp-controller="Users"
                                asp-action="Index"
                                class="btn neutral-btn-primary mt-auto">
-                             @(User.IsInRole("Admin") ? "Users" : "Clients")
+                            @(isAdmin ? "Clients" : "Clients")
                             <i class="bi bi-people"></i>
                         </a>
 
@@ -37,13 +37,38 @@
                 </div>
             </div>
 
+            @if (isAdmin)
+            {
+                <div class="col-md-6 col-lg-3">
+                    <div class="card workflow-card h-100">
+                        <div class="card-body d-flex flex-column">
+
+                            <div class="workflow-title d-flex align-items-center gap-2">
+                                Staff
+                            </div>
+
+                            <p class="workflow-text">
+                                Access staff tools and administrative controls.
+                            </p>
+
+                            <a asp-controller="StaffPanel"
+                                   asp-action="StaffListIndex"
+                                   class="btn neutral-btn-primary mt-auto">
+                                Staff
+                                <i class="bi bi-person-badge"></i>
+                            </a>
+
+                        </div>
+                    </div>
+                </div>
+            }
+
             <!-- Referrals -->
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 @(isAdmin ? "col-lg-3" : "col-lg-4")">
                 <div class="card workflow-card h-100">
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            
                             Referrals
                         </div>
 
@@ -63,12 +88,11 @@
             </div>
 
             <!-- Inventory -->
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 @(isAdmin ? "col-lg-3" : "col-lg-4")">
                 <div class="card workflow-card h-100">
                     <div class="card-body d-flex flex-column">
 
                         <div class="workflow-title d-flex align-items-center gap-2">
-                            
                             Inventory
                         </div>
 
@@ -86,6 +110,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Staff Panel (Admins ONLY) -->
+            
 
         </div>
     </div>
