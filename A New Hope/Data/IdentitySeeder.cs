@@ -103,6 +103,15 @@ namespace A_New_Hope.Data
                     "Domain admin user 'admin@anewhope.local' was not found. Ensure DataSeeder runs before IdentitySeeder.");
             }
 
+            var domainStaff = await db.DomainUsers
+                .FirstOrDefaultAsync(u => u.Email == "staff@anewhope.local");
+
+            if (domainStaff is null)
+            {
+                throw new InvalidOperationException(
+                    "Domain staff user 'staff@anewhope.local' was not found. Ensure DataSeeder runs before IdentitySeeder.");
+            }
+
             // ------------------------------------------------------------
             // 3) Ensure an Identity admin account exists (ApplicationUser)
             // ------------------------------------------------------------
@@ -156,6 +165,53 @@ namespace A_New_Hope.Data
                         var errors = string.Join("; ", updateResult.Errors.Select(e => e.Description));
                         throw new InvalidOperationException($"Failed to update Identity admin user: {errors}");
                     }
+                }
+            }
+
+            const string staffEmail = "staff@anewhope.local";
+            const string staffPassword = "ChangeMe123!";
+
+            var identityStaff = await userManager.FindByEmailAsync(staffEmail);
+
+            if (identityStaff is null)
+            {
+                identityStaff = new ApplicationUser
+                {
+                    UserName = staffEmail,
+                    Email = staffEmail,
+                    EmailConfirmed = true,
+                    DomainUserId = domainStaff.Id
+                };
+
+                var createResult = await userManager.CreateAsync(identityStaff, staffPassword);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                    throw new InvalidOperationException($"Failed to create Identity staff user: {errors}");
+                }
+            }
+            else
+            {
+                if (identityStaff.DomainUserId != domainStaff.Id)
+                {
+                    identityStaff.DomainUserId = domainStaff.Id;
+
+                    var updateResult = await userManager.UpdateAsync(identityStaff);
+                    if (!updateResult.Succeeded)
+                    {
+                        var errors = string.Join("; ", updateResult.Errors.Select(e => e.Description));
+                        throw new InvalidOperationException($"Failed to update Identity staff user: {errors}");
+                    }
+                }
+            }
+
+            if (!await userManager.IsInRoleAsync(identityStaff, "Staff"))
+            {
+                var addRoleResult = await userManager.AddToRoleAsync(identityStaff, "Staff");
+                if (!addRoleResult.Succeeded)
+                {
+                    var errors = string.Join("; ", addRoleResult.Errors.Select(e => e.Description));
+                    throw new InvalidOperationException($"Failed to assign Staff role: {errors}");
                 }
             }
 

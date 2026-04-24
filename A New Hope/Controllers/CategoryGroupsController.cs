@@ -1,5 +1,6 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -410,7 +411,8 @@ namespace A_New_Hope.Controllers
             }
 
             // Require at least one letter or number in the category group name.
-            if (!string.IsNullOrWhiteSpace(model.Name) && !ContainsLetterOrDigit(model.Name))
+            if (!string.IsNullOrWhiteSpace(model.Name) &&
+                !AddressValidation.ContainsLetterOrDigit(model.Name))
             {
                 ModelState.AddModelError(nameof(CategoryGroup.Name), "Category group name must contain letters or numbers.");
             }
@@ -431,15 +433,6 @@ namespace A_New_Hope.Controllers
                     ModelState.AddModelError(nameof(CategoryGroup.Name), "A category group with this name already exists.");
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns true when the value contains at least one letter or digit.
-        /// </summary>
-        private static bool ContainsLetterOrDigit(string value)
-        {
-            // Require at least one alphanumeric character in the value.
-            return value.Any(char.IsLetterOrDigit);
         }
     }
 }

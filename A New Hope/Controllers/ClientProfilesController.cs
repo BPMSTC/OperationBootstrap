@@ -477,23 +477,5 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(ClientProfile.EmploymentStatus), "Select a valid employment status.");
             }
         }
-
-        /// <summary>
-        /// Returns null when the value is blank; otherwise returns the trimmed value.
-        /// </summary>
-        private static string? NullIfWhiteSpace(string? value)
-        {
-            // Convert blank strings to null after trimming.
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
-
-        /// <summary>
-        /// Returns true when the value contains at least one letter or digit.
-        /// </summary>
-        private static bool ContainsLetterOrDigit(string value)
-        {
-            // Require at least one alphanumeric character in the value.
-            return value.Any(char.IsLetterOrDigit);
-        }
     }
 }

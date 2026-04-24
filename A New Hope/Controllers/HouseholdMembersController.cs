@@ -1,9 +1,9 @@
 using A_New_Hope.Data;
 using A_New_Hope.Models;
+using A_New_Hope.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace A_New_Hope.Controllers
 {
@@ -484,13 +484,15 @@ namespace A_New_Hope.Controllers
             }
 
             // Validate first name characters when provided.
-            if (!string.IsNullOrWhiteSpace(model.FirstName) && !IsValidPersonName(model.FirstName))
+            if (!string.IsNullOrWhiteSpace(model.FirstName) &&
+                !PersonValidation.IsValidPersonName(model.FirstName))
             {
                 ModelState.AddModelError(nameof(HouseholdMember.FirstName), "First Name contains invalid characters.");
             }
 
             // Validate last name characters when provided.
-            if (!string.IsNullOrWhiteSpace(model.LastName) && !IsValidPersonName(model.LastName))
+            if (!string.IsNullOrWhiteSpace(model.LastName) &&
+                !PersonValidation.IsValidPersonName(model.LastName))
             {
                 ModelState.AddModelError(nameof(HouseholdMember.LastName), "Last Name contains invalid characters.");
             }
@@ -524,15 +526,6 @@ namespace A_New_Hope.Controllers
                 ModelState.AddModelError(nameof(HouseholdMember.DateOfBirth), "Enter either Date of Birth or Approximate Age, not both.");
                 ModelState.AddModelError(nameof(HouseholdMember.ApproximateAge), "Enter either Date of Birth or Approximate Age, not both.");
             }
-        }
-
-        /// <summary>
-        /// Validates a person name using a practical character set.
-        /// </summary>
-        private static bool IsValidPersonName(string name)
-        {
-            // Allow letters plus common punctuation for personal names.
-            return Regex.IsMatch(name, @"^[A-Za-z][A-Za-z\s'.-]*$");
         }
     }
 }

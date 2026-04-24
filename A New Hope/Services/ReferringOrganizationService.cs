@@ -2,6 +2,7 @@
 using A_New_Hope.Models;
 using A_New_Hope.Models.Inputs;
 using A_New_Hope.Services.Interfaces;
+using A_New_Hope.Utilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Services
@@ -118,16 +119,16 @@ namespace A_New_Hope.Services
 
         private static void Normalize(ReferringOrganizationEntryInput input)
         {
-            input.Name = NullIfWhiteSpace(input.Name);
-            input.PrimaryContactName = NullIfWhiteSpace(input.PrimaryContactName);
-            input.Email = NullIfWhiteSpace(input.Email);
-            input.PhoneNumber = NullIfWhiteSpace(input.PhoneNumber);
-            input.AddressLine1 = NullIfWhiteSpace(input.AddressLine1);
-            input.AddressLine2 = NullIfWhiteSpace(input.AddressLine2);
-            input.City = NullIfWhiteSpace(input.City);
-            input.State = NullIfWhiteSpace(input.State)?.ToUpperInvariant();
-            input.PostalCode = NullIfWhiteSpace(input.PostalCode);
-            input.Notes = NullIfWhiteSpace(input.Notes);
+            input.Name = InputNormalization.NullIfWhiteSpace(input.Name);
+            input.PrimaryContactName = InputNormalization.NullIfWhiteSpace(input.PrimaryContactName);
+            input.Email = InputNormalization.NullIfWhiteSpace(input.Email);
+            input.PhoneNumber = InputNormalization.NullIfWhiteSpace(input.PhoneNumber);
+            input.AddressLine1 = InputNormalization.NullIfWhiteSpace(input.AddressLine1);
+            input.AddressLine2 = InputNormalization.NullIfWhiteSpace(input.AddressLine2);
+            input.City = InputNormalization.NullIfWhiteSpace(input.City);
+            input.State = InputNormalization.NullIfWhiteSpace(input.State)?.ToUpperInvariant();
+            input.PostalCode = InputNormalization.NullIfWhiteSpace(input.PostalCode);
+            input.Notes = InputNormalization.NullIfWhiteSpace(input.Notes);
 
             input.SelectedServiceCategoryIds ??= new List<ulong>();
         }
@@ -168,11 +169,6 @@ namespace A_New_Hope.Services
             {
                 throw new ArgumentException("Postal code is required.", nameof(input));
             }
-        }
-
-        private static string? NullIfWhiteSpace(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
     }
 }
