@@ -126,9 +126,17 @@ namespace A_New_Hope.Data
                 // (Identity users remain in AspNetUsers.)
                 entity.ToTable("Users");
                 // MySQL-friendly explicit lengths for string columns.
-                // Email has an explicit max length to avoid long text issues.
+                // They should have an explicit max length to avoid long text issues.
+                entity.Property(e => e.FirstName)
+                    .HasMaxLength(100)
+                    .IsRequired();
+                entity.Property(e => e.LastName)
+                    .HasMaxLength(100)
+                    .IsRequired();
                 entity.Property(e => e.Email)
-                    .HasMaxLength(255);
+                    .HasMaxLength(255)
+                    .IsRequired(false);
+
                 // Useful indexes for common filters and “soft delete” queries.
                 entity.HasIndex(e => e.IsActive);
                 entity.HasIndex(e => e.DeletedAt);
