@@ -20,13 +20,12 @@ namespace A_New_Hope.Models
         /// Front-end validation ensures proper email format and length.
         /// Added Regex for stricter validation of allowed email characters.
         /// </summary>
-        [Required(ErrorMessage = "Email address is required.")]
         [MaxLength(254, ErrorMessage = "Email address cannot exceed 254 characters.")]
         [EmailAddress(ErrorMessage = "Enter a valid email address (example: name@domain.com).")]
         [RegularExpression(
-    @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$",
-    ErrorMessage = "Enter a valid email address (must include a valid domain like .com, .org, etc.)."
-)]
+            @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$",
+            ErrorMessage = "Enter a valid email address (must include a valid domain like .com, .org, etc.)."
+        )]
         public string? Email { get; set; }
 
         // -----------------------------------------------------------------
@@ -43,18 +42,18 @@ namespace A_New_Hope.Models
         public string? PhoneNumber { get; set; }
 
         /// <summary>
-        /// Optional first name.
+        /// Required first name.
         /// </summary>
         [Required]
         [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Invalid characters in name.")]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
         /// <summary>
-        /// Optional last name.
+        /// Required last name.
         /// </summary>
         [Required]
         [RegularExpression(@"^[a-zA-Z\s'-]+$", ErrorMessage = "Invalid characters in name.")]
-        public string LastName { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional address line 1.
