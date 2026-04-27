@@ -730,3 +730,174 @@ a.btn-outline-secondary[href*="/StaffDetails"] {
         background-color: var(--action-details) !important;
         color: #fff !important;
     }
+
+
+
+
+
+
+
+/* ==============================
+   User Details Household Members
+============================== */
+
+/* Light mode defaults */
+.details-section-heading {
+    color: var(--text-main);
+}
+
+.household-member-item {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color) !important;
+}
+
+.household-toggle {
+    color: var(--text-main) !important;
+    background-color: var(--bg-surface) !important;
+}
+
+    .household-toggle:hover,
+    .household-toggle:focus,
+    .household-toggle[aria-expanded="true"] {
+        color: var(--text-main) !important;
+        background-color: var(--bg-muted) !important;
+        box-shadow: none !important;
+    }
+
+    .household-toggle .fw-semibold,
+    .household-chevron {
+        color: inherit !important;
+    }
+
+.household-member-body {
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+}
+
+    .household-member-body dt {
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    .household-member-body dd {
+        color: var(--text-main);
+    }
+
+.household-collapse {
+    background-color: var(--bg-surface);
+}
+
+/* Dark mode overrides */
+.dark-mode .details-section-heading {
+    color: #f8f9fa;
+}
+
+.dark-mode .household-member-item {
+    background-color: #212529;
+    border: 1px solid #495057 !important;
+}
+
+.dark-mode .household-toggle {
+    color: #f8f9fa !important;
+    background-color: #2b3035 !important;
+}
+
+    .dark-mode .household-toggle:hover,
+    .dark-mode .household-toggle:focus,
+    .dark-mode .household-toggle[aria-expanded="true"] {
+        color: #ffffff !important;
+        background-color: #2b3035 !important;
+        box-shadow: none !important;
+    }
+
+    .dark-mode .household-toggle .fw-semibold,
+    .dark-mode .household-chevron {
+        color: inherit !important;
+    }
+
+.dark-mode .household-member-body {
+    background-color: #111315;
+    color: #f8f9fa;
+}
+
+    .dark-mode .household-member-body dt {
+        color: #d6d8db;
+        font-weight: 600;
+    }
+
+    .dark-mode .household-member-body dd {
+        color: #ffffff;
+    }
+
+.dark-mode .household-collapse {
+    background-color: #111315;
+}
+
+
+/* ==============================
+   Referrals Index Search Card
+============================== */
+
+/* Light mode defaults */
+.referrals-search-card {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-main) !important;
+}
+
+    .referrals-search-card > .card-body {
+        background-color: var(--bg-surface) !important;
+        color: var(--text-main) !important;
+    }
+
+    .referrals-search-card .form-label {
+        color: var(--text-main) !important;
+        font-weight: 600;
+    }
+
+/* Dark mode overrides */
+.dark-mode .referrals-search-card {
+    background-color: #212529 !important;
+    border: 1px solid #495057 !important;
+    color: #f8f9fa !important;
+}
+
+    .dark-mode .referrals-search-card > .card-body {
+        background-color: #212529 !important;
+        color: #f8f9fa !important;
+    }
+
+    .dark-mode .referrals-search-card .form-label {
+        color: #f8f9fa !important;
+        font-weight: 600;
+    }
+
+    .dark-mode .referrals-search-card .form-control,
+    .dark-mode .referrals-search-card .form-select {
+        background-color: #212529 !important;
+        border-color: #6c757d !important;
+        color: #f8f9fa !important;
+    }
+
+        .dark-mode .referrals-search-card .form-control::placeholder {
+            color: #adb5bd !important;
+            opacity: 1;
+        }
+
+    .dark-mode .referrals-search-card .input-group-text {
+        background-color: #2b3035 !important;
+        border-color: #6c757d !important;
+        color: #f8f9fa !important;
+    }
+
+    .dark-mode .referrals-search-card .btn-outline-secondary {
+        color: #f8f9fa !important;
+        border-color: #adb5bd !important;
+    }
+
+        .dark-mode .referrals-search-card .btn-outline-secondary:hover,
+        .dark-mode .referrals-search-card .btn-outline-secondary:focus {
+            color: #ffffff !important;
+            background-color: #495057 !important;
+            border-color: #adb5bd !important;
+        }

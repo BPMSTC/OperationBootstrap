@@ -20,8 +20,8 @@
 // - The call to MigrateAsync() ensures the schema is created/updated before inserting seed rows.
 
 using A_New_Hope.Models;
-using Microsoft.EntityFrameworkCore;
 using A_New_Hope.Models.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace A_New_Hope.Data
 {
@@ -55,20 +55,61 @@ namespace A_New_Hope.Data
             // This makes the seed data easy to reason about and avoids small time skews.
             var now = DateTime.UtcNow;
 
+            // Helper arrays for random Client data generation (used in some seed sections below).
+            var clientFirstNames = new[]
+            {
+                "Jamie", "Taylor", "Morgan", "Riley", "Casey", "Jordan", "Alex", "Cameron", "Drew", "Avery",
+                "Parker", "Quinn", "Reese", "Skyler", "Dakota", "Harper", "Rowan", "Sawyer", "Emerson", "Finley",
+                "Bailey", "Charlie", "Hayden", "Kendall", "Logan", "Micah", "Payton", "Reagan", "Sage", "Tatum",
+                "Addison", "Blake", "Corey", "Devon", "Elliot", "Frankie", "Gray", "Hunter", "Indigo", "Jesse",
+                "Kai", "Lane", "Marley", "Nico", "Oakley", "Phoenix", "River", "Shawn", "Terry", "Winter"
+            };
+
+            var clientLastNames = new[]
+            {
+                "Anderson", "Bennett", "Carter", "Dawson", "Ellis", "Foster", "Garcia", "Harris", "Iverson", "Johnson",
+                "Keller", "Larson", "Miller", "Nelson", "Owens", "Peterson", "Quincy", "Roberts", "Stevens", "Turner",
+                "Underwood", "Valdez", "Walker", "Young", "Zimmerman", "Brooks", "Collins", "Diaz", "Evans", "Flores",
+                "Gibson", "Hayes", "Ingram", "Jacobs", "Knight", "Lewis", "Mason", "Norris", "Ortiz", "Price",
+                "Reed", "Sullivan", "Thomas", "Vaughn", "Watson", "Xu", "Yates", "Zimmer", "Porter", "Hughes",
+
+                "Adams", "Bishop", "Campbell", "Douglas", "Edwards", "Franklin", "Griffin", "Henderson", "Irwin", "Jennings",
+                "Kim", "Lawson", "Mitchell", "Newton", "Olsen", "Powell", "Quinn", "Ramirez", "Sanders", "Thompson",
+                "Upton", "Vasquez", "West", "York", "Zane", "Barker", "Chavez", "Duncan", "Erickson", "Fields",
+                "Graham", "Holland", "Isaac", "Jefferson", "Kramer", "Long", "Morales", "Newman", "O'Brien", "Parker",
+                "Rhodes", "Schmidt", "Tran", "Vega", "Wallace", "Yu", "Ziegler", "Pierce", "Holmes", "Fletcher"
+            };
+
+            var cities = new[]
+            {
+                "Stevens Point", "Plover", "Whiting", "Park Ridge", "Junction City", "Amherst", "Rosholt", "Custer"
+            };
+
+            var postalCodes = new[]
+            {
+                "54481", "54467", "54482", "54423", "54407", "54473", "54475", "54406"
+            };
+
+            var employmentStatuses = Enum.GetValues(typeof(EmploymentStatus))
+                .Cast<EmploymentStatus>()
+                .ToArray();
+
+            var incomeTypes = Enum.GetValues(typeof(IncomeType))
+                .Cast<IncomeType>()
+                .ToArray();
+
+            var referralStatuses = Enum.GetValues(typeof(ReferralStatus))
+                .Cast<ReferralStatus>()
+                .ToArray();
+            //* End helper arrays for random Client data generation
+
+
+
             // ============================================================
             // USERS (DomainUsers)
             // ============================================================
-            // DomainUsers represent your application’s "business user" records (clients, staff, admins).
-            //
-            // This section seeds:
-            // - 1 admin user
-            // - 2 client users
-            //
-            // NOTE: This seeds ONLY DomainUsers; Identity (login accounts) is handled separately
-            // by your IdentitySeeder.
             if (!await context.DomainUsers.AnyAsync())
             {
-                // Admin user (staff/admin login concepts are typically handled via Identity roles)
                 var admin = new DomainUser
                 {
                     Email = "admin@anewhope.local",
@@ -81,8 +122,7 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
-                // Staff user
-                var staff = new DomainUser
+                var staff1 = new DomainUser
                 {
                     Email = "staff@anewhope.local",
                     FirstName = "Sample",
@@ -94,42 +134,57 @@ namespace A_New_Hope.Data
                     UpdatedAt = now
                 };
 
-                // Client #1
-                var client1 = new DomainUser
+                var staff2 = new DomainUser
                 {
-                    Email = "client1@anewhope.local",
-                    FirstName = "Jamie",
-                    LastName = "Client",
-                    UserType = UserType.Client,
+                    Email = "intake.staff@anewhope.local",
+                    FirstName = "Intake",
+                    LastName = "Coordinator",
+                    UserType = UserType.Staff,
                     DefaultPreference = PreferenceOption.Ask,
                     IsActive = true,
-                    PhoneNumber = "555-111-2222",
-                    City = "Stevens Point",
-                    State = "WI",
-                    PostalCode = "54481",
                     CreatedAt = now,
                     UpdatedAt = now
                 };
 
-                // Client #2
-                var client2 = new DomainUser
+                var clients = new List<DomainUser>();
+
+                for (int i = 1; i <= 100; i++)
                 {
-                    Email = "client2@anewhope.local",
-                    FirstName = "Taylor",
-                    LastName = "Client",
-                    UserType = UserType.Client,
-                    DefaultPreference = PreferenceOption.Always,
-                    IsActive = true,
-                    PhoneNumber = "555-333-4444",
-                    City = "Plover",
-                    State = "WI",
-                    PostalCode = "54467",
-                    CreatedAt = now,
-                    UpdatedAt = now
-                };
+                    var firstName = clientFirstNames[(i - 1) % clientFirstNames.Length];
+                    var lastName = clientLastNames[(i - 1) % clientLastNames.Length];
 
-                // AddRange stages the inserts; SaveChangesAsync commits them to the DB.
-                context.DomainUsers.AddRange(admin, staff, client1, client2);
+                    var cityIndex = (i - 1) % cities.Length;
+
+                    var isUnhoused = i % 5 == 0;
+
+                    clients.Add(new DomainUser
+                    {
+                        Email = $"client{i:000}@anewhope.local",
+                        FirstName = firstName,
+                        LastName = lastName,
+                        UserType = UserType.Client,
+                        DefaultPreference = i % 3 == 0
+                            ? PreferenceOption.Always
+                            : i % 3 == 1
+                                ? PreferenceOption.Ask
+                                : PreferenceOption.Never,
+                        IsActive = true,
+                        PhoneNumber = $"555-{100 + i:000}-{2000 + i:0000}",
+
+                        AddressLine1 = isUnhoused ? null : $"{100 + i} Main Street",
+                        AddressLine2 = null,
+                        City = isUnhoused ? null : cities[cityIndex],
+                        State = isUnhoused ? null : "WI",
+                        PostalCode = isUnhoused ? null : postalCodes[cityIndex],
+
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    });
+                }
+
+                context.DomainUsers.AddRange(admin, staff1, staff2);
+                context.DomainUsers.AddRange(clients);
+
                 await context.SaveChangesAsync();
             }
 
@@ -144,15 +199,13 @@ namespace A_New_Hope.Data
                 u.FirstName == "System" &&
                 u.LastName == "Admin");
 
-            var clientUser1 = await context.DomainUsers.FirstAsync(u =>
-                u.UserType == UserType.Client &&
-                u.FirstName == "Jamie" &&
-                u.LastName == "Client");
+            var seededClients = await context.DomainUsers
+                .Where(u => u.UserType == UserType.Client && u.DeletedAt == null)
+                .OrderBy(u => u.Id)
+                .ToListAsync();
 
-            var clientUser2 = await context.DomainUsers.FirstAsync(u =>
-                u.UserType == UserType.Client &&
-                u.FirstName == "Taylor" &&
-                u.LastName == "Client");
+            var clientUser1 = seededClients.First();
+            var clientUser2 = seededClients.Skip(1).First();
 
             // ============================================================
             // CLIENT PROFILES
@@ -161,29 +214,28 @@ namespace A_New_Hope.Data
             // This section seeds one profile per client user.
             if (!await context.ClientProfiles.AnyAsync())
             {
-                context.ClientProfiles.AddRange(
-                    new ClientProfile
-                    {
-                        UserId = clientUser1.Id,
-                        EmploymentStatus = EmploymentStatus.PartTime,
-                        IsUnhoused = false,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    },
-                    new ClientProfile
-                    {
-                        UserId = clientUser2.Id,
-                        EmploymentStatus = EmploymentStatus.Unemployed,
-                        IsUnhoused = true,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }
-                );
+                var profiles = new List<ClientProfile>();
 
+                for (int i = 0; i < seededClients.Count; i++)
+                {
+                    var client = seededClients[i];
+
+                    profiles.Add(new ClientProfile
+                    {
+                        UserId = client.Id,
+                        EmploymentStatus = GetSeededEmploymentStatus(i),
+                        IsUnhoused = string.IsNullOrWhiteSpace(client.AddressLine1)
+                            && string.IsNullOrWhiteSpace(client.City)
+                            && string.IsNullOrWhiteSpace(client.State)
+                            && string.IsNullOrWhiteSpace(client.PostalCode),
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    });
+                }
+
+                context.ClientProfiles.AddRange(profiles);
                 await context.SaveChangesAsync();
             }
 
@@ -193,33 +245,45 @@ namespace A_New_Hope.Data
             // ClientIncomes store categorized monthly income rows for each client profile.
             if (!await context.ClientIncomes.AnyAsync())
             {
-                context.ClientIncomes.AddRange(
-                    new ClientIncome
-                    {
-                        ClientProfileUserId = clientUser1.Id,
-                        IncomeType = IncomeType.Employment,
-                        MonthlyAmount = 1200.00m,
-                        IsActive = true,
-                        Notes = null,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    },
-                    new ClientIncome
-                    {
-                        ClientProfileUserId = clientUser2.Id,
-                        IncomeType = IncomeType.Unemployment,
-                        MonthlyAmount = 300.00m,
-                        IsActive = true,
-                        Notes = null,
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }
-                );
+                var incomes = new List<ClientIncome>();
 
+                for (int i = 0; i < seededClients.Count; i++)
+                {
+                    var client = seededClients[i];
+                    var employmentStatus = GetSeededEmploymentStatus(i);
+
+                    var hasEmploymentIncome =
+                        employmentStatus == EmploymentStatus.FullTime ||
+                        employmentStatus == EmploymentStatus.PartTime ||
+                        employmentStatus == EmploymentStatus.SelfEmployed;
+
+                    // Working clients should always have income.
+                    // Non-working clients get income records about half the time.
+                    if (!hasEmploymentIncome && i % 2 != 0)
+                    {
+                        continue;
+                    }
+
+                    var incomeRowCount = (i % 2) + 1;
+
+                    for (int j = 0; j < incomeRowCount; j++)
+                    {
+                        incomes.Add(new ClientIncome
+                        {
+                            ClientProfileUserId = client.Id,
+                            IncomeType = GetSeededIncomeType(i, j, employmentStatus),
+                            MonthlyAmount = 150m + (i * 10m) + (j * 125m),
+                            IsActive = true,
+                            Notes = j == 0 ? null : "Additional seeded income source.",
+                            CreatedByUserId = adminUser.Id,
+                            UpdatedByUserId = adminUser.Id,
+                            CreatedAt = now,
+                            UpdatedAt = now
+                        });
+                    }
+                }
+
+                context.ClientIncomes.AddRange(incomes);
                 await context.SaveChangesAsync();
             }
 
@@ -230,31 +294,47 @@ namespace A_New_Hope.Data
             // Each member is linked to a client user via ClientUserId.
             if (!await context.HouseholdMembers.AnyAsync())
             {
-                context.HouseholdMembers.AddRange(
-                    new HouseholdMember
-                    {
-                        ClientUserId = clientUser1.Id,
-                        FirstName = "Casey",
-                        LastName = "Client",
-                        DateOfBirth = new DateTime(2015, 6, 12),
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    },
-                    new HouseholdMember
-                    {
-                        ClientUserId = clientUser2.Id,
-                        FirstName = "Morgan",
-                        LastName = "Client",
-                        DateOfBirth = new DateTime(2012, 11, 3),
-                        CreatedByUserId = adminUser.Id,
-                        UpdatedByUserId = adminUser.Id,
-                        CreatedAt = now,
-                        UpdatedAt = now
-                    }
-                );
+                var householdMembers = new List<HouseholdMember>();
 
+                var householdFirstNames = new[]
+                {
+                    "Sam", "Chris", "Pat", "Lee", "Robin", "Dana", "Leslie", "Shannon", "Kris", "Jo",
+                    "Mackenzie", "Noel", "Remy", "Sidney", "Toni"
+                };
+
+                for (int i = 0; i < seededClients.Count; i++)
+                {
+                    var client = seededClients[i];
+
+                    // Half of clients get household members.
+                    if (i % 2 != 0)
+                    {
+                        continue;
+                    }
+
+                    // Each selected client gets 1-3 household members.
+                    var memberCount = (i % 3) + 1;
+
+                    for (int j = 0; j < memberCount; j++)
+                    {
+                        householdMembers.Add(new HouseholdMember
+                        {
+                            ClientUserId = client.Id,
+                            FirstName = householdFirstNames[(i + j) % householdFirstNames.Length],
+                            LastName = client.LastName,
+                            DateOfBirth = new DateTime(
+                                2010 + ((i + j) % 12),
+                                ((j + 1) % 12) + 1,
+                                ((i + j) % 25) + 1),
+                            CreatedByUserId = adminUser.Id,
+                            UpdatedByUserId = adminUser.Id,
+                            CreatedAt = now,
+                            UpdatedAt = now
+                        });
+                    }
+                }
+
+                context.HouseholdMembers.AddRange(householdMembers);
                 await context.SaveChangesAsync();
             }
 
@@ -520,73 +600,237 @@ namespace A_New_Hope.Data
             if (!await context.ReferringOrganizations.AnyAsync())
             {
                 context.ReferringOrganizations.AddRange(
-                new ReferringOrganization
-                {
-                    Name = "Portage County Social Services",
-                    PhoneNumber = "555-100-2000",
-                    Email = "referrals@portagecounty.local",
-                    AddressLine1 = "1462 Main Street",
-                    City = "Stevens Point",
-                    State = "WI",
-                    PostalCode = "54481",
-                    PrimaryContactName = "Alex Rivera",
-                    IsActive = true,
-                    CreatedByUserId = adminUser.Id,
-                    UpdatedByUserId = adminUser.Id,
-                    CreatedAt = now,
-                    UpdatedAt = now
-                },
-                new ReferringOrganization
-                {
-                    Name = "Hope Community Clinic",
-                    PhoneNumber = "555-300-4000",
-                    Email = "intake@hopeclinic.local",
-                    AddressLine1 = "825 Clinic Avenue",
-                    City = "Plover",
-                    State = "WI",
-                    PostalCode = "54467",
-                    PrimaryContactName = "Jordan Lee",
-                    IsActive = true,
-                    CreatedByUserId = adminUser.Id,
-                    UpdatedByUserId = adminUser.Id,
-                    CreatedAt = now,
-                    UpdatedAt = now
-                }
-                );
-
-                await context.SaveChangesAsync();
-            }
-
-            var org1 = await context.ReferringOrganizations.FirstAsync(o => o.Name == "Portage County Social Services");
-            var org2 = await context.ReferringOrganizations.FirstAsync(o => o.Name == "Hope Community Clinic");
-
-            var foodServiceCategory = await context.ServiceCategories.FirstAsync(c => c.Name == "Food");
-            var medicalServiceCategory = await context.ServiceCategories.FirstAsync(c => c.Name == "Medical");
-            var transportationServiceCategory = await context.ServiceCategories.FirstAsync(c => c.Name == "Transportation");
-
-            if (!await context.ReferringOrganizationServiceCategories.AnyAsync())
-            {
-                context.ReferringOrganizationServiceCategories.AddRange(
-                    new ReferringOrganizationServiceCategory
+                    new ReferringOrganization
                     {
-                        ReferringOrganizationId = org1.Id,
-                        ServiceCategoryId = foodServiceCategory.Id
+                        Name = "Portage County Social Services",
+                        PhoneNumber = "555-100-2000",
+                        Email = "referrals@portagecounty.local",
+                        AddressLine1 = "1462 Main Street",
+                        City = "Stevens Point",
+                        State = "WI",
+                        PostalCode = "54481",
+                        PrimaryContactName = "Alex Rivera",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
                     },
-                    new ReferringOrganizationServiceCategory
+                    new ReferringOrganization
                     {
-                        ReferringOrganizationId = org1.Id,
-                        ServiceCategoryId = transportationServiceCategory.Id
+                        Name = "Hope Community Clinic",
+                        PhoneNumber = "555-300-4000",
+                        Email = "intake@hopeclinic.local",
+                        AddressLine1 = "825 Clinic Avenue",
+                        City = "Plover",
+                        State = "WI",
+                        PostalCode = "54467",
+                        PrimaryContactName = "Jordan Lee",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
                     },
-                    new ReferringOrganizationServiceCategory
+                    new ReferringOrganization
                     {
-                        ReferringOrganizationId = org2.Id,
-                        ServiceCategoryId = medicalServiceCategory.Id
+                        Name = "CAP Services",
+                        PhoneNumber = "555-210-1100",
+                        Email = "community@capservices.local",
+                        AddressLine1 = "2900 Hoover Road",
+                        City = "Stevens Point",
+                        State = "WI",
+                        PostalCode = "54481",
+                        PrimaryContactName = "Morgan Fields",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ReferringOrganization
+                    {
+                        Name = "Stevens Point Area Senior Center",
+                        PhoneNumber = "555-220-1100",
+                        Email = "seniorreferrals@spasc.local",
+                        AddressLine1 = "1200 Maria Drive",
+                        City = "Stevens Point",
+                        State = "WI",
+                        PostalCode = "54481",
+                        PrimaryContactName = "Riley Stone",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ReferringOrganization
+                    {
+                        Name = "Plover Community Outreach",
+                        PhoneNumber = "555-230-1100",
+                        Email = "outreach@plovercommunity.local",
+                        AddressLine1 = "333 Post Road",
+                        City = "Plover",
+                        State = "WI",
+                        PostalCode = "54467",
+                        PrimaryContactName = "Casey Morgan",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ReferringOrganization
+                    {
+                        Name = "Central Wisconsin Housing Support",
+                        PhoneNumber = "555-240-1100",
+                        Email = "housing@centralwihousing.local",
+                        AddressLine1 = "702 Division Street",
+                        City = "Stevens Point",
+                        State = "WI",
+                        PostalCode = "54481",
+                        PrimaryContactName = "Dakota Reed",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ReferringOrganization
+                    {
+                        Name = "Family Crisis Resource Center",
+                        PhoneNumber = "555-250-1100",
+                        Email = "help@familycrisis.local",
+                        AddressLine1 = "1880 Church Street",
+                        City = "Stevens Point",
+                        State = "WI",
+                        PostalCode = "54481",
+                        PrimaryContactName = "Taylor Brooks",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
+                    },
+                    new ReferringOrganization
+                    {
+                        Name = "Veterans Assistance Network",
+                        PhoneNumber = "555-260-1100",
+                        Email = "veterans@assistnetwork.local",
+                        AddressLine1 = "500 Clark Street",
+                        City = "Stevens Point",
+                        State = "WI",
+                        PostalCode = "54481",
+                        PrimaryContactName = "Parker Evans",
+                        IsActive = true,
+                        CreatedByUserId = adminUser.Id,
+                        UpdatedByUserId = adminUser.Id,
+                        CreatedAt = now,
+                        UpdatedAt = now
                     }
                 );
 
                 await context.SaveChangesAsync();
             }
 
+            var referringOrganizations = await context.ReferringOrganizations
+                .Where(o => o.DeletedAt == null && o.IsActive)
+                .OrderBy(o => o.Name)
+                .ToListAsync();
+
+            var serviceCategories = await context.ServiceCategories
+                .Where(c => c.DeletedAt == null && c.IsActive)
+                .ToListAsync();
+
+            var foodServiceCategory = serviceCategories.First(c => c.Name == "Food");
+            var medicalServiceCategory = serviceCategories.First(c => c.Name == "Medical");
+            var transportationServiceCategory = serviceCategories.First(c => c.Name == "Transportation");
+            var clothingServiceCategory = serviceCategories.First(c => c.Name == "Clothing");
+            var hygieneServiceCategory = serviceCategories.First(c => c.Name == "Hygiene");
+            var babySuppliesServiceCategory = serviceCategories.First(c => c.Name == "Baby Supplies");
+
+            if (!await context.ReferringOrganizationServiceCategories.AnyAsync())
+            {
+                var organizationServiceCategoryMap = new Dictionary<string, List<ServiceCategory>>
+                {
+                    ["Portage County Social Services"] = new List<ServiceCategory>
+                    {
+                        foodServiceCategory,
+                        transportationServiceCategory
+                    },
+
+                    ["Hope Community Clinic"] = new List<ServiceCategory>
+                    {
+                        medicalServiceCategory,
+                        hygieneServiceCategory
+                    },
+
+                    ["CAP Services"] = new List<ServiceCategory>
+                    {
+                        foodServiceCategory,
+                        transportationServiceCategory,
+                        clothingServiceCategory
+                    },
+
+                    ["Stevens Point Area Senior Center"] = new List<ServiceCategory>
+                    {
+                        foodServiceCategory,
+                        transportationServiceCategory,
+                        medicalServiceCategory
+                    },
+
+                    ["Plover Community Outreach"] = new List<ServiceCategory>
+                    {
+                        foodServiceCategory,
+                        clothingServiceCategory,
+                        hygieneServiceCategory
+                    },
+
+                    ["Central Wisconsin Housing Support"] = new List<ServiceCategory>
+                    {
+                        transportationServiceCategory,
+                        hygieneServiceCategory
+                    },
+
+                    ["Family Crisis Resource Center"] = new List<ServiceCategory>
+                    {
+                        foodServiceCategory,
+                        clothingServiceCategory,
+                        hygieneServiceCategory,
+                        babySuppliesServiceCategory
+                    },
+
+                    ["Veterans Assistance Network"] = new List<ServiceCategory>
+                    {
+                        foodServiceCategory,
+                        transportationServiceCategory,
+                        medicalServiceCategory
+                    }
+                };
+                var referringOrganizationServiceCategories = new List<ReferringOrganizationServiceCategory>();
+
+                foreach (var mapItem in organizationServiceCategoryMap)
+                {
+                    var organization = referringOrganizations.FirstOrDefault(o => o.Name == mapItem.Key);
+
+                    if (organization == null)
+                    {
+                        continue;
+                    }
+
+                    foreach (var serviceCategory in mapItem.Value)
+                    {
+                        referringOrganizationServiceCategories.Add(new ReferringOrganizationServiceCategory
+                        {
+                            ReferringOrganizationId = organization.Id,
+                            ServiceCategoryId = serviceCategory.Id
+                        });
+                    }
+                }
+
+                context.ReferringOrganizationServiceCategories.AddRange(referringOrganizationServiceCategories);
+                await context.SaveChangesAsync();
+            }
 
             // ============================================================
             // INVENTORY ITEMS
@@ -1587,24 +1831,56 @@ namespace A_New_Hope.Data
             // and store metadata such as status, contact info, and notes.
             if (!await context.Referrals.AnyAsync())
             {
-                context.Referrals.Add(
-                    new Referral
+                var referrals = new List<Referral>();
+
+                for (int i = 0; i < seededClients.Count; i++)
+                {
+                    var client = seededClients[i];
+
+                    var referredOn = now.Date.AddDays(-(i % 90));
+                    var status = referralStatuses[i % referralStatuses.Length];
+                    var validTo = GetSeededValidTo(status, referredOn, now.Date);
+
+                    referrals.Add(new Referral
                     {
-                        ClientUserId = clientUser1.Id,
-                        ReferringOrganizationId = org1.Id,
-
-                        // ReferredOn is set to "now" at seed time.
-                        ReferredOn = DateTime.UtcNow,
-
-                        Status = ReferralStatus.Pending,
-                        Notes = "Initial seeded referral.",
+                        ClientUserId = client.Id,
+                        ReferringOrganizationId = referringOrganizations[i % referringOrganizations.Count].Id,
+                        ReferredOn = referredOn,
+                        Status = status,
+                        ValidFrom = referredOn,
+                        ValidTo = validTo,
+                        Notes = $"Seeded referral #{i + 1} for search and filter testing.",
                         CreatedByUserId = adminUser.Id,
                         UpdatedByUserId = adminUser.Id,
                         CreatedAt = now,
                         UpdatedAt = now
-                    }
-                );
+                    });
 
+                    // About 25% of clients get a second referral.
+                    if (i % 4 == 0)
+                    {
+                        var secondReferredOn = now.Date.AddDays(-(i % 120) - 7);
+                        var secondStatus = referralStatuses[(i + 2) % referralStatuses.Length];
+                        var secondValidTo = GetSeededValidTo(secondStatus, secondReferredOn, now.Date);
+
+                        referrals.Add(new Referral
+                        {
+                            ClientUserId = client.Id,
+                            ReferringOrganizationId = referringOrganizations[(i + 3) % referringOrganizations.Count].Id,
+                            ReferredOn = secondReferredOn,
+                            Status = secondStatus,
+                            ValidFrom = secondReferredOn,
+                            ValidTo = secondValidTo,
+                            Notes = $"Additional seeded referral for client #{i + 1}.",
+                            CreatedByUserId = adminUser.Id,
+                            UpdatedByUserId = adminUser.Id,
+                            CreatedAt = now,
+                            UpdatedAt = now
+                        });
+                    }
+                }
+
+                context.Referrals.AddRange(referrals);
                 await context.SaveChangesAsync();
             }
 
@@ -1648,6 +1924,71 @@ namespace A_New_Hope.Data
 
                 await context.SaveChangesAsync();
             }
+        }
+
+        // GetSeededValidTo determines the ValidTo date for seeded referrals based on their status.
+        private static DateTime? GetSeededValidTo(ReferralStatus status, DateTime validFrom, DateTime today)
+        {
+            return status switch
+            {
+                ReferralStatus.Pending => null,
+                ReferralStatus.Denied => null,
+
+                // Approved referrals should still be valid for about half a year from the seed date.
+                ReferralStatus.Approved => today.AddDays(180),
+
+                // Expired referrals should already be expired.
+                ReferralStatus.Expired => today.AddDays(-7),
+
+                // Closed referrals should have a ValidTo value, but it should be in the past.
+                ReferralStatus.Closed => validFrom.AddDays(30) < today
+                    ? validFrom.AddDays(30)
+                    : today.AddDays(-1),
+
+                _ => null
+            };
+        }
+
+        private static EmploymentStatus GetSeededEmploymentStatus(int index)
+        {
+            var statuses = new[]
+            {
+                EmploymentStatus.FullTime,
+                EmploymentStatus.PartTime,
+                EmploymentStatus.SelfEmployed,
+                EmploymentStatus.Unemployed,
+                EmploymentStatus.Retired,
+                EmploymentStatus.Student,
+                EmploymentStatus.Disabled,
+                EmploymentStatus.NotSpecified
+            };
+
+            return statuses[index % statuses.Length];
+        }
+
+        private static IncomeType GetSeededIncomeType(int clientIndex, int incomeIndex, EmploymentStatus employmentStatus)
+        {
+            var nonEmploymentIncomeTypes = new[]
+            {
+                IncomeType.SocialSecurity,
+                IncomeType.ChildSupport,
+                IncomeType.Disability,
+                IncomeType.Unemployment,
+                IncomeType.Pension,
+                IncomeType.GeneralAssistance,
+                IncomeType.Other
+            };
+
+            if (employmentStatus == EmploymentStatus.FullTime ||
+                employmentStatus == EmploymentStatus.PartTime ||
+                employmentStatus == EmploymentStatus.SelfEmployed)
+            {
+                return incomeIndex == 0
+                    ? IncomeType.Employment
+                    : nonEmploymentIncomeTypes[(clientIndex + incomeIndex) % nonEmploymentIncomeTypes.Length];
+            }
+
+            return nonEmploymentIncomeTypes[(clientIndex + incomeIndex) % nonEmploymentIncomeTypes.Length];
         }
     }
 }

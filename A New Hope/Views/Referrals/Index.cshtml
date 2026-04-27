@@ -1,27 +1,131 @@
 @model IEnumerable<A_New_Hope.Models.Referral>
+@using A_New_Hope.Models
 
 @{
     ViewData["Title"] = "Referrals";
+
+    var currentSearchTerm = ViewData["CurrentSearchTerm"] as string;
+    var currentStatusFilter = ViewData["CurrentStatusFilter"] as string;
+    var currentSortOrder = ViewData["CurrentSortOrder"] as string;
 }
 
 <div class="page-header">
     <h1>Referrals</h1>
 </div>
 
-<div class="mb-3 d-flex justify-content-between align-items-center">
-    <a asp-action="StartReferralEntry" class="btn btn-primary">Create New</a>
+<div class="card shadow-sm mb-4 referrals-search-card">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+            <a asp-action="StartReferralEntry" class="btn btn-primary">
+                Create New
+            </a>
+        </div>
 
-    <form asp-action="Index" method="get" class="d-flex gap-2">
-        <input type="text"
-               name="searchTerm"
-               value="@(ViewData["CurrentFilter"])"
-               class="form-control w-auto"
-               placeholder="Search referrals..." />
+        <form asp-action="Index" method="get" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4">
+                <label for="searchTerm" class="form-label">Search referrals</label>
+                <div class="input-group">
+                    <span class="input-group-text" aria-hidden="true">
+                        🔍
+                    </span>
+                    <input type="text"
+                           id="searchTerm"
+                           name="searchTerm"
+                           value="@currentSearchTerm"
+                           class="form-control"
+                           placeholder="Client or organization" />
+                </div>
+            </div>
 
-        <button type="submit" class="btn btn-outline-secondary">Search</button>
+            <div class="col-12 col-md-3">
+                <label for="statusFilter" class="form-label">Status</label>
+                <select id="statusFilter" name="statusFilter" class="form-select">
+                    @if (string.IsNullOrWhiteSpace(currentStatusFilter))
+                    {
+                        <option value="" selected>All statuses</option>
+                    }
+                    else
+                    {
+                        <option value="">All statuses</option>
+                    }
 
-        <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
-    </form>
+                    @foreach (ReferralStatus status in Enum.GetValues(typeof(ReferralStatus)))
+                    {
+                        var statusValue = status.ToString();
+
+                        if (statusValue == currentStatusFilter)
+                        {
+                            <option value="@statusValue" selected>@statusValue</option>
+                        }
+                        else
+                        {
+                            <option value="@statusValue">@statusValue</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <label for="sortOrder" class="form-label">Sort by</label>
+                <select id="sortOrder" name="sortOrder" class="form-select">
+                    @if (string.IsNullOrWhiteSpace(currentSortOrder))
+                    {
+                        <option value="" selected>Newest referral date</option>
+                    }
+                    else
+                    {
+                        <option value="">Newest referral date</option>
+                    }
+
+                    @if (currentSortOrder == "date_asc")
+                    {
+                        <option value="date_asc" selected>Oldest referral date</option>
+                    }
+                    else
+                    {
+                        <option value="date_asc">Oldest referral date</option>
+                    }
+
+                    @if (currentSortOrder == "client_asc")
+                    {
+                        <option value="client_asc" selected>Client name A-Z</option>
+                    }
+                    else
+                    {
+                        <option value="client_asc">Client name A-Z</option>
+                    }
+
+                    @if (currentSortOrder == "organization_asc")
+                    {
+                        <option value="organization_asc" selected>Organization A-Z</option>
+                    }
+                    else
+                    {
+                        <option value="organization_asc">Organization A-Z</option>
+                    }
+
+                    @if (currentSortOrder == "status_asc")
+                    {
+                        <option value="status_asc" selected>Status A-Z</option>
+                    }
+                    else
+                    {
+                        <option value="status_asc">Status A-Z</option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-outline-secondary flex-fill">
+                    Search
+                </button>
+
+                <a asp-action="Index" class="btn btn-outline-secondary">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="table-responsive">
@@ -30,8 +134,8 @@
             <tr>
                 <th>Client</th>
                 <th>Referring Organization</th>
-                <th>@Html.DisplayNameFor(model => model.ReferredOn)</th>
-                <th>@Html.DisplayNameFor(model => model.Status)</th>
+                <th>Referral Date</th>
+                <th>Status</th>
                 <th class="text-end text-nowrap">Actions</th>
             </tr>
         </thead>
@@ -43,27 +147,57 @@
                 {
                     <tr>
                         <td>
-                            @(
-                                item.ClientUser != null
-                                    ? $"{item.ClientUser.FirstName} {item.ClientUser.LastName}"
-                                    : ""
-                            )
+                            @if (item.ClientUser != null)
+                            {
+                                <a asp-controller="Users"
+                                   asp-action="Details"
+                                   asp-route-id="@item.ClientUserId">
+                                    @item.ClientUser.FirstName @item.ClientUser.LastName
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No client assigned</span>
+                            }
                         </td>
 
                         <td>
-                            @(item.ReferringOrganization != null ? item.ReferringOrganization.Name : "")
+                            @if (item.ReferringOrganization != null)
+                            {
+                                <a asp-controller="ReferringOrganizations"
+                                   asp-action="Details"
+                                   asp-route-id="@item.ReferringOrganizationId">
+                                    @item.ReferringOrganization.Name
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No organization assigned</span>
+                            }
                         </td>
 
-                        <td>@item.ValidTo</td>
+                        <td>
+                            @item.ReferredOn.ToString("MM/dd/yyyy")
+                        </td>
 
-                        <td>@item.Status</td>
-
-                        
+                        <td>
+                            <span class="badge bg-secondary">
+                                @item.Status
+                            </span>
+                        </td>
 
                         <td class="text-end text-nowrap">
-                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-secondary">Details</a>
-                            <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Delete</a>
+                            <a asp-action="Details"
+                               asp-route-id="@item.Id"
+                               class="btn btn-sm btn-outline-secondary">
+                                Details
+                            </a>
+
+                            <a asp-action="Delete"
+                               asp-route-id="@item.Id"
+                               class="btn btn-sm btn-outline-danger">
+                                Delete
+                            </a>
                         </td>
                     </tr>
                 }

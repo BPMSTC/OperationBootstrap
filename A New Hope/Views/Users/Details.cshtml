@@ -94,7 +94,7 @@
 {
     <div class="mt-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h3 class="mb-0">Household Members</h3>
+            <h3 class="mb-0 household-section-heading">Household Members</h3>
             <button type="button"
                     id="toggleAllHouseholdMembers"
                     class="btn btn-outline-secondary btn-sm rounded-pill">
@@ -116,8 +116,8 @@
                 memberDisplayName = $"Household Member {i + 1}";
             }
 
-            <div class="border rounded-3 mb-2 overflow-hidden household-member-item">
-                <button class="btn w-100 text-start d-flex justify-content-between align-items-center px-3 py-2 border-0 bg-transparent household-toggle"
+            <div class="border rounded-3 mb-2 overflow-hidden household-member-item shadow-sm">
+                <button class="btn w-100 text-start d-flex justify-content-between align-items-center px-3 py-2 border-0 household-toggle"
                         type="button"
                         data-bs-toggle="collapse"
                         data-bs-target="#@collapseId"
@@ -128,7 +128,7 @@
                 </button>
 
                 <div class="collapse household-collapse" id="@collapseId">
-                    <div class="px-3 pb-3 pt-1">
+                    <div class="px-3 pb-3 pt-2 household-member-body">
                         <dl class="row mb-0">
                             <dt class="col-sm-3 mb-3">First Name</dt>
                             <dd class="col-sm-9 mb-3">@member.FirstName</dd>

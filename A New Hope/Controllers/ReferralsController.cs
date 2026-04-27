@@ -50,13 +50,20 @@ namespace A_New_Hope.Controllers
 
         // GET: Referrals
         /// <summary>
-        /// Displays all non-deleted referrals.
+        /// Displays all non-deleted referrals with server-side search, filtering, and sorting.
         /// </summary>
-        public async Task<IActionResult> Index(string? searchTerm)
+        public async Task<IActionResult> Index(
+            string? searchTerm,
+            string? statusFilter,
+            string? sortOrder)
         {
             try
             {
-                _logger.LogInformation("Loading Referrals Index page");
+                _logger.LogInformation(
+                    "Loading Referrals Index page with SearchTerm: {SearchTerm}, StatusFilter: {StatusFilter}, SortOrder: {SortOrder}",
+                    searchTerm,
+                    statusFilter,
+                    sortOrder);
 
                 // Build the base query for active referrals.
                 IQueryable<Referral> query = _context.Referrals
@@ -64,34 +71,82 @@ namespace A_New_Hope.Controllers
                     .Include(r => r.ClientUser)
                     .Include(r => r.ReferringOrganization);
 
-                // Apply the search filter when one is provided.
+                // Normalize filter values.
+                searchTerm = InputNormalization.NullIfWhiteSpace(searchTerm);
+                statusFilter = InputNormalization.NullIfWhiteSpace(statusFilter);
+                sortOrder = InputNormalization.NullIfWhiteSpace(sortOrder);
+
+                // Apply text search when one is provided.
+                // This intentionally searches client/organization fields only.
+                // Status is handled separately by the statusFilter.
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
-                    searchTerm = searchTerm.Trim();
-
                     query = query.Where(r =>
-                        // Client (name + email)
+                        // Client search: full name, reverse name, first name, last name, email
                         (r.ClientUser != null && (
-                            (r.ClientUser.FirstName + " " + r.ClientUser.LastName).Contains(searchTerm) ||
-                            (r.ClientUser.LastName + ", " + r.ClientUser.FirstName).Contains(searchTerm) ||
+                            (r.ClientUser.FirstName != null && r.ClientUser.FirstName.Contains(searchTerm)) ||
+                            (r.ClientUser.LastName != null && r.ClientUser.LastName.Contains(searchTerm)) ||
+                            ((r.ClientUser.FirstName + " " + r.ClientUser.LastName).Contains(searchTerm)) ||
+                            ((r.ClientUser.LastName + ", " + r.ClientUser.FirstName).Contains(searchTerm)) ||
                             (r.ClientUser.Email != null && r.ClientUser.Email.Contains(searchTerm))
                         )) ||
 
-                        // Referring Organization
+                        // Referring organization search
                         (r.ReferringOrganization != null &&
-                            r.ReferringOrganization.Name.Contains(searchTerm)) ||
-
-                        // Status
-                        r.Status.ToString().Contains(searchTerm)
+                            r.ReferringOrganization.Name.Contains(searchTerm))
                     );
                 }
 
-                // Retrieve the ordered referrals for display.
-                var referrals = await query
-                    .OrderByDescending(r => r.ReferredOn)
-                    .ThenBy(r => r.Id)
-                    .ToListAsync();
+                // Apply status filter when one is provided.
+                if (!string.IsNullOrWhiteSpace(statusFilter))
+                {
+                    if (Enum.TryParse<ReferralStatus>(statusFilter, ignoreCase: true, out var parsedStatus) &&
+                        Enum.IsDefined(typeof(ReferralStatus), parsedStatus))
+                    {
+                        query = query.Where(r => r.Status == parsedStatus);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invalid referral status filter received: {StatusFilter}", statusFilter);
+                        TempData["ErrorMessage"] = "The selected referral status filter was invalid.";
+                    }
+                }
 
+                // Apply sorting.
+                query = sortOrder switch
+                {
+                    "date_asc" => query
+                        .OrderBy(r => r.ReferredOn)
+                        .ThenBy(r => r.Id),
+
+                    "client_asc" => query
+                        .OrderBy(r => r.ClientUser!.LastName)
+                        .ThenBy(r => r.ClientUser!.FirstName)
+                        .ThenByDescending(r => r.ReferredOn),
+
+                    "organization_asc" => query
+                        .OrderBy(r => r.ReferringOrganization!.Name)
+                        .ThenByDescending(r => r.ReferredOn),
+
+                    "status_asc" => query
+                        .OrderBy(r => r.Status)
+                        .ThenByDescending(r => r.ReferredOn),
+
+                    _ => query
+                        .OrderByDescending(r => r.ReferredOn)
+                        .ThenBy(r => r.Id)
+                };
+
+                // Retrieve the referrals for display.
+                var referrals = await query.ToListAsync();
+
+                // Preserve selected values in the view.
+                ViewData["CurrentSearchTerm"] = searchTerm;
+                ViewData["CurrentStatusFilter"] = statusFilter;
+                ViewData["CurrentSortOrder"] = sortOrder;
+
+                // Keep this temporarily if your current Index view still uses CurrentFilter.
+                // Once the view is updated, you can remove this line.
                 ViewData["CurrentFilter"] = searchTerm;
 
                 _logger.LogInformation("Loaded {Count} referrals", referrals.Count);
