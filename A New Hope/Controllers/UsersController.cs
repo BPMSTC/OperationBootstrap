@@ -918,6 +918,45 @@ namespace A_New_Hope.Controllers
                 _context.DomainUsers.Add(user);
                 await _context.SaveChangesAsync();
 
+                // ================= CLIENT PROFILE =================
+                var clientProfile = new ClientProfile
+                {
+                    UserId = user.Id,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.ClientProfiles.Add(clientProfile);
+                await _context.SaveChangesAsync();
+
+                // ================= INCOME =================
+                if (incomes != null && incomes.Count > 0)
+                {
+                    var incomeEntities = incomes
+                        .Where(i =>
+                            i.IncomeType.HasValue &&
+                            i.MonthlyAmount.HasValue &&
+                            i.MonthlyAmount.Value > 0
+                        )
+                        .Select(i => new ClientIncome
+                        {
+                            ClientProfileUserId = clientProfile.UserId, // confirm this vs Id
+                            IncomeType = i.IncomeType!.Value,
+                            MonthlyAmount = i.MonthlyAmount!.Value,
+
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsActive = true
+                        })
+                        .ToList();
+
+                    if (incomeEntities.Count > 0)
+                    {
+                        _context.ClientIncomes.AddRange(incomeEntities);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
                 // ================= HOUSEHOLD =================
                 foreach (var h in household)
                 {

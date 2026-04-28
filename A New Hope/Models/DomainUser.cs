@@ -20,7 +20,7 @@ namespace A_New_Hope.Models
         /// Front-end validation ensures proper email format and length.
         /// Added Regex for stricter validation of allowed email characters.
         /// </summary>
-        [Required(ErrorMessage = "Email address is required.")]
+        
         [MaxLength(254, ErrorMessage = "Email address cannot exceed 254 characters.")]
         [EmailAddress(ErrorMessage = "Enter a valid email address (example: name@domain.com).")]
         [RegularExpression(
