@@ -1,26 +1,11 @@
 @model A_New_Hope.Models.ViewModels.Users.UserDetailsViewModel
-
-<div class="alert alert-info">
-    IsClient: @Model.IsClient <br />
-    ClientProfile is null: @(Model.ClientProfile == null)
-</div>
+@using A_New_Hope.Models.Enums
 
 @{
     var heading = Model.User.UserType switch
     {
-        A_New_Hope.Models.UserType.Admin => "Admin Details",
-        A_New_Hope.Models.UserType.Staff => "Staff Details",
         A_New_Hope.Models.UserType.Client => "Client Details",
-        _ => "User Details"
     };
-    <div class="alert alert-info">
-        <div><strong>DEBUG</strong></div>
-        <div>IsClient: @Model.IsClient</div>
-        <div>ClientProfile null: @(Model.ClientProfile == null)</div>
-        <div>ClientIncomes null: @(Model.ClientIncomes == null)</div>
-        <div>ClientIncomes count: @(Model.ClientIncomes?.Count ?? 0)</div>
-        <div>Active incomes: @(Model.ClientIncomes?.Count(i => i.IsActive) ?? 0)</div>
-    </div>
 
     var hideAddress =
         Model.IsClient &&
@@ -32,164 +17,212 @@
 <h1 class="mb-3">@heading</h1>
 <hr />
 
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="User.Id" />
+
+<!-- ================= BASIC INFO ================= -->
 <!-- ================= BASIC INFO ================= -->
 <section class="mb-4">
     <h5 class="mb-3">Basic Information</h5>
 
     <dl class="row">
 
-        @if (!string.IsNullOrWhiteSpace(Model.User.FirstName) ||
-             !string.IsNullOrWhiteSpace(Model.User.LastName))
-        {
-            <dt class="col-sm-3">Name</dt>
-            <dd class="col-sm-9">
-                @Model.User.FirstName @Model.User.LastName
-            </dd>
-        }
+        <!-- NAME -->
+        <dt class="col-sm-3">Name</dt>
+        <dd class="col-sm-9">
+            @if (Model.IsEditMode)
+            {
+                <div class="d-flex gap-2">
+                    <input asp-for="User.FirstName" class="form-control" placeholder="First Name" />
+                    <input asp-for="User.LastName" class="form-control" placeholder="Last Name" />
+                </div>
+            }
+            else
+            {
+                @($"{Model.User.FirstName} {Model.User.LastName}")
+            }
+        </dd>
 
-        @if (!string.IsNullOrWhiteSpace(Model.User.Email))
-        {
-            <dt class="col-sm-3">Email</dt>
-            <dd class="col-sm-9">@Model.User.Email</dd>
-        }
+        <!-- EMAIL -->
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">
+            @if (Model.IsEditMode)
+            {
+                <input asp-for="User.Email" class="form-control" />
+            }
+            else
+            {
+                @Model.User.Email
+            }
+        </dd>
 
-        @if (!string.IsNullOrWhiteSpace(Model.User.PhoneNumber))
-        {
-            <dt class="col-sm-3">Phone</dt>
-            <dd class="col-sm-9">@Model.User.PhoneNumber</dd>
-        }
+        <!-- PHONE -->
+        <dt class="col-sm-3">Phone</dt>
+        <dd class="col-sm-9">
+            @if (Model.IsEditMode)
+            {
+                <input asp-for="User.PhoneNumber" class="form-control" />
+            }
+            else
+            {
+                @Model.User.PhoneNumber
+            }
+        </dd>
 
-        @if (Model.User.DateOfBirth != null)
-        {
-            <dt class="col-sm-3">Date of Birth</dt>
-            <dd class="col-sm-9">
+        <!-- DOB -->
+        <dt class="col-sm-3">Date of Birth</dt>
+        <dd class="col-sm-9">
+            @if (Model.IsEditMode)
+            {
+                <input asp-for="User.DateOfBirth" type="date" class="form-control" />
+            }
+            else
+            {
                 @Model.User.DateOfBirth?.ToString("MM/dd/yyyy")
-            </dd>
-        }
+            }
+        </dd>
 
-    @*     @if (!hideAddress)
-        {
-            <dt class="col-sm-3">Address</dt>
-            <dd class="col-sm-9">
-                @Model.User.AddressLine1<br />
-
-                @if (!string.IsNullOrWhiteSpace(Model.User.AddressLine2))
-                {
-                    @Model.User.AddressLine2
-                    <br />
-                }
-
-                @(Model.User.City + ", " + Model.User.State + " " + Model.User.PostalCode)
-            </dd>
-        }
-        else
-        {
-            <dt class="col-sm-3">Address</dt>
-            <dd class="col-sm-9 text-muted">No fixed address</dd>
-        }
-    </dl> *@
+    </dl>
 </section>
 
     <!-- ================= ADDRESS ================= -->
-    @if (!hideAddress)
-    {
-        <section class="mb-4">
-            <h5 class="mb-3">Address</h5>
+@if (!hideAddress)
+{
+    <section class="mb-4">
+        <h5 class="mb-3">Address</h5>
 
-            <dl class="row mb-0">
+        <dl class="row mb-0">
 
-                <dt class="col-sm-3">Address Line 1</dt>
-                <dd class="col-sm-9">@Model.User.AddressLine1</dd>
-
-                @if (!string.IsNullOrWhiteSpace(Model.User.AddressLine2))
+            <dt class="col-sm-3">Address Line 1</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsEditMode)
                 {
-                    <dt class="col-sm-3">Address Line 2</dt>
-                    <dd class="col-sm-9">@Model.User.AddressLine2</dd>
+                    <input asp-for="User.AddressLine1" class="form-control" />
                 }
+                else
+                {
+                    @Model.User.AddressLine1
+                }
+            </dd>
 
-                <dt class="col-sm-3">City</dt>
-                <dd class="col-sm-9">@Model.User.City</dd>
+            <dt class="col-sm-3">Address Line 2</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsEditMode)
+                {
+                    <input asp-for="User.AddressLine2" class="form-control" />
+                }
+                else
+                {
+                    @Model.User.AddressLine2
+                }
+            </dd>
 
-                <dt class="col-sm-3">State</dt>
-                <dd class="col-sm-9">@Model.User.State</dd>
+            <dt class="col-sm-3">City</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsEditMode)
+                {
+                    <input asp-for="User.City" class="form-control" />
+                }
+                else
+                {
+                    @Model.User.City
+                }
+            </dd>
 
-                <dt class="col-sm-3">Postal Code</dt>
-                <dd class="col-sm-9">@Model.User.PostalCode</dd>
+            <dt class="col-sm-3">State</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsEditMode)
+                {
+                    <input asp-for="User.State" class="form-control" maxlength="2" />
+                }
+                else
+                {
+                    @Model.User.State
+                }
+            </dd>
 
-            </dl>
-        </section>
-    }
-    else
-    {
-        <section class="mb-4">
-            <h5 class="mb-3">Address</h5>
+            <dt class="col-sm-3">Postal Code</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsEditMode)
+                {
+                    <input asp-for="User.PostalCode" class="form-control" />
+                }
+                else
+                {
+                    @Model.User.PostalCode
+                }
+            </dd>
 
-            <div class="text-muted">
-                No fixed address
-            </div>
-        </section>
-    }
+        </dl>
+    </section>
+}
+else
+{
+    <section class="mb-4">
+        <h5 class="mb-3">Address</h5>
+
+        <div class="text-muted">
+            No fixed address
+        </div>
+    </section>
+}
 
 <!-- ================= FINANCIAL ================= -->
-    <!-- ================= FINANCIAL ================= -->
     @if (Model.IsClient)
     {
         <section class="mb-4">
-            <h5 class="mb-3">Financial Information</h5>
+            <h5>Financial Information</h5>
 
             <dl class="row">
 
-                <!-- Employment Status -->
-                <dt class="col-sm-3">Employment Status</dt>
+                <dt class="col-sm-3">Employment</dt>
                 <dd class="col-sm-9">
-                    @(Model.ClientProfile?.EmploymentStatus)
-                </dd>
-
-                <!-- Monthly Income Total -->
-                <dt class="col-sm-3">Monthly Income</dt>
-                <dd class="col-sm-9">
-                    @{
-                        var totalIncome = Model.ClientIncomes?
-                            .Where(i => i.IsActive)
-                            .Sum(i => i.MonthlyAmount);
-                    }
-
-                    @(totalIncome.HasValue
-                        ? totalIncome.Value.ToString("C")
-                        : "$0.00")
-                </dd>
-
-                <!-- Income Sources -->
-                <dt class="col-sm-3">Income Sources</dt>
-                <dd class="col-sm-9">
-
-                    @if (Model.ClientIncomes?.Any(i => i.IsActive) == true)
+                    @if (Model.IsEditMode)
                     {
-                        <div class="d-flex flex-column gap-2">
-
-                            @foreach (var income in Model.ClientIncomes
-                                .Where(i => i.IsActive))
-                            {
-                                <div class="border rounded p-2 bg-surface">
-
-                                    <div class="fw-semibold">
-                                        @income.IncomeType
-                                    </div>
-
-                                    <div class="text-muted">
-                                        @income.MonthlyAmount.ToString("C") / month
-                                    </div>
-
-                                </div>
-                            }
-
-                        </div>
+                        <select asp-for="ClientProfile.EmploymentStatus"
+                                asp-items="Html.GetEnumSelectList<EmploymentStatus>()"
+                                class="form-select">
+                        </select>
                     }
                     else
                     {
-                        <span class="text-muted">
-                            No income records found.
-                        </span>
+                        @Model.ClientProfile?.EmploymentStatus
+                    }
+                </dd>
+
+                <dt class="col-sm-3">Income</dt>
+                <dd class="col-sm-9">
+
+                    @if (Model.IsEditMode)
+                    {
+                        @for (int i = 0; i < Model.ClientIncomes.Count; i++)
+                        {
+                            <div class="row mb-2">
+
+                                <input type="hidden" asp-for="ClientIncomes[i].Id" />
+
+                                <div class="col-md-6">
+                                    <select asp-for="ClientIncomes[i].IncomeType"
+                                            class="form-select"
+                                            asp-items="Html.GetEnumSelectList<A_New_Hope.Models.IncomeType>()">
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <input asp-for="ClientIncomes[i].MonthlyAmount"
+                                           class="form-control" />
+                                </div>
+
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        var totalIncome = Model.ClientIncomes?
+                            .Where(i => i.IsActive)
+                            .Sum(i => i.MonthlyAmount) ?? 0;
+
+                        <div><strong>@totalIncome.ToString("C")</strong></div>
                     }
 
                 </dd>
@@ -199,157 +232,230 @@
     }
 
 <!-- ================= HOUSEHOLD ================= -->
-@if (Model.IsClient && Model.HouseholdMembers?.Any() == true)
-{
-    <section class="mb-4">
-        <div class="d-flex justify-content-between align-items-center">
+    @if (Model.IsClient && Model.HouseholdMembers?.Any() == true)
+    {
+        <section class="mb-4">
             <h3 class="mb-0">Household Members</h3>
+            <hr />
 
-            <button id="toggleAllHouseholdMembers"
-                    class="btn btn-outline-secondary btn-sm rounded-pill">
-                Expand All
-            </button>
-        </div>
-
-        <hr />
-
-        @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
-        {
-            var member = Model.HouseholdMembers[i];
-            var collapseId = $"hh_{i}";
-
-            var name = string.Join(" ",
-                new[] { member.FirstName, member.LastName }
-                .Where(x => !string.IsNullOrWhiteSpace(x)));
-
-            if (string.IsNullOrWhiteSpace(name))
+            @if (!Model.IsEditMode)
             {
-                name = $"Household Member {i + 1}";
+                @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+                {
+                    var member = Model.HouseholdMembers[i];
+                    var collapseId = $"hh_{i}";
+
+                    var name = string.Join(" ",
+                        new[] { member.FirstName, member.LastName }
+                        .Where(x => !string.IsNullOrWhiteSpace(x)));
+
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        name = $"Household Member {i + 1}";
+                    }
+
+                    <div class="border rounded mb-2 household-collapse">
+
+                        <button class="btn w-100 text-start d-flex justify-content-between align-items-center"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#@collapseId">
+
+                            <span style="color: white;">@name</span>
+                            <span style="color: white;">▾</span>
+
+                        </button>
+
+                        <div id="@collapseId" class="collapse p-3">
+
+                            <dl class="row mb-0">
+
+                                <dt class="col-sm-3">First Name</dt>
+                                <dd class="col-sm-9">@member.FirstName</dd>
+
+                                <dt class="col-sm-3">Last Name</dt>
+                                <dd class="col-sm-9">@member.LastName</dd>
+
+                                <dt class="col-sm-3">DOB</dt>
+                                <dd class="col-sm-9">@member.DateOfBirth?.ToString("MM/dd/yyyy")</dd>
+
+                                <dt class="col-sm-3">Age</dt>
+                                <dd class="col-sm-9">@member.ApproximateAge</dd>
+
+                            </dl>
+
+                        </div>
+                    </div>
+                }
             }
+            else
+            {
+                @for (int i = 0; i < Model.HouseholdMembers.Count; i++)
+                {
+                    <div class="border p-3 mb-2">
 
-            <div class="border rounded mb-2">
-                <button class="btn w-100 text-start d-flex justify-content-between align-items-center"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#@collapseId">
-                    <span>@name</span>
-                    <span>▾</span>
-                </button>
+                        <input type="hidden" asp-for="HouseholdMembers[i].Id" />
 
-                <div id="@collapseId" class="collapse p-3">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-3">First Name</dt>
-                        <dd class="col-sm-9">@member.FirstName</dd>
+                        <div class="row g-2">
 
-                        <dt class="col-sm-3">Last Name</dt>
-                        <dd class="col-sm-9">@member.LastName</dd>
+                            <div class="col-md-3">
+                                <label class="form-label">First Name</label>
+                                <input asp-for="HouseholdMembers[i].FirstName"
+                                       class="form-control" />
+                            </div>
 
-                        <dt class="col-sm-3">DOB</dt>
-                        <dd class="col-sm-9">@member.DateOfBirth</dd>
+                            <div class="col-md-3">
+                                <label class="form-label">Last Name</label>
+                                <input asp-for="HouseholdMembers[i].LastName"
+                                       class="form-control" />
+                            </div>
 
-                        <dt class="col-sm-3">Age</dt>
-                        <dd class="col-sm-9">@member.ApproximateAge</dd>
-                    </dl>
-                </div>
-            </div>
-        }
-    </section>
-}
+                            <div class="col-md-3">
+                                <label class="form-label">Date of Birth</label>
+                                <input asp-for="HouseholdMembers[i].DateOfBirth"
+                                       type="date"
+                                       class="form-control" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Approximate Age</label>
+                                <input class="form-control"
+                                       value="@Model.HouseholdMembers[i].ApproximateAge"
+                                       readonly />
+                            </div>
+
+                        </div>
+
+                    </div>
+                }
+            }
+        </section>
+    }
+
 
 <!-- ================= REFERRALS ================= -->
-@if (Model.IsClient)
-{
-    <section class="mb-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <h3 id="referralsHeading" class="mb-0">Open Referrals</h3>
+    @if (Model.IsClient && !Model.IsEditMode)
+    {
+        <section class="mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 id="referralsHeading" class="mb-0">Open Referrals</h3>
 
-            <button id="toggleReferralsView"
-                    class="btn btn-outline-secondary btn-sm rounded-pill">
-                Show All
-            </button>
-        </div>
+                <button id="toggleReferralsView"
+                        type="button"
+                        class="btn btn-outline-secondary btn-sm rounded-pill">
+                    Show All
+                </button>
+            </div>
 
-        <hr />
+            <hr />
 
-        @if (Model.Referrals?.Any() == true)
-        {
-            <div class="table-responsive">
-                <table class="table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Organization</th>
-                            <th>Valid To</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
+            @if (Model.Referrals?.Any() == true)
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Organization</th>
+                                <th>Valid To</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
 
-                    <tbody>
-                        @foreach (var referral in Model.Referrals)
-                        {
-                            var isOpen =
-                                referral.Status == A_New_Hope.Models.ReferralStatus.Approved &&
-                                referral.ValidTo?.Date >= DateTime.Today;
+                        <tbody>
+                            @foreach (var referral in Model.Referrals)
+                            {
+                                var isOpen =
+                                    referral.Status == A_New_Hope.Models.ReferralStatus.Approved &&
+                                    referral.ValidTo?.Date >= DateTime.Today;
 
-                            <tr class="referral-row" data-open="@isOpen.ToString().ToLower()">
-                                <td>@referral.ReferredOn.ToString("M/d/yyyy")</td>
-                                <td>@referral.Status</td>
-                                <td>@referral.ReferringOrganization?.Name</td>
-                                <td>@referral.ValidTo?.ToString("M/d/yyyy")</td>
-                                <td class="text-end">
-                                    <a asp-action="Details"
+                                <tr class="referral-row" data-open="@isOpen.ToString().ToLower()">
+                                    <td>@referral.ReferredOn.ToString("M/d/yyyy")</td>
+                                    <td>@referral.Status</td>
+                                    <td>@referral.ReferringOrganization?.Name</td>
+                                    <td>@referral.ValidTo?.ToString("M/d/yyyy")</td>
+                                    <td class="text-end">
+                                        <a asp-action="Details"
                                            asp-controller="Referrals"
                                            asp-route-id="@referral.Id"
                                            class="btn btn-sm btn-outline-primary rounded-pill">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
 
-            <p id="noOpenReferralsMessage" class="text-muted d-none mt-2">
-                No open referrals found.
-            </p>
-        }
-        else
-        {
-            <p class="text-muted">No referrals found.</p>
-        }
-    </section>
-}
+                <p id="noOpenReferralsMessage" class="text-muted d-none mt-2">
+                    No open referrals found.
+                </p>
+            }
+            else
+            {
+                <p class="text-muted">No referrals found.</p>
+            }
+        </section>
+    }
 
 <!-- ================= ACTIONS ================= -->
 <section class="mt-4">
-    <a asp-action="Edit"
+
+    @if (Model.IsEditMode)
+    {
+        <!-- SAVE -->
+        <button type="submit" class="btn btn-primary">
+            Save
+        </button>
+
+        <!-- CANCEL (go back to details without saving) -->
+        <a asp-action="Details"
+           asp-route-id="@Model.User.Id"
+           class="btn btn-secondary ms-2">
+            Cancel
+        </a>
+    }
+    else
+    {
+        <!-- EDIT -->
+        <a asp-action="Edit"
            asp-route-id="@Model.User.Id"
            class="btn btn-primary">
-        Edit
-    </a>
+            Edit
+        </a>
 
-    @if (Model.User.UserType == A_New_Hope.Models.UserType.Client && Model.User.IsActive)
-    {
-        <a asp-controller="Referrals"
+        <!-- CREATE REFERRAL -->
+        @if (Model.User.UserType == A_New_Hope.Models.UserType.Client && Model.User.IsActive)
+        {
+            <a asp-controller="Referrals"
                asp-action="StartReferralEntryForClient"
                asp-route-id="@Model.User.Id"
                class="btn btn-outline-primary ms-2">
-            Create Referral
-        </a>
+                Create Referral
+            </a>
+        }
     }
 
+    <!-- BACK (always visible) -->
     <a asp-action="Index" class="btn btn-outline-secondary ms-2">
         Back
     </a>
+
+    </form>
+
 </section>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+        // ================= HOUSEHOLD COLLAPSE =================
         const toggleAllButton = document.getElementById("toggleAllHouseholdMembers");
         const collapses = document.querySelectorAll(".household-collapse");
 
         if (toggleAllButton && collapses.length > 0 && typeof bootstrap !== "undefined") {
+
             function areAllExpanded() {
                 return Array.from(collapses).every(c => c.classList.contains("show"));
             }
@@ -362,15 +468,12 @@
                 const expand = !areAllExpanded();
 
                 collapses.forEach(collapseElement => {
-                    const collapseInstance =
+                    const instance =
                         bootstrap.Collapse.getInstance(collapseElement) ||
                         new bootstrap.Collapse(collapseElement, { toggle: false });
 
-                    if (expand) {
-                        collapseInstance.show();
-                    } else {
-                        collapseInstance.hide();
-                    }
+                    if (expand) instance.show();
+                    else instance.hide();
                 });
             });
 
@@ -382,12 +485,14 @@
             updateToggleAllText();
         }
 
+        // ================= REFERRALS TOGGLE =================
         const referralsToggleButton = document.getElementById("toggleReferralsView");
         const referralsHeading = document.getElementById("referralsHeading");
         const referralRows = document.querySelectorAll(".referral-row");
         const noOpenReferralsMessage = document.getElementById("noOpenReferralsMessage");
 
         if (referralsToggleButton && referralsHeading && referralRows.length > 0) {
+
             let showingAllReferrals = false;
 
             function applyReferralFilter() {
@@ -398,24 +503,25 @@
 
                     if (showingAllReferrals || isOpen) {
                         row.classList.remove("d-none");
-
-                        if (isOpen) {
-                            visibleOpenCount++;
-                        }
+                        if (isOpen) visibleOpenCount++;
                     } else {
                         row.classList.add("d-none");
                     }
                 });
 
-                referralsHeading.textContent = showingAllReferrals ? "All Referrals" : "Open Referrals";
-                referralsToggleButton.textContent = showingAllReferrals ? "Show Open Referrals" : "Show All Referrals";
+                referralsHeading.textContent = showingAllReferrals
+                    ? "All Referrals"
+                    : "Open Referrals";
+
+                referralsToggleButton.textContent = showingAllReferrals
+                    ? "Show Open Referrals"
+                    : "Show All Referrals";
 
                 if (noOpenReferralsMessage) {
-                    if (!showingAllReferrals && visibleOpenCount === 0) {
-                        noOpenReferralsMessage.classList.remove("d-none");
-                    } else {
-                        noOpenReferralsMessage.classList.add("d-none");
-                    }
+                    noOpenReferralsMessage.classList.toggle(
+                        "d-none",
+                        showingAllReferrals || visibleOpenCount > 0
+                    );
                 }
             }
 
@@ -426,5 +532,6 @@
 
             applyReferralFilter();
         }
+
     });
 </script>

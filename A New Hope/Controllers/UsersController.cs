@@ -394,32 +394,54 @@ namespace A_New_Hope.Controllers
             }
         }
 
-        // GET: Users/Edit/5
-        /// <summary>
-        /// Shows the edit form for a single non-deleted domain user.
-        /// </summary>
+        // GET: Users/Edit/5 (actually used as Details/Edit toggle)
+        [HttpGet]
         public async Task<IActionResult> Edit(ulong? id)
         {
             try
             {
-                // Reject requests with no id.
                 if (id == null)
-                {
                     return NotFound();
-                }
 
-                // Retrieve the requested non-deleted user for editing.
                 var user = await _context.DomainUsers
                     .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
-                // Return not found when the user does not exist.
                 if (user == null)
                 {
                     _logger.LogWarning("User {UserId} not found for edit.", id);
                     return NotFound();
                 }
 
-                return View(user);
+                var profile = await _context.ClientProfiles
+                    .FirstOrDefaultAsync(x => x.UserId == id);
+
+                var household = await _context.HouseholdMembers
+                    .Where(x => x.ClientUserId == id && x.DeletedAt == null)
+                    .ToListAsync();
+
+                var incomes = profile == null
+                    ? new List<ClientIncome>()
+                    : await _context.ClientIncomes
+                        .Where(x => x.ClientProfileUserId == profile.UserId)
+                        .ToListAsync();
+
+                var referrals = await _context.Referrals
+                    .Where(x => x.ClientUserId == id)
+                    .ToListAsync();
+
+                var model = new A_New_Hope.Models.ViewModels.Users.UserDetailsViewModel
+                {
+                    User = user,
+                    ClientProfile = profile,
+                    HouseholdMembers = household,
+                    ClientIncomes = incomes,
+                    Referrals = referrals,
+                    HasLoginAccount = false,
+                    IdentityUserId = null,
+                    IsEditMode = true
+                };
+
+                return View("Details", model);
             }
             catch (Exception ex)
             {
@@ -429,108 +451,147 @@ namespace A_New_Hope.Controllers
             }
         }
 
-        // POST: Users/Edit/5
-        /// <summary>
-        /// Updates an existing domain user after server-side validation.
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,Email,PhoneNumber,FirstName,LastName,AddressLine1,AddressLine2,City,State,PostalCode,DateOfBirth,DefaultPreference,UserType,IsActive")] DomainUser formModel)
+        public async Task<IActionResult> Edit(ulong id, UserDetailsViewModel model)
         {
             try
             {
                 _logger.LogInformation("Updating user UserId={UserId}", id);
 
-                // Ensure the route id matches the posted model id.
-                if (id != formModel.Id)
-                {
-                    _logger.LogWarning("Edit mismatch: route id {RouteId} vs model id {ModelId}", id, formModel.Id);
+                if (id != model.User.Id)
                     return NotFound();
-                }
 
-                // Remove navigation properties that are not posted by the form.
-                ModelState.Remove(nameof(DomainUser.CreatedByUser));
-                ModelState.Remove(nameof(DomainUser.UpdatedByUser));
-                ModelState.Remove(nameof(DomainUser.ClientProfile));
-
-                // Normalize incoming values before business-rule validation.
-                NormalizeDomainUser(formModel);
-                await ApplyDomainUserValidationAsync(formModel, formModel.Id);
-
-                // Return the form when validation fails.
-                if (!ModelState.IsValid)
-                {
-                    return View(formModel);
-                }
-
-                // Retrieve the existing non-deleted domain user record.
                 var existing = await _context.DomainUsers
                     .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null);
 
-                // Return not found when the target record no longer exists.
                 if (existing == null)
-                {
                     return NotFound();
-                }
 
-                // Copy validated form values into the tracked entity.
-                existing.Email = formModel.Email;
-                existing.PhoneNumber = formModel.PhoneNumber;
-                existing.FirstName = formModel.FirstName;
-                existing.LastName = formModel.LastName;
-                existing.AddressLine1 = formModel.AddressLine1;
-                existing.AddressLine2 = formModel.AddressLine2;
-                existing.City = formModel.City;
-                existing.State = formModel.State;
-                existing.PostalCode = formModel.PostalCode;
-                existing.DateOfBirth = formModel.DateOfBirth;
-                existing.DefaultPreference = formModel.DefaultPreference;
-                existing.UserType = formModel.UserType;
-                existing.IsActive = formModel.IsActive;
+                // ================= DOMAIN USER =================
+                existing.Email = model.User.Email;
+                existing.PhoneNumber = model.User.PhoneNumber;
+                existing.FirstName = model.User.FirstName;
+                existing.LastName = model.User.LastName;
+                existing.AddressLine1 = model.User.AddressLine1;
+                existing.AddressLine2 = model.User.AddressLine2;
+                existing.City = model.User.City;
+                existing.State = model.User.State;
+                existing.PostalCode = model.User.PostalCode;
+                existing.DateOfBirth = model.User.DateOfBirth;
+                existing.UserType = model.User.UserType;
+                existing.IsActive = model.User.IsActive;
                 existing.UpdatedAt = DateTime.UtcNow;
-                existing.UpdatedByUserId = null;
 
-                try
+                // ================= CLIENT PROFILE =================
+                var profile = await _context.ClientProfiles
+                    .FirstOrDefaultAsync(x => x.UserId == id);
+
+                if (profile != null)
                 {
-                    await _context.SaveChangesAsync();
-
-                    // Sync linked Identity role and lockout status after saving domain changes.
-                    await SyncIdentityAccessForDomainUserAsync(existing);
-
-                    _logger.LogInformation("User updated successfully. UserId={UserId}", id);
-
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    // Check whether the record was deleted during the edit attempt.
-                    if (!await UserExists(formModel.Id))
+                    // FIXED: safe nullable enum handling
+                    if (model.ClientProfile?.EmploymentStatus != null)
                     {
-                        _logger.LogError("User doesn't exist.");
-                        return NotFound();
+                        profile.EmploymentStatus = model.ClientProfile.EmploymentStatus;
                     }
 
-                    _logger.LogError(ex, "Concurrency error updating UserId={UserId}", id);
-                    throw;
+                    profile.UpdatedAt = DateTime.UtcNow;
                 }
-                catch (InvalidOperationException ex)
+
+                // ================= INCOME =================
+                if (profile != null)
                 {
-                    ModelState.AddModelError("", ex.Message);
-                    _logger.LogError("{Message}", ex.Message);
-                    return View(formModel);
+                    var existingIncomes = await _context.ClientIncomes
+                        .Where(x => x.ClientProfileUserId == profile.UserId)
+                        .ToListAsync();
+
+                    // update / insert
+                    if (model.ClientIncomes != null)
+                    {
+                        foreach (var incomeVm in model.ClientIncomes)
+                        {
+                            var match = existingIncomes
+                                .FirstOrDefault(x => x.Id == incomeVm.Id);
+
+                            if (incomeVm.IsActive)
+                            {
+                                if (match == null)
+                                {
+                                    _context.ClientIncomes.Add(new ClientIncome
+                                    {
+                                        ClientProfileUserId = profile.UserId,
+                                        IncomeType = incomeVm.IncomeType,
+                                        MonthlyAmount = incomeVm.MonthlyAmount,
+                                        IsActive = true,
+                                        CreatedAt = DateTime.UtcNow,
+                                        UpdatedAt = DateTime.UtcNow
+                                    });
+                                }
+                                else
+                                {
+                                    match.IncomeType = incomeVm.IncomeType;
+                                    match.MonthlyAmount = incomeVm.MonthlyAmount;
+                                    match.IsActive = true;
+                                    match.UpdatedAt = DateTime.UtcNow;
+                                }
+                            }
+                            else
+                            {
+                                if (match != null)
+                                {
+                                    _context.ClientIncomes.Remove(match);
+                                }
+                            }
+                        }
+                    }
                 }
-                catch (DbUpdateException ex)
+
+                // ================= HOUSEHOLD =================
+                var household = await _context.HouseholdMembers
+                    .Where(x => x.ClientUserId == id)
+                    .ToListAsync();
+
+                if (model.HouseholdMembers != null)
                 {
-                    ModelState.AddModelError("", "Unable to save changes.");
-                    _logger.LogError("{Message}", ex.Message);
-                    return View(formModel);
+                    for (int i = 0; i < model.HouseholdMembers.Count; i++)
+                    {
+                        var vmMember = model.HouseholdMembers[i];
+
+                        var existingMember = household
+                            .FirstOrDefault(x => x.Id == vmMember.Id);
+
+                        bool isDeleted = model.HouseholdDeleteFlags != null
+                                         && i < model.HouseholdDeleteFlags.Count
+                                         && model.HouseholdDeleteFlags[i];
+
+                        if (isDeleted)
+                        {
+                            if (existingMember != null)
+                                _context.HouseholdMembers.Remove(existingMember);
+
+                            continue;
+                        }
+
+                        if (existingMember != null)
+                        {
+                            existingMember.FirstName = vmMember.FirstName;
+                            existingMember.LastName = vmMember.LastName;
+                            existingMember.DateOfBirth = vmMember.DateOfBirth;
+                            existingMember.UpdatedAt = DateTime.UtcNow;
+                        }
+                    }
                 }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("User updated successfully. UserId={UserId}", id);
+
+                return RedirectToAction(nameof(Details), new { id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error updating user UserId={UserId}", id);
-                ModelState.AddModelError("", "An unexpected error occurred while updating the user.");
-                return View(formModel);
+                _logger.LogError(ex, "Error updating user");
+                return View(model);
             }
         }
 
