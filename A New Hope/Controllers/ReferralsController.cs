@@ -55,15 +55,19 @@ namespace A_New_Hope.Controllers
         public async Task<IActionResult> Index(
             string? searchTerm,
             string? statusFilter,
-            string? sortOrder)
+            string? sortOrder,
+            DateTime? referredOnFrom,
+            DateTime? referredOnTo)
         {
             try
             {
                 _logger.LogInformation(
-                    "Loading Referrals Index page with SearchTerm: {SearchTerm}, StatusFilter: {StatusFilter}, SortOrder: {SortOrder}",
+                    "Loading Referrals Index page with SearchTerm: {SearchTerm}, StatusFilter: {StatusFilter}, SortOrder: {SortOrder}, ReferredOnFrom: {ReferredOnFrom}, ReferredOnTo: {ReferredOnTo}",
                     searchTerm,
                     statusFilter,
-                    sortOrder);
+                    sortOrder,
+                    referredOnFrom,
+                    referredOnTo);
 
                 // Build the base query for active referrals.
                 IQueryable<Referral> query = _context.Referrals
@@ -112,6 +116,26 @@ namespace A_New_Hope.Controllers
                     }
                 }
 
+                // Validate referral date range before applying the filters.
+                if (referredOnFrom.HasValue && referredOnTo.HasValue && referredOnFrom.Value.Date > referredOnTo.Value.Date)
+                {
+                    TempData["ErrorMessage"] = "Referral Date From cannot be later than Referral Date To.";
+                }
+                else
+                {
+                    if (referredOnFrom.HasValue)
+                    {
+                        var fromDate = referredOnFrom.Value.Date;
+                        query = query.Where(r => r.ReferredOn >= fromDate);
+                    }
+
+                    if (referredOnTo.HasValue)
+                    {
+                        var toDateExclusive = referredOnTo.Value.Date.AddDays(1);
+                        query = query.Where(r => r.ReferredOn < toDateExclusive);
+                    }
+                }
+
                 // Apply sorting.
                 query = sortOrder switch
                 {
@@ -119,17 +143,34 @@ namespace A_New_Hope.Controllers
                         .OrderBy(r => r.ReferredOn)
                         .ThenBy(r => r.Id),
 
+                    "date_desc" => query
+                        .OrderByDescending(r => r.ReferredOn)
+                        .ThenBy(r => r.Id),
+
                     "client_asc" => query
                         .OrderBy(r => r.ClientUser!.LastName)
                         .ThenBy(r => r.ClientUser!.FirstName)
+                        .ThenByDescending(r => r.ReferredOn),
+
+                    "client_desc" => query
+                        .OrderByDescending(r => r.ClientUser!.LastName)
+                        .ThenByDescending(r => r.ClientUser!.FirstName)
                         .ThenByDescending(r => r.ReferredOn),
 
                     "organization_asc" => query
                         .OrderBy(r => r.ReferringOrganization!.Name)
                         .ThenByDescending(r => r.ReferredOn),
 
+                    "organization_desc" => query
+                        .OrderByDescending(r => r.ReferringOrganization!.Name)
+                        .ThenByDescending(r => r.ReferredOn),
+
                     "status_asc" => query
                         .OrderBy(r => r.Status)
+                        .ThenByDescending(r => r.ReferredOn),
+
+                    "status_desc" => query
+                        .OrderByDescending(r => r.Status)
                         .ThenByDescending(r => r.ReferredOn),
 
                     _ => query
@@ -144,9 +185,10 @@ namespace A_New_Hope.Controllers
                 ViewData["CurrentSearchTerm"] = searchTerm;
                 ViewData["CurrentStatusFilter"] = statusFilter;
                 ViewData["CurrentSortOrder"] = sortOrder;
+                ViewData["CurrentReferredOnFrom"] = referredOnFrom?.ToString("yyyy-MM-dd");
+                ViewData["CurrentReferredOnTo"] = referredOnTo?.ToString("yyyy-MM-dd");
 
                 // Keep this temporarily if your current Index view still uses CurrentFilter.
-                // Once the view is updated, you can remove this line.
                 ViewData["CurrentFilter"] = searchTerm;
 
                 _logger.LogInformation("Loaded {Count} referrals", referrals.Count);
