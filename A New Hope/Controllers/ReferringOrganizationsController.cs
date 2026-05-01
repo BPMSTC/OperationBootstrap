@@ -35,47 +35,68 @@ namespace A_New_Hope.Controllers
 
         // GET: ReferringOrganizations
         /// <summary>
-        /// Displays all non-deleted referring organizations.
+        /// Displays all non-deleted referring organizations with server-side search and sorting.
         /// </summary>
-        public async Task<IActionResult> Index(string? searchTerm)
+        public async Task<IActionResult> Index(string? searchTerm, string? sortOrder)
         {
             try
             {
-                _logger.LogInformation("Loading Referring Organizations Index page");
+                _logger.LogInformation(
+                    "Loading Referring Organizations Index page with SearchTerm: {SearchTerm}, SortOrder: {SortOrder}",
+                    searchTerm,
+                    sortOrder);
 
                 // Build the base query for active referring organizations.
-                var query = _context.ReferringOrganizations
+                IQueryable<ReferringOrganization> query = _context.ReferringOrganizations
                     .Where(r => r.DeletedAt == null);
+
+                // Normalize filter values.
+                searchTerm = InputNormalization.NullIfWhiteSpace(searchTerm);
+                sortOrder = InputNormalization.NullIfWhiteSpace(sortOrder);
 
                 // Apply the search filter when one is provided.
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
-                    searchTerm = searchTerm.Trim();
-                    var digitsOnly = new string(searchTerm.Where(char.IsDigit).ToArray());
-
                     query = query.Where(r =>
                         (r.Name != null && r.Name.Contains(searchTerm)) ||
-                        (r.PrimaryContactName != null && r.PrimaryContactName.Contains(searchTerm)) ||
-                        (r.Email != null && r.Email.Contains(searchTerm)) ||
-                        (r.City != null && r.City.Contains(searchTerm)) ||
-                        (r.State != null && r.State.Contains(searchTerm)) ||
-
-                        // Safe phone search
-                        (!string.IsNullOrEmpty(digitsOnly) &&
-                            r.PhoneNumber != null &&
-                            r.PhoneNumber.Replace(" ", "")
-                                         .Replace("-", "")
-                                         .Replace("(", "")
-                                         .Replace(")", "")
-                                         .Contains(digitsOnly))
+                        (r.Email != null && r.Email.Contains(searchTerm))
                     );
                 }
 
-                // Retrieve the ordered organizations for display.
-                var referringOrganizations = await query
-                    .OrderBy(r => r.Name)
-                    .ToListAsync();
+                // Apply sorting.
+                query = sortOrder switch
+                {
+                    "name_asc" => query
+                        .OrderBy(r => r.Name)
+                        .ThenBy(r => r.Id),
 
+                    "name_desc" => query
+                        .OrderByDescending(r => r.Name)
+                        .ThenBy(r => r.Id),
+
+                    "email_asc" => query
+                        .OrderBy(r => r.Email)
+                        .ThenBy(r => r.Name)
+                        .ThenBy(r => r.Id),
+
+                    "email_desc" => query
+                        .OrderByDescending(r => r.Email)
+                        .ThenBy(r => r.Name)
+                        .ThenBy(r => r.Id),
+
+                    _ => query
+                        .OrderBy(r => r.Name)
+                        .ThenBy(r => r.Id)
+                };
+
+                // Retrieve the organizations for display.
+                var referringOrganizations = await query.ToListAsync();
+
+                // Preserve selected values in the view.
+                ViewData["CurrentSearchTerm"] = searchTerm;
+                ViewData["CurrentSortOrder"] = sortOrder;
+
+                // Keep this temporarily if your current Index view still uses CurrentFilter.
                 ViewData["CurrentFilter"] = searchTerm;
 
                 _logger.LogInformation("Loaded {Count} referring organizations", referringOrganizations.Count);
