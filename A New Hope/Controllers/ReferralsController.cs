@@ -947,40 +947,19 @@ namespace A_New_Hope.Controllers
         /// <summary>
         /// Shows the edit form for a single non-deleted referral.
         /// </summary>
-        public async Task<IActionResult> Edit(ulong? id)
+        public async Task<IActionResult> Edit(ulong id)
         {
-            try
-            {
-                // Reject requests with no id.
-                if (id == null)
-                {
-                    _logger.LogWarning("Edit requested with null Id");
-                    return NotFound();
-                }
+            var referral = await _context.Referrals
+                .Include(r => r.ClientUser)
+                .Include(r => r.ReferringOrganization)
+                .FirstOrDefaultAsync(r => r.Id == id);
 
-                _logger.LogInformation("Loading Edit page for Referral Id {Id}", id);
+            if (referral == null)
+                return NotFound();
 
-                // Retrieve the requested active referral for editing.
-                var referral = await _context.Referrals
-                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
+            ViewBag.IsEditMode = true;
 
-                // Return not found when the referral does not exist.
-                if (referral == null)
-                {
-                    _logger.LogWarning("Referral Id {Id} not found for edit", id);
-                    return NotFound();
-                }
-
-                // Populate dropdown values using the current record selections.
-                await PopulateDropdowns(referral.ClientUserId, referral.ReferringOrganizationId);
-                return View(referral);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading edit page for Referral Id {Id}", id);
-                TempData["ErrorMessage"] = "An unexpected error occurred while loading the edit form.";
-                return RedirectToAction(nameof(Index));
-            }
+            return View("Details", referral); // reuse same page
         }
 
         // POST: Referrals/Edit/5
@@ -989,94 +968,52 @@ namespace A_New_Hope.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(ulong id, [Bind("Id,ClientUserId,ReferringOrganizationId,ReferredOn,Status,ValidFrom,ValidTo,Notes")] Referral formModel)
+        public async Task<IActionResult> Edit(ulong id, Referral model)
         {
-            try
+            if (id != model.Id)
+                return NotFound();
+
+            // 🔥 Prevent validation errors from navigation properties
+            ModelState.Remove("ClientUser");
+            ModelState.Remove("ReferringOrganization");
+
+            if (!ModelState.IsValid)
             {
-                _logger.LogInformation("Attempting to edit Referral Id {Id}", id);
+                var reload = await _context.Referrals
+                    .Include(r => r.ClientUser)
+                    .Include(r => r.ReferringOrganization)
+                    .FirstOrDefaultAsync(r => r.Id == id);
 
-                // Ensure the route id matches the posted model id.
-                if (id != formModel.Id)
-                {
-                    _logger.LogWarning("Edit mismatch: route Id {RouteId} vs model Id {ModelId}", id, formModel.Id);
+                if (reload == null)
                     return NotFound();
-                }
 
-                // Remove navigation properties that are not posted by the form.
-                ModelState.Remove(nameof(Referral.ClientUser));
-                ModelState.Remove(nameof(Referral.ReferringOrganization));
-                ModelState.Remove(nameof(Referral.CreatedByUser));
-                ModelState.Remove(nameof(Referral.UpdatedByUser));
+                // preserve user input
+                reload.Status = model.Status;
+                reload.ReferredOn = model.ReferredOn;
+                reload.ValidFrom = model.ValidFrom;
+                reload.ValidTo = model.ValidTo;
+                reload.Notes = model.Notes;
 
-                // Normalize incoming values before business-rule validation.
-                NormalizeReferral(formModel);
-                await ApplyReferralValidationAsync(formModel, formModel.Id);
+                ViewBag.IsEditMode = true;
 
-                // Return the form with dropdowns restored when validation fails.
-                if (!ModelState.IsValid)
-                {
-                    _logger.LogWarning("Edit Referral failed validation for Id {Id}", id);
-                    await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
-                    return View(formModel);
-                }
-
-                // Retrieve the existing active referral record.
-                var existing = await _context.Referrals
-                    .FirstOrDefaultAsync(r => r.Id == id && r.DeletedAt == null);
-
-                // Return not found when the target record no longer exists.
-                if (existing == null)
-                {
-                    _logger.LogWarning("Referral Id {Id} not found during edit save", id);
-                    return NotFound();
-                }
-
-                // Copy validated form values into the tracked entity.
-                existing.ClientUserId = formModel.ClientUserId;
-                existing.ReferringOrganizationId = formModel.ReferringOrganizationId;
-                existing.ReferredOn = formModel.ReferredOn;
-                existing.Status = formModel.Status;
-                existing.ValidFrom = formModel.ValidFrom;
-                existing.ValidTo = formModel.ValidTo;
-                existing.Notes = formModel.Notes;
-                existing.UpdatedAt = DateTime.UtcNow;
-                existing.UpdatedByUserId = null;
-
-                try
-                {
-                    await _context.SaveChangesAsync();
-
-                    _logger.LogInformation("Referral Id {Id} updated successfully", id);
-                    return RedirectToAction(nameof(Index));
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    // Check whether the record was deleted during the edit attempt.
-                    if (!await ReferralExists(formModel.Id))
-                    {
-                        _logger.LogWarning("Referral Id {Id} no longer exists during concurrency check", id);
-                        return NotFound();
-                    }
-
-                    _logger.LogError(ex, "Concurrency error updating Referral Id {Id}", id);
-                    throw;
-                }
-                catch (DbUpdateException ex)
-                {
-                    _logger.LogError(ex, "Error updating Referral Id {Id}", id);
-
-                    ModelState.AddModelError("", "Unable to save changes.");
-                    await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
-                    return View(formModel);
-                }
+                return View("Details", reload);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error editing Referral Id {Id}", id);
-                ModelState.AddModelError("", "An unexpected error occurred while updating the referral.");
-                await PopulateDropdowns(formModel.ClientUserId, formModel.ReferringOrganizationId);
-                return View(formModel);
-            }
+
+            var referral = await _context.Referrals.FindAsync(id);
+
+            if (referral == null)
+                return NotFound();
+
+            // update only editable fields
+            referral.Status = model.Status;
+            referral.ReferredOn = model.ReferredOn;
+            referral.ValidFrom = model.ValidFrom;
+            referral.ValidTo = model.ValidTo;
+            referral.Notes = model.Notes;
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         // GET: Referrals/Delete/5

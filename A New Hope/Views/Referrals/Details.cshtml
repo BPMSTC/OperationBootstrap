@@ -2,64 +2,142 @@
 
 @{
     ViewData["Title"] = "Referral Details";
+    var isEdit = ViewBag.IsEditMode as bool? ?? false;
 }
 
-<h1>Referral Details</h1>
+<h1 class="mb-3">Referral Details</h1>
+<hr />
 
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-3">Client</dt>
-        <dd class="col-sm-9">
-            @(
-                        Model.ClientUser != null
-                        ? $"{Model.ClientUser.LastName}, {Model.ClientUser.FirstName} ({Model.ClientUser.Email})"
-                        : ""
-                        )
-        </dd>
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
 
-        <dt class="col-sm-3">Referring Organization</dt>
-        <dd class="col-sm-9">
-            @(
-                        Model.ReferringOrganization != null
-                        ? Model.ReferringOrganization.Name
-                        : ""
-                        )
-        </dd>
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ReferredOn)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ReferredOn)</dd>
+    <!-- ================= BASIC INFO ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Basic Information</h5>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Status)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Status)</dd>
+        <dl class="row">
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidFrom)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ValidFrom)</dd>
+            <dt class="col-sm-3">Client</dt>
+            <dd class="col-sm-9">
+                @(
+                    Model.ClientUser != null
+                    ? $"{Model.ClientUser.LastName}, {Model.ClientUser.FirstName} ({Model.ClientUser.Email})"
+                    : ""
+                )
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ValidTo)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.ValidTo)</dd>
+            <dt class="col-sm-3">Status</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="Status" class="form-control" />
+                }
+                else
+                {
+                    @Model.Status
+                }
+            </dd>
 
-        <dt class="col-sm-3">Referrer Name</dt>
-        <dd class="col-sm-9">@Model.ReferringOrganization?.PrimaryContactName</dd>
+            <dt class="col-sm-3">Referred On</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="ReferredOn" type="date" class="form-control"
+                           value="@(Model.ReferredOn.ToString("yyyy-MM-dd"))" />
+                }
+                else
+                {
+                    @Model.ReferredOn.ToString("MM/dd/yyyy")
+                }
+            </dd>
 
-        <dt class="col-sm-3">Referrer Phone</dt>
-        <dd class="col-sm-9">@Model.ReferringOrganization?.PhoneNumber</dd>
+            <dt class="col-sm-3">Valid From</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="ValidFrom" type="date" class="form-control"
+                           value="@(Model.ValidFrom?.ToString("yyyy-MM-dd"))" />
+                }
+                else
+                {
+                    @(Model.ValidFrom?.ToString("MM/dd/yyyy"))
+                }
+            </dd>
 
-        <dt class="col-sm-3">Referrer Email</dt>
-        <dd class="col-sm-9">@Model.ReferringOrganization?.Email</dd>
+            <dt class="col-sm-3">Valid To</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="ValidTo" type="date" class="form-control"
+                           value="@(Model.ValidTo?.ToString("yyyy-MM-dd"))" />
+                }
+                else
+                {
+                    @(Model.ValidTo?.ToString("MM/dd/yyyy"))
+                }
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Notes)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>
+        </dl>
+    </section>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
+    <!-- ================= REFERRING ORGANIZATION ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Referring Organization</h5>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
-    </dl>
-</div>
+        <dl class="row">
 
-<div>
-    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
-    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
-</div>
+            <dt class="col-sm-3">Organization Name</dt>
+            <dd class="col-sm-9">
+                @(Model.ReferringOrganization?.Name ?? "")
+            </dd>
+
+            <dt class="col-sm-3">Contact Name</dt>
+            <dd class="col-sm-9">
+                @Model.ReferringOrganization?.PrimaryContactName
+            </dd>
+
+            <dt class="col-sm-3">Phone</dt>
+            <dd class="col-sm-9">
+                @Model.ReferringOrganization?.PhoneNumber
+            </dd>
+
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">
+                @Model.ReferringOrganization?.Email
+            </dd>
+
+        </dl>
+    </section>
+
+    <!-- ================= NOTES ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Notes</h5>
+
+        @if (isEdit)
+        {
+            <textarea asp-for="Notes" class="form-control" rows="4"></textarea>
+        }
+        else
+        {
+            <div class="border rounded p-3">
+                @(!string.IsNullOrWhiteSpace(Model.Notes) ? Model.Notes : "No notes provided.")
+            </div>
+        }
+    </section>
+
+    <!-- ================= ACTIONS ================= -->
+    <div class="mt-3">
+        @if (isEdit)
+        {
+            <button type="submit" class="btn btn-secondary">Save</button>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary ms-1">Cancel</a>
+        }
+        else
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+            <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
+        }
+    </div>
+</form>
