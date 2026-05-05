@@ -2,72 +2,285 @@
 
 @{
     ViewData["Title"] = "Referring Organization Details";
+    var isEdit = ViewBag.IsEditMode as bool? ?? false;
 }
 
-<h1>Referring Organization Details</h1>
+<h1 class="mb-3">Referring Organization Details</h1>
+<hr />
 
-<div>
-    <hr />
-    <dl class="row">
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Name)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Name)</dd>
+<form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
 
-        <dt class="col-sm-3">Service Categories</dt>
-        <dd class="col-sm-9">
-            @if (Model.ReferringOrganizationServiceCategories != null &&
-                        Model.ReferringOrganizationServiceCategories.Any())
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    <!-- ================= BASIC INFO ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Basic Information</h5>
+
+        <dl class="row">
+
+            <!-- NAME -->
+            @if (!string.IsNullOrWhiteSpace(Model.Name) || isEdit)
             {
-                @string.Join(", ",
-                Model.ReferringOrganizationServiceCategories
-                .Where(x => x.ServiceCategory != null)
-                .Select(x => x.ServiceCategory.Name)
-                .OrderBy(name => name))
+                <dt class="col-sm-3">Name</dt>
+                <dd class="col-sm-9">
+                    @if (isEdit)
+                    {
+                        <input asp-for="Name" class="form-control" />
+                    }
+                    else
+                    {
+                        @Model.Name
+                    }
+                </dd>
+            }
+
+            <!-- SERVICE CATEGORIES -->
+            <dt class="col-sm-3">Service Categories</dt>
+            <dd class="col-sm-9">
+                @if (Model.ReferringOrganizationServiceCategories?.Any() == true)
+                {
+                    @string.Join(", ",
+                        Model.ReferringOrganizationServiceCategories
+                            .Where(x => x.ServiceCategory != null)
+                            .Select(x => x.ServiceCategory.Name)
+                            .OrderBy(x => x))
+                }
+                else
+                {
+                    <span class="text-muted">—</span>
+                }
+            </dd>
+
+            <!-- PHONE -->
+            @if (!string.IsNullOrWhiteSpace(Model.PhoneNumber) || isEdit)
+            {
+                <dt class="col-sm-3">Phone</dt>
+                <dd class="col-sm-9">
+                    @if (isEdit)
+                    {
+                        <input asp-for="PhoneNumber" class="form-control" />
+                    }
+                    else
+                    {
+                        @Model.PhoneNumber
+                    }
+                </dd>
+            }
+
+            <!-- EMAIL -->
+            @if (!string.IsNullOrWhiteSpace(Model.Email) || isEdit)
+            {
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">
+                    @if (isEdit)
+                    {
+                        <input asp-for="Email" class="form-control" />
+                    }
+                    else
+                    {
+                        @Model.Email
+                    }
+                </dd>
+            }
+
+        </dl>
+    </section>
+
+    <!-- ================= ADDRESS ================= -->
+    @if (isEdit ||
+         !string.IsNullOrWhiteSpace(Model.AddressLine1) ||
+         !string.IsNullOrWhiteSpace(Model.AddressLine2) ||
+         !string.IsNullOrWhiteSpace(Model.City) ||
+         !string.IsNullOrWhiteSpace(Model.State) ||
+         !string.IsNullOrWhiteSpace(Model.PostalCode))
+    {
+        <section class="mb-4">
+            <h5 class="mb-3">Address</h5>
+
+            <dl class="row">
+
+                @if (!string.IsNullOrWhiteSpace(Model.AddressLine1) || isEdit)
+                {
+                    <dt class="col-sm-3">Address Line 1</dt>
+                    <dd class="col-sm-9">
+                        @if (isEdit)
+                        {
+                            <input asp-for="AddressLine1" class="form-control" />
                         }
+                        else
+                        {
+                            @Model.AddressLine1
+                        }
+                    </dd>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.AddressLine2) || isEdit)
+                {
+                    <dt class="col-sm-3">Address Line 2</dt>
+                    <dd class="col-sm-9">
+                        @if (isEdit)
+                        {
+                            <input asp-for="AddressLine2" class="form-control" />
+                        }
+                        else
+                        {
+                            @Model.AddressLine2
+                        }
+                    </dd>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.City) || isEdit)
+                {
+                    <dt class="col-sm-3">City</dt>
+                    <dd class="col-sm-9">
+                        @if (isEdit)
+                        {
+                            <input asp-for="City" class="form-control" />
+                        }
+                        else
+                        {
+                            @Model.City
+                        }
+                    </dd>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.State) || isEdit)
+                {
+                    <dt class="col-sm-3">State</dt>
+                    <dd class="col-sm-9">
+                        @if (isEdit)
+                        {
+                            <input asp-for="State" class="form-control" maxlength="2" />
+                        }
+                        else
+                        {
+                            @Model.State
+                        }
+                    </dd>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.PostalCode) || isEdit)
+                {
+                    <dt class="col-sm-3">Postal Code</dt>
+                    <dd class="col-sm-9">
+                        @if (isEdit)
+                        {
+                            <input asp-for="PostalCode" class="form-control" />
+                        }
+                        else
+                        {
+                            @Model.PostalCode
+                        }
+                    </dd>
+                }
+
+            </dl>
+        </section>
+    }
+
+    <!-- ================= CONTACT ================= -->
+    @if (!string.IsNullOrWhiteSpace(Model.PrimaryContactName) || isEdit)
+    {
+        <section class="mb-4">
+            <h5 class="mb-3">Primary Contact</h5>
+
+            <dl class="row">
+
+                <dt class="col-sm-3">Contact Name</dt>
+                <dd class="col-sm-9">
+                    @if (isEdit)
+                    {
+                        <input asp-for="PrimaryContactName" class="form-control" />
+                    }
+                    else
+                    {
+                        @Model.PrimaryContactName
+                    }
+                </dd>
+
+            </dl>
+        </section>
+    }
+
+    <!-- ================= NOTES ================= -->
+    @if (!string.IsNullOrWhiteSpace(Model.Notes) || isEdit)
+    {
+        <section class="mb-4">
+            <h5 class="mb-3">Notes</h5>
+
+            @if (isEdit)
+            {
+                <textarea asp-for="Notes" class="form-control" rows="4"></textarea>
+            }
             else
             {
-                <span>—</span>
+                <div class="border rounded p-3">
+                    @Model.Notes
+                </div>
             }
-        </dd>
+        </section>
+    }
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PhoneNumber)</dd>
+    @* <!-- ================= SYSTEM ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">System Information</h5>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+        <dl class="row">
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine1)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine1)</dd>
+            <dt class="col-sm-3">Active</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="IsActive" type="checkbox" class="form-check-input" />
+                }
+                else
+                {
+                    @Model.IsActive
+                }
+            </dd>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.AddressLine2)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.AddressLine2)</dd>
+            @if (Model.CreatedAt != null)
+            {
+                <dt class="col-sm-3">Created</dt>
+                <dd class="col-sm-9">@Model.CreatedAt</dd>
+            }
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.City)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.City)</dd>
+            @if (Model.UpdatedAt != null)
+            {
+                <dt class="col-sm-3">Updated</dt>
+                <dd class="col-sm-9">@Model.UpdatedAt</dd>
+            }
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.State)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.State)</dd>
+        </dl>
+    </section> *@
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PostalCode)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PostalCode)</dd>
+    <!-- ================= ACTIONS ================= -->
+    <div class="mt-3">
+        @if (isEdit)
+        {
+            <button type="submit" class="btn btn-secondary">Save</button>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PrimaryContactName)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.PrimaryContactName)</dd>
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               class="btn btn-outline-secondary ms-1">
+                Cancel
+            </a>
+        }
+        else
+        {
+            <a asp-action="Edit"
+               asp-route-id="@Model.Id"
+               class="btn btn-primary">
+                Edit
+            </a>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Notes)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.Notes)</dd>
+            <a asp-action="Index"
+               class="btn btn-outline-secondary ms-1">
+                Back to List
+            </a>
+        }
+    </div>
 
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IsActive)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.IsActive)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.CreatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.CreatedAt)</dd>
-
-        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UpdatedAt)</dt>
-        <dd class="col-sm-9">@Html.DisplayFor(model => model.UpdatedAt)</dd>
-    </dl>
-</div>
-
-<div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary">Edit</a>
-    <a asp-action="Index" class="btn btn-outline-secondary ms-1">Back to List</a>
-</div>
+</form>
