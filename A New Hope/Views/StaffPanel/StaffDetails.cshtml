@@ -5,114 +5,210 @@
     var isEdit = Context.Request.Query["edit"] == "true";
 }
 
-<div class="container">
+<h1 class="mb-3">Staff Details</h1>
+<hr />
 
-    <!-- HEADER -->
-    <div class="section-header mb-3">
-        <h1>Staff Details</h1>
-    </div>
+<form asp-action="StaffDetails" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
 
-    <div class="card main-card">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-        <form asp-action="StaffDetails" method="post">
-            @Html.AntiForgeryToken()
+    <!-- ================= ACCOUNT INFO ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Account Information</h5>
 
-            <input type="hidden" asp-for="Id" />
+        <dl class="row">
 
-            <div class="table-responsive">
-
-                <table class="table table-hover align-middle mb-0">
-
-                    <thead>
-                        <tr>
-                            <th style="width: 200px;">Field</th>
-                            <th>Value</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-
-                        <tr>
-                            <td class="fw-semibold">First Name</td>
-                            <td>
-                                @if (isEdit)
-                                {
-                                    <input asp-for="FirstName" class="form-control" />
-                                }
-                                else
-                                {
-                                    <span class="text-main">@Model.FirstName</span>
-                                }
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="fw-semibold">Last Name</td>
-                            <td>
-                                @if (isEdit)
-                                {
-                                    <input asp-for="LastName" class="form-control" />
-                                }
-                                else
-                                {
-                                    <span class="text-main">@Model.LastName</span>
-                                }
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="fw-semibold">Email</td>
-                            <td>
-                                @if (isEdit)
-                                {
-                                    <input asp-for="Email" class="form-control" />
-                                }
-                                else
-                                {
-                                    <span class="text-main">@Model.Email</span>
-                                }
-                            </td>
-                        </tr>
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
-            <div class="mt-3 d-flex gap-2">
-
+            <dt class="col-sm-3">User Type</dt>
+            <dd class="col-sm-9">
                 @if (isEdit)
                 {
-                    <button type="submit" class="btn btn-primary">
-                        Save
-                    </button>
-
-                    <a asp-action="StaffDetails"
-                           asp-route-id="@Model.Id"
-                           class="btn btn-secondary">
-                        Cancel
-                    </a>
+                    <select asp-for="UserType" class="form-select">
+                        <option value="Staff">Staff</option>
+                        <option value="Admin">Admin</option>
+                    </select>
                 }
                 else
                 {
-                    <a asp-action="StaffDetails"
-                           asp-route-id="@Model.Id"
-                           asp-route-edit="true"
-                           class="btn btn-primary">
-                        Edit
-                    </a>
-
-                    <a asp-controller="StaffPanel"
-                           asp-action="StaffListIndex"
-                           class="btn btn-secondary">
-                        Back
-                    </a>
+                    @Model.UserType
                 }
+            </dd>
 
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="Email" class="form-control" />
+                }
+                else
+                {
+                    @Model.Email
+                }
+            </dd>
+
+        </dl>
+    </section>
+
+    <!-- ================= PERSONAL INFO ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Personal Information</h5>
+
+        <dl class="row">
+
+            <dt class="col-sm-3">First Name</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="FirstName" class="form-control" />
+                }
+                else
+                {
+                    @Model.FirstName
+                }
+            </dd>
+
+            <dt class="col-sm-3">Last Name</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="LastName" class="form-control" />
+                }
+                else
+                {
+                    @Model.LastName
+                }
+            </dd>
+
+            <dt class="col-sm-3">Phone Number</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="PhoneNumber" class="form-control" />
+                }
+                else
+                {
+                    @Model.PhoneNumber
+                }
+            </dd>
+
+        </dl>
+    </section>
+
+    <!-- ================= ADDRESS ================= -->
+    <section class="mb-4">
+        <h5 class="mb-3">Address</h5>
+
+        <dl class="row">
+
+            <dt class="col-sm-3">Address Line 1</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="AddressLine1" class="form-control" />
+                }
+                else
+                {
+                    @Model.AddressLine1
+                }
+            </dd>
+
+            <dt class="col-sm-3">Address Line 2</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="AddressLine2" class="form-control" />
+                }
+                else
+                {
+                    @Model.AddressLine2
+                }
+            </dd>
+
+            <dt class="col-sm-3">City</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="City" class="form-control" />
+                }
+                else
+                {
+                    @Model.City
+                }
+            </dd>
+
+            <dt class="col-sm-3">State</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="State" class="form-control" maxlength="2" />
+                }
+                else
+                {
+                    @Model.State
+                }
+            </dd>
+
+            <dt class="col-sm-3">Postal Code</dt>
+            <dd class="col-sm-9">
+                @if (isEdit)
+                {
+                    <input asp-for="PostalCode" class="form-control" />
+                }
+                else
+                {
+                    @Model.PostalCode
+                }
+            </dd>
+
+        </dl>
+    </section>
+
+    <!-- ================= PASSWORD ================= -->
+    @if (isEdit)
+    {
+        <section class="mb-4">
+            <h5 class="mb-3">Security</h5>
+
+            <div class="row">
+                <div class="col-sm-3">
+                    <label class="form-label">New Password</label>
+                </div>
+                <div class="col-sm-9">
+                    <input name="Password" type="password" class="form-control" />
+                    <div class="form-text">Leave blank to keep current password.</div>
+                </div>
             </div>
+        </section>
+    }
 
-        </form>
+    <!-- ================= ACTIONS ================= -->
+    <div class="mt-3">
+        @if (isEdit)
+        {
+            <button type="submit" class="btn btn-secondary">Save</button>
 
+            <a asp-action="StaffDetails"
+               asp-route-id="@Model.Id"
+               class="btn btn-outline-secondary ms-1">
+                Cancel
+            </a>
+        }
+        else
+        {
+            <a asp-action="StaffDetails"
+               asp-route-id="@Model.Id"
+               asp-route-edit="true"
+               class="btn btn-primary">
+                Edit
+            </a>
+
+            <a asp-controller="StaffPanel"
+               asp-action="StaffListIndex"
+               class="btn btn-outline-secondary ms-1">
+                Back to List
+            </a>
+        }
     </div>
-</div>
+
+</form>
