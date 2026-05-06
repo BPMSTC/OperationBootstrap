@@ -856,7 +856,10 @@ namespace A_New_Hope.Controllers
                 if (!form.ContainsKey(key))
                     break;
 
-                var firstName = form[key];
+                var firstName = form[$"HouseholdMembers[{index}].FirstName"].ToString().Trim();
+                var lastName = form[$"HouseholdMembers[{index}].LastName"].ToString().Trim();
+                var dateOfBirthValue = form[$"HouseholdMembers[{index}].DateOfBirth"].ToString();
+                var approximateAgeValue = form[$"HouseholdMembers[{index}].ApproximateAge"].ToString();
 
                 if (string.IsNullOrWhiteSpace(firstName))
                 {
@@ -867,9 +870,9 @@ namespace A_New_Hope.Controllers
                 members.Add(new HouseholdMember
                 {
                     FirstName = firstName,
-                    LastName = form[$"HouseholdMembers[{index}].LastName"],
-                    DateOfBirth = DateTime.TryParse(form[$"HouseholdMembers[{index}].DateOfBirth"], out var dob) ? dob : null,
-                    ApproximateAge = int.TryParse(form[$"HouseholdMembers[{index}].ApproximateAge"], out var age) ? age : null
+                    LastName = lastName,
+                    DateOfBirth = DateTime.TryParse(dateOfBirthValue, out var dob) ? dob : null,
+                    ApproximateAge = int.TryParse(approximateAgeValue, out var age) ? age : null
                 });
 
                 index++;
@@ -1150,6 +1153,13 @@ namespace A_New_Hope.Controllers
         /// </summary>
         private async Task ApplyDomainUserValidationAsync(DomainUser model, ulong? currentId = null)
         {
+
+            if ((model.UserType == UserType.Staff || model.UserType == UserType.Admin) &&
+                string.IsNullOrWhiteSpace(model.Email))
+            {
+                ModelState.AddModelError(nameof(DomainUser.Email), "Email address is required for Staff and Admin users.");
+            }
+
             if (!string.IsNullOrWhiteSpace(model.Email) && !IsValidEmail(model.Email))
             {
                 ModelState.AddModelError(nameof(DomainUser.Email), "Email format is invalid.");
