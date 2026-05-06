@@ -6,16 +6,6 @@ namespace A_New_Hope.Models.ViewModels.Users
     /// UserDetailsViewModel
     /// --------------------
     /// View model for the Users/Details page.
-    ///
-    /// Why this exists:
-    /// - The Details page needs more than just the DomainUser entity.
-    /// - It may need related client-only data such as ClientProfile and HouseholdMembers.
-    /// - It may also need Identity/account info such as whether a linked login exists.
-    ///
-    /// Design notes:
-    /// - DomainUser remains the primary business record shown on the page.
-    /// - ClientProfile and HouseholdMembers are included only when the user is a Client.
-    /// - HasLoginAccount / IdentityUserId mirror the pattern already used by DomainUserIndexRowViewModel.
     /// </summary>
     public class UserDetailsViewModel
     {
@@ -26,19 +16,16 @@ namespace A_New_Hope.Models.ViewModels.Users
 
         /// <summary>
         /// Optional client-specific profile record.
-        /// Populated when the DomainUser is a Client and a profile exists.
         /// </summary>
         public ClientProfile? ClientProfile { get; set; }
 
         /// <summary>
-        /// Optional collection of household members associated with the client.
-        /// Empty for non-client users or when no household members exist.
+        /// Household members associated with the client.
         /// </summary>
         public List<HouseholdMember> HouseholdMembers { get; set; } = new();
 
         /// <summary>
-        /// Optional collection of monthly income records associated with the client.
-        /// Empty for non-client users or when no income records exist.
+        /// Monthly income records associated with the client.
         /// </summary>
         public List<ClientIncome> ClientIncomes { get; set; } = new();
 
@@ -48,7 +35,7 @@ namespace A_New_Hope.Models.ViewModels.Users
         public bool HasLoginAccount { get; set; }
 
         /// <summary>
-        /// The linked Identity user id when a login account exists; otherwise null.
+        /// The linked Identity user id when a login account exists.
         /// </summary>
         public string? IdentityUserId { get; set; }
 
@@ -57,6 +44,20 @@ namespace A_New_Hope.Models.ViewModels.Users
         /// </summary>
         public bool IsClient => User.UserType == UserType.Client;
 
+        /// <summary>
+        /// Referrals associated with the client.
+        /// </summary>
         public List<Referral> Referrals { get; set; } = new();
+
+        /// <summary>
+        /// Controls whether the page is in edit mode.
+        /// </summary>
+        public bool IsEditMode { get; set; }
+
+        /// <summary>
+        /// UI-only flags for marking household members as deleted.
+        /// Index must match HouseholdMembers list.
+        /// </summary>
+        public List<bool> HouseholdDeleteFlags { get; set; } = new();
     }
 }
